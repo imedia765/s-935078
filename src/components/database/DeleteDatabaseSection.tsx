@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
-// Define the table names as a const array to ensure type safety
 const TABLES = [
   'ticket_responses',
   'support_tickets',
@@ -30,10 +29,13 @@ const TABLES = [
   'profiles'
 ] as const;
 
-// Create a type from the array
 type TableName = typeof TABLES[number];
 
-export function DeleteDatabaseSection() {
+interface DeleteDatabaseSectionProps {
+  onDelete?: () => void;
+}
+
+export function DeleteDatabaseSection({ onDelete }: DeleteDatabaseSectionProps) {
   const { toast } = useToast();
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -57,10 +59,19 @@ export function DeleteDatabaseSection() {
         }
       }
 
+      await supabase
+        .from('database_logs')
+        .insert({
+          action: 'delete',
+          details: 'All database records deleted'
+        });
+
       toast({
         title: "Database cleared successfully",
         description: "All data has been removed from the database.",
       });
+
+      onDelete?.();
     } catch (error) {
       console.error('Error deleting database:', error);
       toast({

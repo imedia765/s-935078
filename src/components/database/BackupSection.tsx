@@ -5,7 +5,12 @@ import { useRef } from "react";
 import { exportDatabase, restoreDatabase } from "@/utils/databaseBackup";
 import { useToast } from "@/hooks/use-toast";
 
-export function BackupSection() {
+interface BackupSectionProps {
+  onBackupComplete?: () => void;
+  onRestoreComplete?: () => void;
+}
+
+export function BackupSection({ onBackupComplete, onRestoreComplete }: BackupSectionProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -16,6 +21,7 @@ export function BackupSection() {
         title: "Backup successful",
         description: "Database backup has been downloaded",
       });
+      onBackupComplete?.();
     } catch (error) {
       toast({
         title: "Backup failed",
@@ -35,6 +41,7 @@ export function BackupSection() {
         title: "Restore successful",
         description: "Database has been restored from backup",
       });
+      onRestoreComplete?.();
     } catch (error) {
       toast({
         title: "Restore failed",

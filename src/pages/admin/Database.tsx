@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,40 @@ import { supabase } from "@/integrations/supabase/client";
 import { ImportSection } from "@/components/database/ImportSection";
 import { BackupSection } from "@/components/database/BackupSection";
 import { DeleteDatabaseSection } from "@/components/database/DeleteDatabaseSection";
+import { getDatabaseStatus } from "@/utils/databaseBackup";
+
+interface DatabaseStatus {
+  lastAction: {
+    action: string;
+    timestamp: string;
+    details?: string;
+  } | null;
+  totalRows: number;
+  estimatedSize: string;
+}
 
 export default function Database() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [status, setStatus] = useState<DatabaseStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchStatus = async () => {
+    try {
+      setIsLoading(true);
+      const status = await getDatabaseStatus();
+      setStatus(status);
+    } catch (error) {
+      console.error('Error fetching database status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch database status",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -27,6 +57,7 @@ export default function Database() {
     };
 
     checkAuth();
+    fetchStatus();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session) {
@@ -54,18 +85,37 @@ export default function Database() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm font-medium">Last Backup: 2024-02-15 14:30</p>
-                <p className="text-sm text-muted-foreground">Database Size: 256 MB</p>
+              <div className="space-y-2">
+                {status?.lastAction && (
+                  <p className="text-sm font-medium">
+                    Last Action: {status.lastAction.action} ({status.lastAction.timestamp})
+                    {status.lastAction.details && (
+                      <span className="block text-xs text-muted-foreground">
+                        {status.lastAction.details}
+                      </span>
+                    )}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Total Records: {status?.totalRows || 0}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Estimated Size: {status?.estimatedSize || '0 KB'}
+                </p>
               </div>
-              <Button variant="ghost" size="icon">
-                <RefreshCw className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={fetchStatus}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </CardContent>
         </Card>
         <div className="md:col-span-2">
-          <DeleteDatabaseSection />
+          <DeleteDatabaseSection onDelete={fetchStatus} />
         </div>
       </div>
     </div>
