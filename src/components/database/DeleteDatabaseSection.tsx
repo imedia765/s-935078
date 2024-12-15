@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
+// Tables in order of deletion (respecting foreign key constraints)
 const TABLES = [
   'ticket_responses',
   'support_tickets',
