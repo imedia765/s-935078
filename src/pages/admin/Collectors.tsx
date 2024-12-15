@@ -85,6 +85,7 @@ export default function Collectors() {
     <div className="space-y-6">
       <CollectorHeader 
         onPrintAll={handlePrintAll}
+        onUpdate={refetch}
       />
 
       <CollectorSearch 
