@@ -17,6 +17,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
+// Define the table names as a const array to ensure type safety
+const TABLES = [
+  'ticket_responses',
+  'support_tickets',
+  'registrations',
+  'payments',
+  'family_members',
+  'admin_notes',
+  'members',
+  'collectors',
+  'profiles'
+] as const;
+
+// Create a type from the array
+type TableName = typeof TABLES[number];
+
 export function DeleteDatabaseSection() {
   const { toast } = useToast();
   const [confirmText, setConfirmText] = useState("");
@@ -28,19 +44,7 @@ export function DeleteDatabaseSection() {
       console.log("Starting database deletion...");
 
       // Delete data from all tables in reverse order of dependencies
-      const tables = [
-        'ticket_responses',
-        'support_tickets',
-        'registrations',
-        'payments',
-        'family_members',
-        'admin_notes',
-        'members',
-        'collectors',
-        'profiles'
-      ];
-
-      for (const table of tables) {
+      for (const table of TABLES) {
         console.log(`Deleting all records from ${table}...`);
         const { error } = await supabase
           .from(table)
