@@ -51,7 +51,7 @@ export function DeleteDatabaseSection({ onDelete }: DeleteDatabaseSectionProps) 
         const { error } = await supabase
           .from(table)
           .delete()
-          .neq('id', 'placeholder'); // This will delete all records
+          .not('id', 'is', null); // Changed to delete all non-null IDs
 
         if (error) {
           console.error(`Error deleting from ${table}:`, error);
