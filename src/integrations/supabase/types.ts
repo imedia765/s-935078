@@ -51,6 +51,33 @@ export type Database = {
           },
         ]
       }
+      codebase_backups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          download_count: number | null
+          filename: string
+          id: string
+          size: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          download_count?: number | null
+          filename: string
+          id?: string
+          size?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          download_count?: number | null
+          filename?: string
+          id?: string
+          size?: number | null
+        }
+        Relationships: []
+      }
       collectors: {
         Row: {
           active: boolean | null
@@ -160,15 +187,19 @@ export type Database = {
           cors_enabled: boolean | null
           created_at: string
           date_of_birth: string | null
+          default_password_hash: string | null
           email: string | null
+          email_verified: boolean | null
           full_name: string
           gender: string | null
           id: string
           marital_status: string | null
           member_number: string
           membership_type: string | null
+          password_changed: boolean | null
           phone: string | null
           postcode: string | null
+          profile_updated: boolean | null
           status: string | null
           town: string | null
           updated_at: string
@@ -181,15 +212,19 @@ export type Database = {
           cors_enabled?: boolean | null
           created_at?: string
           date_of_birth?: string | null
+          default_password_hash?: string | null
           email?: string | null
+          email_verified?: boolean | null
           full_name: string
           gender?: string | null
           id?: string
           marital_status?: string | null
           member_number: string
           membership_type?: string | null
+          password_changed?: boolean | null
           phone?: string | null
           postcode?: string | null
+          profile_updated?: boolean | null
           status?: string | null
           town?: string | null
           updated_at?: string
@@ -202,15 +237,19 @@ export type Database = {
           cors_enabled?: boolean | null
           created_at?: string
           date_of_birth?: string | null
+          default_password_hash?: string | null
           email?: string | null
+          email_verified?: boolean | null
           full_name?: string
           gender?: string | null
           id?: string
           marital_status?: string | null
           member_number?: string
           membership_type?: string | null
+          password_changed?: boolean | null
           phone?: string | null
           postcode?: string | null
+          profile_updated?: boolean | null
           status?: string | null
           town?: string | null
           updated_at?: string
@@ -285,6 +324,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string
           user_id: string | null
         }
@@ -292,6 +332,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -299,6 +340,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -443,7 +485,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "member" | "collector" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
