@@ -54,6 +54,7 @@ export default function Login() {
     
     const formData = new FormData(e.currentTarget);
     const memberId = formData.get('memberId') as string;
+    const password = formData.get('password') as string;
     
     try {
       console.log("Looking up member with ID:", memberId);
@@ -85,31 +86,10 @@ export default function Login() {
         return;
       }
 
-      // Generate a valid temporary email if using the temp domain
-      const email = member.email.endsWith('@temp.pwaburton.org') 
-        ? `member.${member.member_number}@temporary.org`
-        : member.email;
-
-      // First, try to create the user if they don't exist
-      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: member.member_number,
-      });
-
-      if (signUpError && signUpError.message !== "User already registered") {
-        console.error("Sign up error:", signUpError);
-        throw signUpError;
-      }
-
-      // Now attempt to sign in
-      console.log("Attempting login with member:", { 
-        email,
-        memberId: member.member_number 
-      });
-
+      // For existing members, attempt to sign in with provided password
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: member.member_number,
+        email: member.email,
+        password: password,
       });
 
       if (signInError) {
@@ -129,7 +109,7 @@ export default function Login() {
       console.error("Member ID login error:", error);
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid member ID",
+        description: error instanceof Error ? error.message : "Invalid member ID or password",
         variant: "destructive",
       });
     } finally {
