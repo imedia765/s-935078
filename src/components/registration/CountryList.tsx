@@ -24,7 +24,7 @@ export const CountryList = ({ value, onSelect }: CountryListProps) => {
           <CommandItem
             key={country}
             value={country}
-            onSelect={onSelect}
+            onSelect={() => onSelect(country)}
             className="cursor-pointer"
           >
             <Check

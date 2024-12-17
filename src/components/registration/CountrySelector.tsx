@@ -11,11 +11,11 @@ interface CountrySelectorProps {
 
 export const CountrySelector = ({ register }: CountrySelectorProps) => {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
 
-  const handleSelect = (currentValue: string) => {
-    setValue(currentValue);
-    register("country").onChange({ target: { value: currentValue } });
+  const handleSelect = (value: string) => {
+    setSelectedCountry(value);
+    register("country").onChange({ target: { value } });
     setOpen(false);
   };
 
@@ -30,12 +30,12 @@ export const CountrySelector = ({ register }: CountrySelectorProps) => {
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {value || "Select country..."}
+            {selectedCountry || "Select country..."}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0">
-          <CountryList value={value} onSelect={handleSelect} />
+          <CountryList value={selectedCountry} onSelect={handleSelect} />
         </PopoverContent>
       </Popover>
     </div>
