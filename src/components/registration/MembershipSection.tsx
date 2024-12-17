@@ -21,6 +21,32 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
     const fetchCollectors = async () => {
       console.log("Fetching collectors...");
       try {
+        // First check if we have a member ID and get their collector
+        if (memberId) {
+          console.log("Fetching member data for ID:", memberId);
+          const { data: memberData, error: memberError } = await supabase
+            .from('members')
+            .select('collector_id, collector')
+            .eq('member_number', memberId)
+            .single();
+
+          if (memberError) {
+            console.error("Error fetching member data:", memberError);
+          } else if (memberData) {
+            console.log("Found member data:", memberData);
+            if (memberData.collector) {
+              setAssignedCollectorName(memberData.collector);
+              if (memberData.collector_id) {
+                setSelectedCollector(memberData.collector_id);
+                onCollectorChange?.(memberData.collector_id);
+              }
+              // Early return since we have the collector info
+              return;
+            }
+          }
+        }
+
+        // Only fetch active collectors if we don't have an assigned collector
         const { data: collectorsData, error: collectorsError } = await supabase
           .from('collectors')
           .select('id, name')
@@ -37,35 +63,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
         if (collectorsData && collectorsData.length > 0) {
           setCollectors(collectorsData);
           
-          // If we have a member ID, fetch their collector
-          if (memberId) {
-            console.log("Fetching member data for ID:", memberId);
-            const { data: memberData, error: memberError } = await supabase
-              .from('members')
-              .select('collector_id, collector')
-              .eq('member_number', memberId)
-              .single();
-
-            if (memberError) {
-              console.error("Error fetching member data:", memberError);
-              return;
-            }
-
-            console.log("Fetched member data:", memberData);
-
-            if (memberData?.collector_id) {
-              console.log("Setting collector from member data:", memberData.collector_id);
-              setSelectedCollector(memberData.collector_id);
-              setAssignedCollectorName(memberData.collector || '');
-              onCollectorChange?.(memberData.collector_id);
-            } else {
-              // Fall back to default collector if no specific collector found
-              console.log("No collector found for member, using default");
-              setSelectedCollector(collectorsData[0].id);
-              onCollectorChange?.(collectorsData[0].id);
-            }
-          } else if (!selectedCollector) {
-            // Only set default collector if none is selected
+          if (!selectedCollector) {
             console.log("Setting default collector:", collectorsData[0].id);
             setSelectedCollector(collectorsData[0].id);
             onCollectorChange?.(collectorsData[0].id);
@@ -79,7 +77,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
     };
 
     fetchCollectors();
-  }, [memberId]); 
+  }, [memberId, onCollectorChange]); 
 
   const handleCollectorChange = (value: string) => {
     console.log("Selected collector:", value);
