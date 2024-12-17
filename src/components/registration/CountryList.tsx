@@ -1,12 +1,4 @@
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { countries } from "@/data/countries";
 
 interface CountryListProps {
@@ -16,24 +8,18 @@ interface CountryListProps {
 
 export const CountryList = ({ value, onSelect }: CountryListProps) => {
   return (
-    <Command>
+    <Command className="w-full">
       <CommandInput placeholder="Search country..." />
       <CommandEmpty>No country found.</CommandEmpty>
       <CommandGroup className="max-h-[200px] overflow-y-auto">
         {countries.map((country) => (
           <CommandItem
-            key={country}
-            value={country}
-            onSelect={() => onSelect(country)}
+            key={country.value}
+            value={country.value}
+            onSelect={() => onSelect(country.value)}
             className="cursor-pointer"
           >
-            <Check
-              className={cn(
-                "mr-2 h-4 w-4",
-                value === country ? "opacity-100" : "opacity-0"
-              )}
-            />
-            {country}
+            {country.label}
           </CommandItem>
         ))}
       </CommandGroup>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UseFormRegister } from "react-hook-form";
 import { CountryList } from "./CountryList";
+import { countries } from "@/data/countries";
 
 interface CountrySelectorProps {
   register: UseFormRegister<any>;
@@ -14,8 +15,9 @@ export const CountrySelector = ({ register }: CountrySelectorProps) => {
   const [selectedCountry, setSelectedCountry] = useState("");
 
   const handleSelect = (value: string) => {
-    setSelectedCountry(value);
-    register("country").onChange({ target: { value } });
+    const country = countries.find(c => c.value === value);
+    setSelectedCountry(country?.label || "");
+    register("country").onChange({ target: { value: country?.value || "" } });
     setOpen(false);
   };
 
@@ -34,7 +36,7 @@ export const CountrySelector = ({ register }: CountrySelectorProps) => {
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0">
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <CountryList value={selectedCountry} onSelect={handleSelect} />
         </PopoverContent>
       </Popover>
