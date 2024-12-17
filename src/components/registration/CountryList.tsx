@@ -10,7 +10,7 @@ import {
 import { countries } from "@/data/countries";
 
 interface CountryListProps {
-  value: string;
+  value?: string;
   onSelect: (value: string) => void;
 }
 
@@ -24,9 +24,8 @@ export const CountryList = ({ value, onSelect }: CountryListProps) => {
           <CommandItem
             key={country}
             value={country}
-            onSelect={(currentValue) => {
-              onSelect(currentValue);
-            }}
+            onSelect={onSelect}
+            className="cursor-pointer"
           >
             <Check
               className={cn(
