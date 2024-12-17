@@ -2,13 +2,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormRegister } from "react-hook-form";
-import { CountrySelector } from "./CountrySelector";
 
 interface PersonalInfoProps {
   register: UseFormRegister<any>;
 }
 
 export const PersonalInfoSection = ({ register }: PersonalInfoProps) => {
+  const ukCities = [
+    "London", "Birmingham", "Manchester", "Leeds", "Liverpool", "Newcastle",
+    "Sheffield", "Nottingham", "Bristol", "Leicester", "Burton on Trent"
+  ].sort();
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -41,7 +45,6 @@ export const PersonalInfoSection = ({ register }: PersonalInfoProps) => {
             {...register("postCode", { required: true })}
           />
         </div>
-        <CountrySelector register={register} />
         <div className="space-y-2">
           <label htmlFor="email">Email</label>
           <Input
@@ -88,10 +91,18 @@ export const PersonalInfoSection = ({ register }: PersonalInfoProps) => {
         </div>
         <div className="space-y-2">
           <label htmlFor="pob">Place of Birth</label>
-          <Input
-            id="pob"
-            {...register("pob", { required: true })}
-          />
+          <Select onValueChange={(value) => register("pob").onChange({ target: { value } })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Place of Birth" />
+            </SelectTrigger>
+            <SelectContent>
+              {ukCities.map((city) => (
+                <SelectItem key={city} value={city}>
+                  {city}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <label htmlFor="maritalStatus">Marital Status</label>
