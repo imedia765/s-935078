@@ -32,7 +32,22 @@ export default function Register() {
 
       console.log("Starting registration process with data:", { ...data, collectorId: selectedCollectorId });
 
-      // First, create the member record
+      // First, create auth user with email/password
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (authError) {
+        console.error("Auth error:", authError);
+        throw new Error(authError.message);
+      }
+
+      if (!authData.user) {
+        throw new Error("No user data returned from auth signup");
+      }
+
+      // Create the member record
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .insert({
@@ -54,6 +69,8 @@ export default function Register() {
 
       if (memberError) {
         console.error("Member creation error:", memberError);
+        // Clean up auth user if member creation fails
+        await supabase.auth.signOut();
         throw new Error(memberError.message);
       }
 
