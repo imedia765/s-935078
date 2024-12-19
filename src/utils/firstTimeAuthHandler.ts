@@ -30,7 +30,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     }
 
     // Generate temporary email
-    const tempEmail = `${cleanMemberId.toLowerCase()}@temp-mail.org`;
+    const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
     console.log("Using email for auth:", tempEmail);
 
     // Update member record with temporary email first
@@ -70,11 +70,33 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
           options: {
             data: {
               member_number: cleanMemberId
-            }
+            },
+            emailRedirectTo: window.location.origin + '/change-password'
           }
         });
 
         if (!signUpError) {
+          // For first-time login, we'll automatically confirm the email
+          const { data: adminAuthData, error: adminAuthError } = await supabase.functions.invoke('confirm-user-email', {
+            body: { email: tempEmail }
+          });
+
+          if (adminAuthError) {
+            console.error("Error confirming email:", adminAuthError);
+            throw adminAuthError;
+          }
+
+          // Now try to sign in again
+          const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+            email: tempEmail,
+            password: cleanMemberId
+          });
+
+          if (finalSignInError) {
+            console.error("Error signing in after confirmation:", finalSignInError);
+            throw finalSignInError;
+          }
+
           await updateMemberStatus(cleanMemberId);
           return { success: true };
         }
