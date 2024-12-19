@@ -11,6 +11,8 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
     const password = formData.get("password") as string;
 
     try {
+      console.log("Attempting email login for:", email);
+      
       // First check if this is a valid member email
       const { data: memberData, error: memberError } = await supabase
         .from('members')
@@ -18,16 +20,23 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
         .eq('email', email)
         .single();
 
-      if (memberError || !memberData) {
+      if (memberError) {
+        console.error("Member lookup error:", memberError);
         throw new Error("No member found with this email address");
       }
 
+      // Attempt to sign in
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error:", error);
+        throw error;
+      }
+
+      console.log("Login successful:", data);
 
       toast({
         title: "Login successful",
@@ -51,6 +60,8 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
     const password = formData.get("memberPassword") as string;
 
     try {
+      console.log("Attempting member ID login for:", memberId);
+      
       // First, get the member details
       const { data: member, error: memberError } = await supabase
         .from('members')
@@ -59,22 +70,27 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
         .single();
 
       if (memberError || !member) {
+        console.error("Member lookup error:", memberError);
         throw new Error("Invalid Member ID. Please check your credentials and try again.");
       }
 
       if (!member.email) {
+        console.error("No email found for member:", memberId);
         throw new Error("No email associated with this Member ID. Please contact support.");
       }
 
-      // Attempt to sign in with the temporary email
+      // Attempt to sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: member.email,
         password: password,
       });
 
       if (signInError) {
+        console.error("Sign in error:", signInError);
         throw signInError;
       }
+
+      console.log("Login successful for member:", memberId);
 
       toast({
         title: "Login successful",
@@ -91,35 +107,8 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    console.log("Google login attempt started");
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + "/admin",
-        },
-      });
-
-      if (error) throw error;
-      
-      toast({
-        title: "Redirecting to Google",
-        description: "Please wait while we redirect you to Google sign-in...",
-      });
-    } catch (error) {
-      console.error("Google login error:", error);
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred during Google login",
-        variant: "destructive",
-      });
-    }
-  };
-
   return {
     handleEmailSubmit,
     handleMemberIdSubmit,
-    handleGoogleLogin,
   };
 };
