@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const handleFirstTimeAuth = async (memberId: string, password: string) => {
   const cleanMemberId = memberId.toUpperCase().trim();
   console.log("Handling first time auth for member:", cleanMemberId);
@@ -42,57 +44,68 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       throw new Error("Failed to update member email");
     }
 
-    // Always try to sign up first for first-time login
-    console.log("Attempting signup for:", tempEmail);
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: tempEmail,
-      password: cleanMemberId,
-      options: {
-        data: {
-          member_number: cleanMemberId
-        }
-      }
-    });
+    let retryCount = 0;
+    const maxRetries = 3;
+    const baseDelay = 2000; // 2 seconds
 
-    if (signUpError) {
-      console.error("Sign up error:", signUpError);
-      
-      // If user already exists, try signing in
-      if (signUpError.message.includes("User already registered")) {
-        console.log("User exists, attempting sign in");
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting signup for: ${tempEmail}`);
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
-          password: cleanMemberId
+          password: cleanMemberId,
+          options: {
+            data: {
+              member_number: cleanMemberId
+            }
+          }
         });
 
-        if (signInError) {
-          console.error("Sign in error:", signInError);
-          throw signInError;
+        if (!signUpError) {
+          // Update member record to complete first-time login
+          const { error: updateLoginError } = await supabase
+            .from('members')
+            .update({ 
+              first_time_login: false,
+              email_verified: true,
+              password_changed: false
+            })
+            .eq('member_number', cleanMemberId);
+
+          if (updateLoginError) {
+            console.error("Error updating first time login status:", updateLoginError);
+            throw updateLoginError;
+          }
+
+          console.log("First time auth successful for member:", cleanMemberId);
+          return { success: true };
         }
-      } else {
+
+        if (signUpError.status === 429) {
+          console.log(`Rate limit hit, attempt ${retryCount + 1} of ${maxRetries}`);
+          const waitTime = baseDelay * Math.pow(2, retryCount);
+          await delay(waitTime);
+          retryCount++;
+          continue;
+        }
+
         throw signUpError;
+      } catch (error: any) {
+        if (error.status === 429 && retryCount < maxRetries - 1) {
+          console.log(`Rate limit hit, attempt ${retryCount + 1} of ${maxRetries}`);
+          const waitTime = baseDelay * Math.pow(2, retryCount);
+          await delay(waitTime);
+          retryCount++;
+          continue;
+        }
+        console.error("Auth error:", error);
+        throw error;
       }
     }
 
-    // Update member record to complete first-time login
-    const { error: updateLoginError } = await supabase
-      .from('members')
-      .update({ 
-        first_time_login: false,
-        email_verified: true,
-        password_changed: false
-      })
-      .eq('member_number', cleanMemberId);
-
-    if (updateLoginError) {
-      console.error("Error updating first time login status:", updateLoginError);
-      throw updateLoginError;
-    }
-
-    console.log("First time auth successful for member:", cleanMemberId);
-    return { success: true };
+    throw new Error("Rate limit exceeded. Please try again in a few minutes.");
   } catch (error) {
-    console.error("Auth error:", error);
+    console.error("First time login error:", error);
     throw error;
   }
 };
