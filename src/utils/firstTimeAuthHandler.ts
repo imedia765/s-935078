@@ -70,8 +70,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
           options: {
             data: {
               member_number: cleanMemberId
-            },
-            emailRedirectTo: window.location.origin + '/change-password'
+            }
           }
         });
 

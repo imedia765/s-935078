@@ -7,12 +7,14 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { email } = await req.json()
+    console.log('Confirming email for:', email)
 
     if (!email) {
       throw new Error('Email is required')
@@ -31,19 +33,30 @@ serve(async (req) => {
       }
     })
 
-    if (getUserError || !users || users.length === 0) {
+    if (getUserError) {
+      console.error('Error getting user:', getUserError)
+      throw getUserError
+    }
+
+    if (!users || users.length === 0) {
+      console.error('No user found with email:', email)
       throw new Error('User not found')
     }
+
+    console.log('Found user:', users[0].id)
 
     // Update the user's email confirmation status
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       users[0].id,
-      { email_confirm: true }
+      { email_confirmed: true }
     )
 
     if (updateError) {
+      console.error('Error updating user:', updateError)
       throw updateError
     }
+
+    console.log('Successfully confirmed email for user:', users[0].id)
 
     return new Response(
       JSON.stringify({ message: 'Email confirmed successfully' }),
@@ -53,8 +66,12 @@ serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in confirm-user-email function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
