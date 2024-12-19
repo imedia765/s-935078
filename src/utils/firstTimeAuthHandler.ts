@@ -27,8 +27,8 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       throw new Error("This member has already logged in. Please use the regular login page.");
     }
 
-    // Generate temporary email with a more standard domain
-    const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.com`;
+    // Generate temporary email with a widely accepted domain
+    const tempEmail = `${cleanMemberId.toLowerCase()}@temp-mail.org`;
     console.log("Using email for auth:", tempEmail);
 
     // Update member record with temporary email first
@@ -42,30 +42,34 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       throw new Error("Failed to update member email");
     }
 
-    // Try to sign in directly
-    console.log("Attempting sign in for:", tempEmail);
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // Always try to sign up first for first-time login
+    console.log("Attempting signup for:", tempEmail);
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: tempEmail,
       password: cleanMemberId,
+      options: {
+        data: {
+          member_number: cleanMemberId
+        }
+      }
     });
 
-    if (signInError) {
-      console.error("Sign in error:", signInError);
+    if (signUpError) {
+      console.error("Sign up error:", signUpError);
       
-      // If sign in fails, try to sign up
-      console.log("Sign in failed, attempting signup");
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: tempEmail,
-        password: cleanMemberId,
-        options: {
-          data: {
-            member_number: cleanMemberId
-          }
-        }
-      });
+      // If user already exists, try signing in
+      if (signUpError.message.includes("User already registered")) {
+        console.log("User exists, attempting sign in");
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: tempEmail,
+          password: cleanMemberId
+        });
 
-      if (signUpError) {
-        console.error("Sign up error:", signUpError);
+        if (signInError) {
+          console.error("Sign in error:", signInError);
+          throw signInError;
+        }
+      } else {
         throw signUpError;
       }
     }
@@ -75,7 +79,8 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       .from('members')
       .update({ 
         first_time_login: false,
-        email_verified: true
+        email_verified: true,
+        password_changed: false
       })
       .eq('member_number', cleanMemberId);
 
