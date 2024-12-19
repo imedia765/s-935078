@@ -25,14 +25,24 @@ export default function Login() {
       const isEmail = identifier.includes('@') && !identifier.includes('@temp.pwaburton.org');
       
       if (isEmail) {
-        // Check if member has updated their password
-        const { data: member } = await supabase
+        // Check if member exists and has updated their password
+        const { data: member, error: memberError } = await supabase
           .from('members')
           .select('password_changed, email_verified')
           .eq('email', identifier)
-          .single();
+          .maybeSingle();
 
-        if (!member?.password_changed) {
+        if (memberError) {
+          console.error("Error checking member status:", memberError);
+          throw new Error("An error occurred while checking member status");
+        }
+
+        if (!member) {
+          console.log("No member found with email:", identifier);
+          throw new Error("No member found with this email address. Please check your credentials or use Member ID login if you haven't updated your profile yet.");
+        }
+
+        if (!member.password_changed) {
           toast({
             title: "Password not updated",
             description: "Please use the 'First Time Login' button below if you haven't changed your password yet.",
@@ -55,11 +65,14 @@ export default function Login() {
         title: "Login successful",
         description: "Welcome back!",
       });
+      
+      // Navigate to dashboard or home page after successful login
+      navigate('/admin');
     } catch (error) {
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: "Invalid credentials. Please check your email/member ID and password.",
+        description: error instanceof Error ? error.message : "Invalid credentials. Please check your email/member ID and password.",
         variant: "destructive",
       });
     } finally {
@@ -137,4 +150,4 @@ export default function Login() {
       </Card>
     </div>
   );
-};
+}
