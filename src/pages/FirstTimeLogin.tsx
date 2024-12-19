@@ -22,17 +22,22 @@ export default function FirstTimeLogin() {
     console.log("First time login attempt with member ID:", cleanMemberId);
 
     try {
-      // First, get the member details
+      // First, get the member details using maybeSingle() instead of single()
       const { data: member, error: memberError } = await supabase
         .from('members')
         .select('email, password_changed, member_number, default_password_hash')
         .eq('member_number', cleanMemberId)
-        .single();
+        .maybeSingle();
 
       console.log("Member lookup result:", { member, memberError });
 
-      if (memberError || !member) {
+      if (memberError) {
         console.error("Member lookup error:", memberError);
+        throw new Error("An error occurred while looking up your Member ID. Please try again.");
+      }
+
+      if (!member) {
+        console.error("No member found with ID:", cleanMemberId);
         throw new Error("Invalid Member ID. Please check your credentials and try again.");
       }
 
