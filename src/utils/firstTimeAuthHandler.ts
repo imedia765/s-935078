@@ -31,9 +31,9 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     // Generate temporary email
     const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
-    console.log("Using email for auth:", tempEmail);
+    console.log("Using temporary email for auth:", tempEmail);
 
-    // Update member record with temporary email first
+    // Update member record with temporary email
     const { error: updateEmailError } = await supabase
       .from('members')
       .update({ email: tempEmail })
@@ -45,27 +45,39 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     }
 
     let retryCount = 0;
-    const maxRetries = 5; // Increased from 3 to 5
-    const baseDelay = 2000; // 2 seconds
+    const maxRetries = 7; // Increased retries
+    const baseDelay = 3000; // 3 seconds base delay
 
     while (retryCount < maxRetries) {
       try {
-        // First try to sign in in case user exists
-        console.log(`Attempt ${retryCount + 1}/${maxRetries}: Trying to sign in with existing credentials`);
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        console.log(`Authentication attempt ${retryCount + 1}/${maxRetries}`);
+        
+        // First check if user already exists
+        const { data: existingUser } = await supabase.auth.getUser();
+        if (existingUser?.user) {
+          console.log("User already exists, signing out first");
+          await supabase.auth.signOut();
+          await delay(1000); // Wait for signout to complete
+        }
+
+        // Try to sign in first
+        console.log("Attempting sign in with temporary email");
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email: tempEmail,
           password: cleanMemberId
         });
 
         if (!signInError) {
-          console.log("Successfully signed in with existing credentials");
+          console.log("Sign in successful");
           await updateMemberStatus(cleanMemberId);
           return { success: true };
         }
 
-        // If sign in failed because user doesn't exist, try signup
-        console.log(`Attempt ${retryCount + 1}/${maxRetries}: Attempting signup for:`, tempEmail);
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        console.log("Sign in failed, attempting signup");
+        await delay(1000); // Wait before signup attempt
+
+        // Attempt signup
+        const { error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
           password: cleanMemberId,
           options: {
@@ -76,67 +88,72 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         });
 
         if (!signUpError) {
-          // Wait longer for the signup to process
-          console.log("Signup successful, waiting for processing...");
-          await delay(2000);
+          console.log("Signup successful, waiting for processing");
+          await delay(3000); // Increased delay after signup
 
-          // For first-time login, we'll automatically confirm the email
-          console.log("Confirming email via Edge Function...");
-          const { data: adminAuthData, error: adminAuthError } = await supabase.functions.invoke('confirm-user-email', {
+          console.log("Confirming email via Edge Function");
+          const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
             body: { email: tempEmail }
           });
 
-          if (adminAuthError) {
-            console.error("Error confirming email:", adminAuthError);
-            throw adminAuthError;
+          if (confirmError) {
+            console.error("Error confirming email:", confirmError);
+            throw confirmError;
           }
 
-          console.log("Email confirmed successfully, attempting final sign in");
-          // Wait a bit more before the final sign in
-          await delay(1000);
+          console.log("Email confirmed, attempting final sign in");
+          await delay(2000); // Wait before final sign in
 
-          // Now try to sign in again
           const { error: finalSignInError } = await supabase.auth.signInWithPassword({
             email: tempEmail,
             password: cleanMemberId
           });
 
           if (finalSignInError) {
-            console.error("Error signing in after confirmation:", finalSignInError);
+            console.error("Final sign in error:", finalSignInError);
             throw finalSignInError;
           }
 
-          console.log("Final sign in successful");
+          console.log("Authentication process completed successfully");
           await updateMemberStatus(cleanMemberId);
           return { success: true };
         }
 
-        // Handle rate limit error
-        if (signUpError.status === 429) {
+        // Handle rate limit errors
+        if (signUpError?.status === 429) {
           if (retryCount < maxRetries - 1) {
-            const waitTime = baseDelay * Math.pow(2, retryCount) + Math.random() * 1000;
-            console.log(`Rate limit hit, waiting ${waitTime}ms before retry ${retryCount + 1}/${maxRetries}`);
+            const jitter = Math.random() * 2000; // Random delay between 0-2s
+            const waitTime = baseDelay * Math.pow(2, retryCount) + jitter;
+            console.log(`Rate limit hit, waiting ${Math.round(waitTime)}ms before retry ${retryCount + 1}/${maxRetries}`);
             await delay(waitTime);
             retryCount++;
             continue;
           }
-          throw new Error("Rate limit exceeded. Please try again in a few minutes.");
         }
 
         throw signUpError;
       } catch (error: any) {
+        console.error(`Attempt ${retryCount + 1} failed:`, error);
+
         if (error?.status === 429 && retryCount < maxRetries - 1) {
-          const waitTime = baseDelay * Math.pow(2, retryCount) + Math.random() * 1000;
-          console.log(`Rate limit hit, waiting ${waitTime}ms before retry ${retryCount + 1}/${maxRetries}`);
+          const jitter = Math.random() * 2000;
+          const waitTime = baseDelay * Math.pow(2, retryCount) + jitter;
+          console.log(`Rate limit hit, waiting ${Math.round(waitTime)}ms before retry ${retryCount + 1}/${maxRetries}`);
           await delay(waitTime);
           retryCount++;
           continue;
         }
+
+        if (retryCount >= maxRetries - 1) {
+          console.error("Max retries reached, failing");
+          throw new Error("Failed to authenticate after multiple attempts. Please try again later.");
+        }
+
         throw error;
       }
     }
 
-    throw new Error("Failed to authenticate after multiple attempts. Please try again later.");
+    throw new Error("Authentication failed after all retries");
   } catch (error) {
     console.error("First time login error:", error);
     throw error;

@@ -26,24 +26,35 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get the user by email
-    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
-      filter: {
-        email: email
+    // Get the user by email with retries
+    let users = null;
+    let getUserError = null;
+    const maxRetries = 3;
+    
+    for (let i = 0; i < maxRetries; i++) {
+      console.log(`Attempt ${i + 1}/${maxRetries} to get user`);
+      
+      const response = await supabaseAdmin.auth.admin.listUsers({
+        filter: { email: email }
+      });
+      
+      if (!response.error && response.data.users.length > 0) {
+        users = response.data.users;
+        break;
       }
-    })
-
-    if (getUserError) {
-      console.error('Error getting user:', getUserError)
-      throw getUserError
+      
+      getUserError = response.error;
+      if (i < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+      }
     }
 
-    if (!users || users.length === 0) {
-      console.error('No user found with email:', email)
-      throw new Error('User not found')
+    if (getUserError || !users || users.length === 0) {
+      console.error('Error getting user:', getUserError || 'No user found');
+      throw new Error(getUserError?.message || 'User not found');
     }
 
-    console.log('Found user:', users[0].id)
+    console.log('Found user:', users[0].id);
 
     // Update the user's email confirmation status
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -52,11 +63,11 @@ serve(async (req) => {
     )
 
     if (updateError) {
-      console.error('Error updating user:', updateError)
-      throw updateError
+      console.error('Error updating user:', updateError);
+      throw updateError;
     }
 
-    console.log('Successfully confirmed email for user:', users[0].id)
+    console.log('Successfully confirmed email for user:', users[0].id);
 
     return new Response(
       JSON.stringify({ message: 'Email confirmed successfully' }),
@@ -66,7 +77,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error in confirm-user-email function:', error)
+    console.error('Error in confirm-user-email function:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
