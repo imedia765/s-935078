@@ -35,7 +35,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     // Sign out any existing session first
     await supabase.auth.signOut();
-    await delay(1000); // Short delay after signout
+    await delay(2000); // Increased delay after signout
 
     // Try to sign in first
     console.log("Attempting initial sign in");
@@ -50,66 +50,68 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       return { success: true };
     }
 
-    // If sign in failed, we need to create the account
-    console.log("Sign in failed, attempting signup");
-    await delay(2000); // Delay before signup attempt
-
-    try {
-      // Clear any existing sessions before new attempt
-      await supabase.auth.signOut();
-      await delay(1000);
-
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: tempEmail,
-        password: cleanMemberId,
-        options: {
-          emailRedirectTo: undefined, // Disable email redirect
-          data: {
-            member_number: cleanMemberId
-          }
-        }
-      });
-
-      if (signUpError) {
-        if (signUpError.status === 429) {
-          throw new Error("Rate limit exceeded. Please wait a few minutes and try again.");
-        }
-        throw signUpError;
-      }
-
-      if (!signUpData.user) {
-        throw new Error("No user data returned from signup");
-      }
-
-      console.log("Signup successful, waiting for processing");
-      await delay(2000);
-
-      // Final sign in attempt
-      const { error: finalSignInError } = await supabase.auth.signInWithPassword({
-        email: tempEmail,
-        password: cleanMemberId
-      });
-
-      if (finalSignInError) {
-        console.error("Final sign in error:", finalSignInError);
-        throw finalSignInError;
-      }
-
-      console.log("Authentication process completed successfully");
-      await updateMemberStatus(cleanMemberId);
-      return { success: true };
-
-    } catch (error: any) {
-      console.error("Authentication error:", error);
-      
-      if (error.status === 429) {
-        throw new Error("Rate limit exceeded. Please wait a few minutes before trying again.");
-      }
-      
-      throw error;
+    // If sign in failed and it's not just invalid credentials, throw the error
+    if (signInError.status !== 400) {
+      throw signInError;
     }
-  } catch (error) {
-    console.error("First time login error:", error);
+
+    console.log("Sign in failed (expected for new users), proceeding with signup");
+    await delay(3000); // Delay before signup attempt
+
+    // Clear any existing sessions before new attempt
+    await supabase.auth.signOut();
+    await delay(2000);
+
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: tempEmail,
+      password: cleanMemberId,
+      options: {
+        emailRedirectTo: undefined, // Disable email redirect
+        data: {
+          member_number: cleanMemberId
+        }
+      }
+    });
+
+    if (signUpError) {
+      console.error("Signup error:", signUpError);
+      
+      if (signUpError.status === 429) {
+        throw new Error("We've hit our rate limit. Please wait 5 minutes before trying again.");
+      }
+      
+      throw signUpError;
+    }
+
+    if (!signUpData.user) {
+      throw new Error("No user data returned from signup");
+    }
+
+    console.log("Signup successful, waiting for processing");
+    await delay(3000);
+
+    // Final sign in attempt
+    const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+      email: tempEmail,
+      password: cleanMemberId
+    });
+
+    if (finalSignInError) {
+      console.error("Final sign in error:", finalSignInError);
+      throw finalSignInError;
+    }
+
+    console.log("Authentication process completed successfully");
+    await updateMemberStatus(cleanMemberId);
+    return { success: true };
+
+  } catch (error: any) {
+    console.error("Authentication error:", error);
+    
+    if (error.status === 429) {
+      throw new Error("Rate limit exceeded. Please wait 5 minutes before trying again.");
+    }
+    
     throw error;
   }
 };
