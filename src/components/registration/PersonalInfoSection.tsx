@@ -2,7 +2,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormRegister } from "react-hook-form";
-import { countries } from "@/data/countries";
 
 interface PersonalInfoProps {
   register: UseFormRegister<any>;
@@ -87,18 +86,10 @@ export const PersonalInfoSection = ({ register }: PersonalInfoProps) => {
         </div>
         <div className="space-y-2">
           <label htmlFor="pob">Place of Birth</label>
-          <Select onValueChange={(value) => register("pob").onChange({ target: { value } })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select Country of Birth" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((country) => (
-                <SelectItem key={country.value} value={country.value}>
-                  {country.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            id="pob"
+            {...register("pob", { required: true })}
+          />
         </div>
         <div className="space-y-2">
           <label htmlFor="maritalStatus">Marital Status</label>

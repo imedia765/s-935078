@@ -1,6 +1,8 @@
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 interface MemberIdLoginFormProps {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
@@ -14,22 +16,23 @@ export const MemberIdLoginForm = ({ onSubmit, isLoading }: MemberIdLoginFormProp
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const cleanMemberId = memberId.toUpperCase().trim();
-    
-    // Create a FormData object with both member ID and password
-    const formData = new FormData();
-    formData.set('memberId', cleanMemberId);
-    formData.set('password', password);
-    
     console.log("Login attempt with:", {
       memberId: cleanMemberId,
-      hasPassword: !!password
+      passwordLength: password.length
     });
-    
     await onSubmit(e);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <Alert className="bg-blue-50 border-blue-200">
+        <InfoIcon className="h-4 w-4 text-blue-500" />
+        <AlertDescription className="text-sm text-blue-700">
+          If you're a new member, use your Member ID (e.g. TM20001) as both your username and password.
+          You'll be prompted to update your email and password after logging in.
+        </AlertDescription>
+      </Alert>
+
       <div className="space-y-2">
         <Input
           id="memberId"
@@ -45,10 +48,10 @@ export const MemberIdLoginForm = ({ onSubmit, isLoading }: MemberIdLoginFormProp
       </div>
       <div className="space-y-2">
         <Input
-          id="password"
-          name="password"
+          id="memberPassword"
+          name="memberPassword"
           type="password"
-          placeholder="Password"
+          placeholder="Password (same as Member ID)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -58,9 +61,6 @@ export const MemberIdLoginForm = ({ onSubmit, isLoading }: MemberIdLoginFormProp
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Logging in..." : "Login with Member ID"}
       </Button>
-      <p className="text-sm text-muted-foreground text-center">
-        First time? Use your Member ID as your password
-      </p>
     </form>
   );
 };
