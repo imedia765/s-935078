@@ -52,12 +52,12 @@ export default function FirstTimeLogin() {
         throw new Error("For first-time login, your password should be the same as your Member ID.");
       }
 
-      // Use the existing temporary email if it exists, otherwise create one
-      const tempEmail = member.email || `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
+      // Use a valid temporary email domain
+      const tempEmail = member.email || `${cleanMemberId.toLowerCase()}@temporary.pwaburton.org`;
       console.log("Using email for auth:", tempEmail);
 
       // First try to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: tempEmail,
         password: cleanMemberId
       });
@@ -66,7 +66,7 @@ export default function FirstTimeLogin() {
         console.log("Sign in failed, attempting signup");
         
         // If sign in fails, try to sign up
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
           password: cleanMemberId,
           options: {
@@ -81,8 +81,10 @@ export default function FirstTimeLogin() {
           throw signUpError;
         }
 
+        console.log("Signup successful:", signUpData);
+
         // After successful signup, try signing in again
-        const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+        const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
           email: tempEmail,
           password: cleanMemberId
         });
@@ -91,6 +93,8 @@ export default function FirstTimeLogin() {
           console.error("Final sign in error:", finalSignInError);
           throw finalSignInError;
         }
+
+        console.log("Final sign in successful:", finalSignInData);
       }
 
       toast({
