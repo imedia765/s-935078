@@ -26,7 +26,6 @@ export const PasswordChangeForm = () => {
       try {
         console.log("Fetching user data...");
         
-        // First verify the session is valid
         const isValid = await checkSession();
         if (!isValid) {
           console.log("No valid session, redirecting to login");
@@ -102,7 +101,6 @@ export const PasswordChangeForm = () => {
     try {
       setIsLoading(true);
       
-      // Verify session is still valid before proceeding
       const isValid = await checkSession();
       if (!isValid) {
         console.log("Session expired during form submission");
@@ -151,6 +149,7 @@ export const PasswordChangeForm = () => {
         description: "Your profile has been updated successfully",
       });
       
+      // After successful update, allow navigation
       navigate("/admin");
     } catch (error) {
       console.error("Update error:", error);
@@ -186,7 +185,7 @@ export const PasswordChangeForm = () => {
         <ProfileFormFields 
           userData={userData} 
           isLoading={isLoading} 
-          isRequired={isFirstTimeLogin}
+          isRequired={true}
         />
         <PasswordFields
           newPassword={newPassword}
