@@ -53,12 +53,14 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       return { success: true };
     }
 
-    console.log("Sign in failed, attempting signup");
-    await delay(1000); // Wait before signup attempt
+    console.log("Sign in failed, attempting signup with retry mechanism");
 
     let lastError = null;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
+        // Clear any existing response streams
+        await delay(1000);
+        
         console.log(`Signup attempt ${attempt + 1}/${MAX_RETRIES}`);
 
         // Add jitter to the delay
@@ -70,10 +72,12 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
           await delay(retryDelay);
         }
 
+        // Create new auth session
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
           password: cleanMemberId,
           options: {
+            emailRedirectTo: `${window.location.origin}/login`,
             data: {
               member_number: cleanMemberId
             }
@@ -130,10 +134,12 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         lastError = error;
         console.error(`Error on attempt ${attempt + 1}:`, error);
 
+        // If rate limited and not last attempt, continue to next retry
         if (error?.status === 429 && attempt < MAX_RETRIES - 1) {
           continue;
         }
 
+        // If last attempt, throw error
         if (attempt === MAX_RETRIES - 1) {
           throw new Error(
             "Failed to complete authentication after multiple attempts. " +
