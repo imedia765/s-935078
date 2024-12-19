@@ -27,7 +27,7 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
 
       if (!memberData) {
         console.error("No member found with email:", email);
-        throw new Error("No member found with this email address");
+        throw new Error("No member found with this email address. Please check your credentials or use the Member ID login if you haven't updated your profile yet.");
       }
 
       // Attempt to sign in
