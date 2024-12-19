@@ -75,6 +75,9 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         });
 
         if (!signUpError) {
+          // Wait a bit for the signup to process
+          await delay(1000);
+
           // For first-time login, we'll automatically confirm the email
           const { data: adminAuthData, error: adminAuthError } = await supabase.functions.invoke('confirm-user-email', {
             body: { email: tempEmail }

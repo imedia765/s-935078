@@ -20,14 +20,14 @@ serve(async (req) => {
       throw new Error('Email is required')
     }
 
-    // Create a Supabase client with the service role key
+    // Initialize Supabase client with admin privileges
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     // Get the user by email
-    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+    const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
         email: email
       }
