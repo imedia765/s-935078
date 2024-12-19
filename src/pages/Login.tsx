@@ -51,10 +51,37 @@ export default function Login() {
           setIsLoading(false);
           return;
         }
+      } else {
+        // For member ID login, check if the member exists first
+        const { data: member, error: memberError } = await supabase
+          .from('members')
+          .select('email, default_password_hash')
+          .eq('member_number', identifier.toUpperCase())
+          .maybeSingle();
+
+        if (memberError) {
+          console.error("Error checking member:", memberError);
+          throw new Error("An error occurred while checking member status");
+        }
+
+        if (!member) {
+          console.log("No member found with ID:", identifier);
+          throw new Error("Invalid Member ID. Please check your credentials and try again.");
+        }
+
+        if (!member.email) {
+          console.error("No email found for member:", identifier);
+          throw new Error("No email associated with this Member ID. Please contact support.");
+        }
+
+        // For first-time login, password should match member ID
+        if (password !== identifier.toUpperCase()) {
+          throw new Error("For first-time login, your password should be the same as your Member ID");
+        }
       }
 
       // Attempt login with proper email format
-      const loginEmail = isEmail ? identifier : `${identifier}@temp.pwaburton.org`;
+      const loginEmail = isEmail ? identifier : `${identifier.toUpperCase()}@temp.pwaburton.org`;
       console.log("Attempting login with email:", loginEmail);
       
       const { error } = await supabase.auth.signInWithPassword({
