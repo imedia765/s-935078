@@ -2,9 +2,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const MAX_RETRIES = 3;
-const BASE_DELAY = 2000; // 2 seconds base delay
-
 export const handleFirstTimeAuth = async (memberId: string, password: string) => {
   const cleanMemberId = memberId.toUpperCase().trim();
   console.log("Handling first time auth for member:", cleanMemberId);
@@ -38,7 +35,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     // Sign out any existing session first
     await supabase.auth.signOut();
-    await delay(3000); // Increased delay after signout
+    await delay(1000); // Short delay after signout
 
     // Try to sign in first
     console.log("Attempting initial sign in");
@@ -53,20 +50,20 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       return { success: true };
     }
 
+    // If sign in failed, we need to create the account
     console.log("Sign in failed, attempting signup");
-    await delay(5000); // Increased delay before signup attempts
+    await delay(2000); // Delay before signup attempt
 
-    // Single signup attempt with proper error handling
     try {
       // Clear any existing sessions before new attempt
       await supabase.auth.signOut();
-      await delay(3000);
+      await delay(1000);
 
-      console.log("Attempting signup");
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: tempEmail,
         password: cleanMemberId,
         options: {
+          emailRedirectTo: undefined, // Disable email redirect
           data: {
             member_number: cleanMemberId
           }
@@ -75,8 +72,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
       if (signUpError) {
         if (signUpError.status === 429) {
-          console.error("Rate limit hit during signup:", signUpError);
-          throw new Error("Too many signup attempts. Please wait a few minutes and try again.");
+          throw new Error("Rate limit exceeded. Please wait a few minutes and try again.");
         }
         throw signUpError;
       }
@@ -86,21 +82,9 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       }
 
       console.log("Signup successful, waiting for processing");
-      await delay(5000);
+      await delay(2000);
 
-      console.log("Confirming email via Edge Function");
-      const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
-        body: { email: tempEmail }
-      });
-
-      if (confirmError) {
-        console.error("Error confirming email:", confirmError);
-        throw confirmError;
-      }
-
-      console.log("Email confirmed, attempting final sign in");
-      await delay(3000);
-
+      // Final sign in attempt
       const { error: finalSignInError } = await supabase.auth.signInWithPassword({
         email: tempEmail,
         password: cleanMemberId
