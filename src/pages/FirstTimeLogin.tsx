@@ -56,48 +56,74 @@ export default function FirstTimeLogin() {
       const tempEmail = member.email || `${cleanMemberId.toLowerCase()}@temporary.pwaburton.org`;
       console.log("Using email for auth:", tempEmail);
 
-      // First try to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: tempEmail,
-        password: cleanMemberId
-      });
-
-      if (signInError) {
-        console.log("Sign in failed, attempting signup");
-        
-        // If sign in fails, try to sign up
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: tempEmail,
-          password: cleanMemberId,
-          options: {
-            data: {
-              member_number: cleanMemberId
-            }
-          }
-        });
-
-        if (signUpError) {
-          console.error("Sign up error:", signUpError);
-          throw signUpError;
-        }
-
-        // After successful signup, try signing in again
-        const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+      try {
+        // First try to sign in
+        console.log("Attempting sign in with:", { email: tempEmail });
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email: tempEmail,
           password: cleanMemberId
         });
 
-        if (finalSignInError) {
-          console.error("Final sign in error:", finalSignInError);
-          throw finalSignInError;
-        }
-      }
+        if (signInError) {
+          console.log("Sign in failed, attempting signup. Error:", signInError);
+          
+          // If sign in fails, try to sign up
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: tempEmail,
+            password: cleanMemberId,
+            options: {
+              data: {
+                member_number: cleanMemberId
+              }
+            }
+          });
 
-      toast({
-        title: "Login successful",
-        description: "Welcome! Please update your profile information.",
-      });
-      navigate('/change-password');
+          if (signUpError) {
+            console.error("Sign up error:", signUpError);
+            throw signUpError;
+          }
+
+          console.log("Signup successful, attempting final sign in");
+
+          // After successful signup, try signing in again
+          const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+            email: tempEmail,
+            password: cleanMemberId
+          });
+
+          if (finalSignInError) {
+            console.error("Final sign in error:", finalSignInError);
+            throw finalSignInError;
+          }
+
+          console.log("Final sign in successful");
+        } else {
+          console.log("Initial sign in successful");
+        }
+
+        // Update member record to indicate first login completed
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({
+            first_time_login: false,
+            email: tempEmail
+          })
+          .eq('member_number', cleanMemberId);
+
+        if (updateError) {
+          console.error("Error updating member record:", updateError);
+          // Don't throw here as auth was successful
+        }
+
+        toast({
+          title: "Login successful",
+          description: "Welcome! Please update your profile information.",
+        });
+        navigate('/change-password');
+      } catch (authError) {
+        console.error("Authentication error:", authError);
+        throw new Error(authError instanceof Error ? authError.message : "Authentication failed. Please try again.");
+      }
     } catch (error) {
       console.error("First time login error:", error);
       toast({
