@@ -33,50 +33,34 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
     console.log("Using temporary email for auth:", tempEmail);
 
-    // Update member record with temporary email
-    const { error: updateEmailError } = await supabase
-      .from('members')
-      .update({ email: tempEmail })
-      .eq('member_number', cleanMemberId);
+    // Sign out any existing session first
+    await supabase.auth.signOut();
+    await delay(1000); // Wait for signout to complete
 
-    if (updateEmailError) {
-      console.error("Error updating member email:", updateEmailError);
-      throw new Error("Failed to update member email");
+    // Try to sign in first
+    console.log("Attempting sign in with temporary email");
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: tempEmail,
+      password: cleanMemberId
+    });
+
+    if (!signInError) {
+      console.log("Sign in successful");
+      await updateMemberStatus(cleanMemberId);
+      return { success: true };
     }
 
-    let retryCount = 0;
-    const maxRetries = 7; // Increased retries
-    const baseDelay = 3000; // 3 seconds base delay
+    console.log("Sign in failed, attempting signup");
+    await delay(1000); // Wait before signup attempt
 
-    while (retryCount < maxRetries) {
+    // Implement retry logic for signup
+    const maxRetries = 5;
+    const baseDelay = 2000; // 2 seconds base delay
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        console.log(`Authentication attempt ${retryCount + 1}/${maxRetries}`);
-        
-        // First check if user already exists
-        const { data: existingUser } = await supabase.auth.getUser();
-        if (existingUser?.user) {
-          console.log("User already exists, signing out first");
-          await supabase.auth.signOut();
-          await delay(1000); // Wait for signout to complete
-        }
+        console.log(`Signup attempt ${attempt + 1}/${maxRetries}`);
 
-        // Try to sign in first
-        console.log("Attempting sign in with temporary email");
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: tempEmail,
-          password: cleanMemberId
-        });
-
-        if (!signInError) {
-          console.log("Sign in successful");
-          await updateMemberStatus(cleanMemberId);
-          return { success: true };
-        }
-
-        console.log("Sign in failed, attempting signup");
-        await delay(1000); // Wait before signup attempt
-
-        // Attempt signup
         const { error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
           password: cleanMemberId,
@@ -89,7 +73,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
         if (!signUpError) {
           console.log("Signup successful, waiting for processing");
-          await delay(3000); // Increased delay after signup
+          await delay(3000); // Wait for signup processing
 
           console.log("Confirming email via Edge Function");
           const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
@@ -109,47 +93,40 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
             password: cleanMemberId
           });
 
-          if (finalSignInError) {
-            console.error("Final sign in error:", finalSignInError);
-            throw finalSignInError;
+          if (!finalSignInError) {
+            console.log("Authentication process completed successfully");
+            await updateMemberStatus(cleanMemberId);
+            return { success: true };
           }
 
-          console.log("Authentication process completed successfully");
-          await updateMemberStatus(cleanMemberId);
-          return { success: true };
+          throw finalSignInError;
         }
 
-        // Handle rate limit errors
-        if (signUpError?.status === 429) {
-          if (retryCount < maxRetries - 1) {
-            const jitter = Math.random() * 2000; // Random delay between 0-2s
-            const waitTime = baseDelay * Math.pow(2, retryCount) + jitter;
-            console.log(`Rate limit hit, waiting ${Math.round(waitTime)}ms before retry ${retryCount + 1}/${maxRetries}`);
-            await delay(waitTime);
-            retryCount++;
-            continue;
-          }
+        // Handle rate limit
+        if (signUpError.status === 429) {
+          const jitter = Math.random() * 1000; // Random delay between 0-1s
+          const retryDelay = (baseDelay * Math.pow(2, attempt)) + jitter;
+          console.log(`Rate limit hit, waiting ${Math.round(retryDelay)}ms before retry`);
+          await delay(retryDelay);
+          continue;
         }
 
         throw signUpError;
       } catch (error: any) {
-        console.error(`Attempt ${retryCount + 1} failed:`, error);
+        console.error(`Attempt ${attempt + 1} failed:`, error);
 
-        if (error?.status === 429 && retryCount < maxRetries - 1) {
-          const jitter = Math.random() * 2000;
-          const waitTime = baseDelay * Math.pow(2, retryCount) + jitter;
-          console.log(`Rate limit hit, waiting ${Math.round(waitTime)}ms before retry ${retryCount + 1}/${maxRetries}`);
-          await delay(waitTime);
-          retryCount++;
+        if (error?.status === 429 && attempt < maxRetries - 1) {
+          const jitter = Math.random() * 1000;
+          const retryDelay = (baseDelay * Math.pow(2, attempt)) + jitter;
+          console.log(`Rate limit hit, waiting ${Math.round(retryDelay)}ms before retry`);
+          await delay(retryDelay);
           continue;
         }
 
-        if (retryCount >= maxRetries - 1) {
-          console.error("Max retries reached, failing");
+        if (attempt === maxRetries - 1) {
+          console.error("Max retries reached");
           throw new Error("Failed to authenticate after multiple attempts. Please try again later.");
         }
-
-        throw error;
       }
     }
 
