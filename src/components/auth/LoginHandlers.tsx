@@ -18,10 +18,15 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
         .from('members')
         .select('id, email_verified, profile_updated')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
       if (memberError) {
         console.error("Member lookup error:", memberError);
+        throw new Error("Error looking up member details");
+      }
+
+      if (!memberData) {
+        console.error("No member found with email:", email);
         throw new Error("No member found with this email address");
       }
 
@@ -67,10 +72,15 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
         .from('members')
         .select('email, default_password_hash')
         .eq('member_number', memberId)
-        .single();
+        .maybeSingle();
 
-      if (memberError || !member) {
+      if (memberError) {
         console.error("Member lookup error:", memberError);
+        throw new Error("Error looking up member details");
+      }
+
+      if (!member) {
+        console.error("No member found with ID:", memberId);
         throw new Error("Invalid Member ID. Please check your credentials and try again.");
       }
 
