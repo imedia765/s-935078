@@ -38,10 +38,10 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     // Sign out any existing session first
     await supabase.auth.signOut();
-    await delay(1000); // Wait for signout to complete
+    await delay(2000); // Increased delay after signout
 
     // Try to sign in first
-    console.log("Attempting sign in with temporary email");
+    console.log("Attempting initial sign in");
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: tempEmail,
       password: cleanMemberId
@@ -53,18 +53,16 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       return { success: true };
     }
 
-    console.log("Sign in failed, attempting signup with retry mechanism");
+    console.log("Sign in failed, attempting signup with increased delays");
+    await delay(3000); // Increased delay before signup attempts
 
     let lastError = null;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        // Clear any existing response streams
-        await delay(1000);
-        
         console.log(`Signup attempt ${attempt + 1}/${MAX_RETRIES}`);
 
-        // Add jitter to the delay
-        const jitter = Math.random() * 1000;
+        // Calculate exponential backoff with jitter
+        const jitter = Math.random() * 2000; // Increased jitter range
         const retryDelay = (BASE_DELAY * Math.pow(2, attempt)) + jitter;
 
         if (attempt > 0) {
@@ -72,12 +70,15 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
           await delay(retryDelay);
         }
 
-        // Create new auth session
+        // Clear any existing sessions before new attempt
+        await supabase.auth.signOut();
+        await delay(2000);
+
+        // Create new auth session with minimal options
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
           password: cleanMemberId,
           options: {
-            emailRedirectTo: `${window.location.origin}/login`,
             data: {
               member_number: cleanMemberId
             }
@@ -87,9 +88,10 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         if (signUpError) {
           console.error(`Signup error on attempt ${attempt + 1}:`, signUpError);
           
-          // If we hit rate limit, wait longer
           if (signUpError.status === 429) {
             lastError = signUpError;
+            // For rate limits, use maximum delay
+            await delay(BASE_DELAY * Math.pow(2, MAX_RETRIES) + 5000);
             continue;
           }
           
@@ -101,7 +103,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         }
 
         console.log("Signup successful, waiting for processing");
-        await delay(3000);
+        await delay(5000); // Increased delay after signup
 
         console.log("Confirming email via Edge Function");
         const { error: confirmError } = await supabase.functions.invoke('confirm-user-email', {
@@ -114,7 +116,7 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         }
 
         console.log("Email confirmed, attempting final sign in");
-        await delay(2000);
+        await delay(3000); // Increased delay before final signin
 
         const { error: finalSignInError } = await supabase.auth.signInWithPassword({
           email: tempEmail,
@@ -134,12 +136,12 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
         lastError = error;
         console.error(`Error on attempt ${attempt + 1}:`, error);
 
-        // If rate limited and not last attempt, continue to next retry
         if (error?.status === 429 && attempt < MAX_RETRIES - 1) {
+          // For rate limits, use maximum delay plus extra buffer
+          await delay(BASE_DELAY * Math.pow(2, MAX_RETRIES) + 5000);
           continue;
         }
 
-        // If last attempt, throw error
         if (attempt === MAX_RETRIES - 1) {
           throw new Error(
             "Failed to complete authentication after multiple attempts. " +
