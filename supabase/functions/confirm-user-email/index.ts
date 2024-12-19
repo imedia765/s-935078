@@ -27,7 +27,7 @@ serve(async (req) => {
     )
 
     // Get the user by email
-    const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
+    const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers({
       filter: {
         email: email
       }
