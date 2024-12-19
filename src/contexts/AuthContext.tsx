@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               title: "Welcome back!",
               description: "Signed in successfully",
             });
-            navigate('/admin');
+            navigate('/admin/profile');
           }
           break;
           
