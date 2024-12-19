@@ -24,7 +24,7 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
         if (session) {
           console.log("Active session found");
           setIsLoggedIn(true);
-          navigate("/admin");
+          navigate("/admin/profile");
         } else {
           console.log("No active session");
           setIsLoggedIn(false);
@@ -121,26 +121,15 @@ const handleSuccessfulLogin = async (session: any, navigate: (path: string) => v
 
     if (error) {
       console.error("Error checking member status:", error);
-      navigate("/admin");
-      return;
-    }
-
-    // Check if profile needs to be updated
-    if (member && !member.profile_updated) {
       navigate("/admin/profile");
       return;
     }
 
-    // Check if password needs to be changed
-    if (member && !member.password_changed) {
-      navigate("/admin/profile");
-      return;
-    }
-
-    // If all checks pass, redirect to admin dashboard
-    navigate("/admin");
+    // Always redirect to profile page after login
+    navigate("/admin/profile");
+    
   } catch (error) {
     console.error("Error in handleSuccessfulLogin:", error);
-    navigate("/admin");
+    navigate("/admin/profile");
   }
 };
