@@ -29,22 +29,27 @@ export default function FirstTimeLogin() {
         .eq('member_number', cleanMemberId)
         .single();
 
+      console.log("Member lookup result:", { member, memberError });
+
       if (memberError || !member) {
+        console.error("Member lookup error:", memberError);
         throw new Error("Invalid Member ID. Please check your credentials and try again.");
       }
 
       if (member.password_changed) {
+        console.log("Member has already changed password");
         throw new Error("This member has already updated their password. Please use the regular login page.");
       }
 
       // For first-time login, the password should match the member number
       if (password !== cleanMemberId) {
+        console.log("Password mismatch for first-time login");
         throw new Error("For first-time login, your password should be the same as your Member ID.");
       }
 
-      // Use a more standard temporary email domain
-      const tempEmail = `${cleanMemberId.toLowerCase()}@temporary.org`;
-      console.log("Attempting login with:", { email: tempEmail, memberId: cleanMemberId });
+      // Create a temporary email for first-time login
+      const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
+      console.log("Using temporary email for auth:", tempEmail);
 
       // Try to sign in first
       const { error: signInError } = await supabase.auth.signInWithPassword({
