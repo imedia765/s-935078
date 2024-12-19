@@ -22,7 +22,7 @@ export default function FirstTimeLogin() {
     console.log("First time login attempt with member ID:", cleanMemberId);
 
     try {
-      // First, get the member details using maybeSingle() instead of single()
+      // First, get the member details using maybeSingle()
       const { data: member, error: memberError } = await supabase
         .from('members')
         .select('email, password_changed, member_number, default_password_hash')
@@ -52,8 +52,8 @@ export default function FirstTimeLogin() {
         throw new Error("For first-time login, your password should be the same as your Member ID.");
       }
 
-      // Create a temporary email for first-time login
-      const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
+      // Create a temporary but valid email for first-time login
+      const tempEmail = `${cleanMemberId.toLowerCase()}@pwaburton.org`;
       console.log("Using temporary email for auth:", tempEmail);
 
       // Try to sign in first
