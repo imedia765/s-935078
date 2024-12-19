@@ -53,20 +53,30 @@ export default function Login() {
         }
       }
 
-      // Attempt login
+      // Attempt login with proper email format
+      const loginEmail = isEmail ? identifier : `${identifier}@temp.pwaburton.org`;
+      console.log("Attempting login with email:", loginEmail);
+      
       const { error } = await supabase.auth.signInWithPassword({
-        email: isEmail ? identifier : `${identifier}@temp.pwaburton.org`,
+        email: loginEmail,
         password: password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error:", error);
+        if (error.message === "Invalid login credentials") {
+          throw new Error("Invalid credentials. Please check your email/member ID and password.");
+        }
+        throw error;
+      }
 
+      console.log("Login successful");
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
       
-      // Navigate to dashboard or home page after successful login
+      // Navigate to dashboard after successful login
       navigate('/admin');
     } catch (error) {
       console.error("Login error:", error);
