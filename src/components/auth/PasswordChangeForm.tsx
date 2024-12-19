@@ -65,16 +65,20 @@ export const PasswordChangeForm = () => {
     try {
       setIsLoading(true);
       const formData = new FormData(e.currentTarget);
+      
+      // Convert FormData values to appropriate types
       const updatedData = {
-        full_name: formData.get('fullName'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        address: formData.get('address'),
-        town: formData.get('town'),
-        postcode: formData.get('postcode'),
-        date_of_birth: formData.get('dob'),
-        gender: formData.get('gender'),
-        marital_status: formData.get('maritalStatus'),
+        full_name: String(formData.get('fullName') || ''),
+        email: String(formData.get('email') || ''),
+        phone: String(formData.get('phone') || ''),
+        address: String(formData.get('address') || ''),
+        town: String(formData.get('town') || ''),
+        postcode: String(formData.get('postcode') || ''),
+        date_of_birth: String(formData.get('dob') || ''),
+        gender: String(formData.get('gender') || ''),
+        marital_status: String(formData.get('maritalStatus') || ''),
+        password_changed: true,
+        profile_updated: true
       };
 
       // Update password
@@ -89,11 +93,7 @@ export const PasswordChangeForm = () => {
       if (user?.email) {
         const { error: updateError } = await supabase
           .from('members')
-          .update({ 
-            ...updatedData,
-            password_changed: true,
-            profile_updated: true 
-          })
+          .update(updatedData)
           .eq('email', user.email);
 
         if (updateError) throw updateError;
