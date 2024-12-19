@@ -1,129 +1,26 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { FirstTimeLoginForm } from "@/components/auth/FirstTimeLoginForm";
+import { handleFirstTimeAuth } from "@/utils/firstTimeAuthHandler";
 
 export default function FirstTimeLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [memberId, setMemberId] = useState('');
-  const [password, setPassword] = useState('');
 
-  const handleFirstTimeLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleFirstTimeLogin = async (memberId: string, password: string) => {
     setIsLoading(true);
-    const cleanMemberId = memberId.toUpperCase().trim();
-    console.log("First time login attempt with member ID:", cleanMemberId);
-
     try {
-      // First, get the member details using maybeSingle()
-      const { data: member, error: memberError } = await supabase
-        .from('members')
-        .select('email, password_changed, member_number, default_password_hash')
-        .eq('member_number', cleanMemberId)
-        .maybeSingle();
-
-      console.log("Member lookup result:", { member, memberError });
-
-      if (memberError) {
-        console.error("Member lookup error:", memberError);
-        throw new Error("Error looking up member details");
-      }
-
-      if (!member) {
-        console.error("No member found with ID:", cleanMemberId);
-        throw new Error("Invalid Member ID. Please check your credentials and try again.");
-      }
-
-      if (member.password_changed) {
-        console.log("Member has already changed password");
-        throw new Error("This member has already updated their password. Please use the regular login page.");
-      }
-
-      // For first-time login, the password should match the member number
-      if (password !== cleanMemberId) {
-        console.log("Password mismatch for first-time login");
-        throw new Error("For first-time login, your password should be the same as your Member ID.");
-      }
-
-      // Use the existing email if available, otherwise generate a temporary one
-      const tempEmail = member.email || `${cleanMemberId.toLowerCase()}@temporary.pwaburton.org`;
-      console.log("Using email for auth:", tempEmail);
-
-      try {
-        // First try to sign in
-        console.log("Attempting sign in with:", { email: tempEmail });
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: tempEmail,
-          password: cleanMemberId
-        });
-
-        if (signInError) {
-          console.log("Sign in failed, attempting signup. Error:", signInError);
-          
-          // If sign in fails, try to sign up
-          const { error: signUpError } = await supabase.auth.signUp({
-            email: tempEmail,
-            password: cleanMemberId,
-            options: {
-              data: {
-                member_number: cleanMemberId
-              }
-            }
-          });
-
-          if (signUpError) {
-            console.error("Sign up error:", signUpError);
-            throw signUpError;
-          }
-
-          console.log("Signup successful, attempting final sign in");
-
-          // After successful signup, try signing in again
-          const { error: finalSignInError } = await supabase.auth.signInWithPassword({
-            email: tempEmail,
-            password: cleanMemberId
-          });
-
-          if (finalSignInError) {
-            console.error("Final sign in error:", finalSignInError);
-            throw finalSignInError;
-          }
-
-          console.log("Final sign in successful");
-        } else {
-          console.log("Initial sign in successful");
-        }
-
-        // Update member record to indicate first login completed
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({
-            first_time_login: false,
-            email: tempEmail
-          })
-          .eq('member_number', cleanMemberId);
-
-        if (updateError) {
-          console.error("Error updating member record:", updateError);
-          // Don't throw here as auth was successful
-        }
-
-        toast({
-          title: "Login successful",
-          description: "Welcome! Please update your profile information.",
-        });
-        navigate('/change-password');
-      } catch (authError) {
-        console.error("Authentication error:", authError);
-        throw new Error(authError instanceof Error ? authError.message : "Authentication failed. Please try again.");
-      }
+      await handleFirstTimeAuth(memberId, password);
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome! Please update your profile information.",
+      });
+      navigate('/change-password');
     } catch (error) {
       console.error("First time login error:", error);
       toast({
@@ -143,44 +40,10 @@ export default function FirstTimeLogin() {
           <CardTitle className="text-2xl text-center">First Time Login</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Alert className="bg-blue-50 border-blue-200">
-            <InfoIcon className="h-4 w-4 text-blue-500" />
-            <AlertDescription className="text-sm text-blue-700">
-              For your first login, use your Member ID (e.g. TM20001) as both your username and password.
-              You'll be prompted to update your email and password after logging in.
-            </AlertDescription>
-          </Alert>
-
-          <form onSubmit={handleFirstTimeLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                id="memberId"
-                name="memberId"
-                type="text"
-                placeholder="Member ID (e.g. TM20001)"
-                value={memberId}
-                onChange={(e) => setMemberId(e.target.value.toUpperCase())}
-                required
-                disabled={isLoading}
-                className="uppercase"
-              />
-            </div>
-            <div className="space-y-2">
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Password (same as Member ID)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "First Time Login"}
-            </Button>
-          </form>
+          <FirstTimeLoginForm 
+            onSubmit={handleFirstTimeLogin}
+            isLoading={isLoading}
+          />
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
