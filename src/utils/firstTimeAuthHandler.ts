@@ -27,8 +27,8 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       throw new Error("This member has already logged in. Please use the regular login page.");
     }
 
-    // Generate temporary email with correct domain
-    const tempEmail = `${cleanMemberId.toLowerCase()}@temporary.pwaburton.org`;
+    // Generate temporary email with a more standard domain
+    const tempEmail = `${cleanMemberId.toLowerCase()}@tempmail.pwaburton.com`;
     console.log("Using email for auth:", tempEmail);
 
     // Update member record with temporary email first
@@ -44,10 +44,11 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
 
     // Try to sign up first since it's a first-time login
     console.log("Attempting signup for:", tempEmail);
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: tempEmail,
       password: cleanMemberId,
       options: {
+        emailRedirectTo: window.location.origin,
         data: {
           member_number: cleanMemberId
         }
@@ -77,7 +78,10 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
     // Update member record to complete first-time login
     const { error: updateLoginError } = await supabase
       .from('members')
-      .update({ first_time_login: false })
+      .update({ 
+        first_time_login: false,
+        email_verified: true // Mark as verified since this is a controlled process
+      })
       .eq('member_number', cleanMemberId);
 
     if (updateLoginError) {
