@@ -27,59 +27,62 @@ export const handleFirstTimeAuth = async (memberId: string, password: string) =>
       throw new Error("This member has already logged in. Please use the regular login page.");
     }
 
-    // Use existing email or generate temporary one
-    const tempEmail = member.email || `${cleanMemberId.toLowerCase()}@temporary.pwaburton.org`;
+    // Generate temporary email with correct domain
+    const tempEmail = `${cleanMemberId.toLowerCase()}@temporary.pwaburton.org`;
     console.log("Using email for auth:", tempEmail);
 
-    // Try to sign in first
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // Update member record with temporary email first
+    const { error: updateEmailError } = await supabase
+      .from('members')
+      .update({ email: tempEmail })
+      .eq('member_number', cleanMemberId);
+
+    if (updateEmailError) {
+      console.error("Error updating member email:", updateEmailError);
+      throw new Error("Failed to update member email");
+    }
+
+    // Try to sign up first since it's a first-time login
+    console.log("Attempting signup for:", tempEmail);
+    const { error: signUpError } = await supabase.auth.signUp({
       email: tempEmail,
-      password: cleanMemberId, // For first time login, password is the member ID
+      password: cleanMemberId,
+      options: {
+        data: {
+          member_number: cleanMemberId
+        }
+      }
     });
 
-    if (signInError) {
-      console.log("Sign in failed, attempting signup. Error:", signInError);
+    if (signUpError) {
+      console.error("Sign up error:", signUpError);
       
-      // If sign in fails, try to sign up
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: tempEmail,
-        password: cleanMemberId,
-        options: {
-          data: {
-            member_number: cleanMemberId
-          }
+      // If user already exists, try signing in
+      if (signUpError.message.includes("User already registered")) {
+        console.log("User exists, attempting sign in");
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: tempEmail,
+          password: cleanMemberId
+        });
+
+        if (signInError) {
+          console.error("Sign in error:", signInError);
+          throw signInError;
         }
-      });
-
-      if (signUpError) {
-        console.error("Sign up error:", signUpError);
+      } else {
         throw signUpError;
-      }
-
-      // After successful signup, try signing in again
-      const { error: finalSignInError } = await supabase.auth.signInWithPassword({
-        email: tempEmail,
-        password: cleanMemberId
-      });
-
-      if (finalSignInError) {
-        console.error("Final sign in error:", finalSignInError);
-        throw finalSignInError;
       }
     }
 
-    // Update member record
-    const { error: updateError } = await supabase
+    // Update member record to complete first-time login
+    const { error: updateLoginError } = await supabase
       .from('members')
-      .update({
-        email: tempEmail,
-        first_time_login: false
-      })
+      .update({ first_time_login: false })
       .eq('member_number', cleanMemberId);
 
-    if (updateError) {
-      console.error("Error updating member record:", updateError);
-      throw updateError;
+    if (updateLoginError) {
+      console.error("Error updating first time login status:", updateLoginError);
+      throw updateLoginError;
     }
 
     console.log("First time auth successful for member:", cleanMemberId);
