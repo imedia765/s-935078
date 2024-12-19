@@ -229,6 +229,7 @@ export type Database = {
           postcode: string | null
           profile_completed: boolean | null
           profile_updated: boolean | null
+          registration_completed: boolean | null
           status: string | null
           town: string | null
           updated_at: string
@@ -256,6 +257,7 @@ export type Database = {
           postcode?: string | null
           profile_completed?: boolean | null
           profile_updated?: boolean | null
+          registration_completed?: boolean | null
           status?: string | null
           town?: string | null
           updated_at?: string
@@ -283,6 +285,7 @@ export type Database = {
           postcode?: string | null
           profile_completed?: boolean | null
           profile_updated?: boolean | null
+          registration_completed?: boolean | null
           status?: string | null
           town?: string | null
           updated_at?: string
