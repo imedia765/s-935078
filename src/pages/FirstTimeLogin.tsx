@@ -33,7 +33,7 @@ export default function FirstTimeLogin() {
 
       if (memberError) {
         console.error("Member lookup error:", memberError);
-        throw new Error("An error occurred while looking up your Member ID. Please try again.");
+        throw new Error("Error looking up member details");
       }
 
       if (!member) {
@@ -52,19 +52,20 @@ export default function FirstTimeLogin() {
         throw new Error("For first-time login, your password should be the same as your Member ID.");
       }
 
-      // Create a temporary but valid email for first-time login
-      const tempEmail = `${cleanMemberId.toLowerCase()}@pwaburton.org`;
-      console.log("Using temporary email for auth:", tempEmail);
+      // Use the existing temporary email if it exists, otherwise create one
+      const tempEmail = member.email || `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
+      console.log("Using email for auth:", tempEmail);
 
-      // Try to sign in first
+      // First try to sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: tempEmail,
         password: cleanMemberId
       });
 
-      // If sign in fails, try to sign up
       if (signInError) {
         console.log("Sign in failed, attempting signup");
+        
+        // If sign in fails, try to sign up
         const { error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
           password: cleanMemberId,
@@ -80,7 +81,7 @@ export default function FirstTimeLogin() {
           throw signUpError;
         }
 
-        // Try signing in again after successful signup
+        // After successful signup, try signing in again
         const { error: finalSignInError } = await supabase.auth.signInWithPassword({
           email: tempEmail,
           password: cleanMemberId
