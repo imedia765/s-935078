@@ -5,16 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { Profile } from "@/integrations/supabase/types/profile";
+import { Member } from "@/integrations/supabase/types/member";
 
 interface ProfileCompletionGuardProps {
   children: React.ReactNode;
 }
 
+type ProfileData = (Profile | Member) & {
+  profile_completed: boolean;
+};
+
 export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: profile } = useQuery({
+  const { data: profile } = useQuery<ProfileData>({
     queryKey: ['profile-completion-check'],
     queryFn: async () => {
       try {
@@ -48,7 +54,7 @@ export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps
             .single();
 
           if (createError) throw createError;
-          return newProfile;
+          return newProfile as ProfileData;
         }
 
         // Get member data to check profile completion
@@ -60,10 +66,10 @@ export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps
 
         if (memberError) {
           // If member data doesn't exist, return profile with profile_completed = false
-          return { ...existingProfile, profile_completed: false };
+          return { ...existingProfile, profile_completed: false } as ProfileData;
         }
         
-        return memberData;
+        return memberData as ProfileData;
       } catch (error) {
         console.error("Profile check error:", error);
         throw error;
