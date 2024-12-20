@@ -12,23 +12,37 @@ export const handleMemberIdLogin = async (
     // First get the member's email using member number
     const { data: memberData, error: memberError } = await supabase
       .from('members')
-      .select('email, full_name')
+      .select('email, full_name, first_time_login')
       .eq('member_number', memberId)
       .single();
 
-    if (memberError || !memberData?.email) {
+    if (memberError || !memberData) {
       console.error("Member lookup error:", memberError);
       throw new Error("Member not found");
     }
 
+    // For first time login, use the temporary email format
+    const loginEmail = memberData.first_time_login 
+      ? `${memberId.toLowerCase()}@temp.pwaburton.org`
+      : memberData.email;
+
+    if (!loginEmail) {
+      throw new Error("No valid email found for this member");
+    }
+
+    console.log("Attempting login with email:", loginEmail);
+
     // Sign in with email and password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: memberData.email,
+      email: loginEmail,
       password: password,
     });
 
     if (signInError) {
       console.error("Sign in error:", signInError);
+      if (signInError.message.includes("Invalid login credentials")) {
+        throw new Error("Invalid Member ID or password");
+      }
       throw signInError;
     }
 
@@ -58,7 +72,7 @@ export const handleMemberIdLogin = async (
         'create_profile',
         {
           p_id: signInData.user.id,
-          p_email: memberData.email,
+          p_email: loginEmail,
           p_user_id: signInData.user.id
         }
       );
