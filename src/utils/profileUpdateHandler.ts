@@ -31,18 +31,20 @@ export const updateProfileAndEmail = async (
       console.log("Validating and updating password...");
       
       // Check if password is different from current one
-      if (newPassword === currentMember.default_password_hash) {
-        throw new Error("New password must be different from your current password");
-      }
-
-      const { error: passwordError } = await supabase.auth.updateUser({
-        password: newPassword,
+      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: userData, error: pwCheckError } = await supabase.auth.updateUser({
+        password: newPassword
       });
 
-      if (passwordError) {
-        console.error("Password update error:", passwordError);
-        throw passwordError;
+      if (pwCheckError) {
+        if (pwCheckError.message.includes("same_password")) {
+          throw new Error("New password must be different from your current password");
+        }
+        console.error("Password update error:", pwCheckError);
+        throw pwCheckError;
       }
+
+      console.log("Auth state changed:", "USER_UPDATED", !!userData);
     }
 
     // Get the new email from form data
