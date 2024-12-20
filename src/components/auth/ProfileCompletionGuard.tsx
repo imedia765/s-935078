@@ -17,18 +17,54 @@ export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps
   const { data: profile } = useQuery({
     queryKey: ['profile-completion-check'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) throw new Error("No authenticated user");
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user?.email) throw new Error("No authenticated user");
 
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('email', user.email)
-        .single();
+        // First check if profile exists
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data;
+        if (profileError && profileError.code !== 'PGRST116') {
+          throw profileError;
+        }
+
+        // If no profile exists, create one
+        if (!existingProfile) {
+          console.log("Creating new profile for user:", user.id);
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          return newProfile;
+        }
+
+        // Get member data to check profile completion
+        const { data: memberData, error: memberError } = await supabase
+          .from('members')
+          .select('*')
+          .eq('email', user.email)
+          .single();
+
+        if (memberError) throw memberError;
+        return memberData;
+      } catch (error) {
+        console.error("Profile check error:", error);
+        throw error;
+      }
     },
+    retry: 1,
   });
 
   useEffect(() => {
