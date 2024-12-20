@@ -41,7 +41,8 @@ export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps
               id: user.id,
               email: user.email,
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+              profile_completed: false
             })
             .select()
             .single();
@@ -57,7 +58,11 @@ export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps
           .eq('email', user.email)
           .single();
 
-        if (memberError) throw memberError;
+        if (memberError) {
+          // If member data doesn't exist, return profile with profile_completed = false
+          return { ...existingProfile, profile_completed: false };
+        }
+        
         return memberData;
       } catch (error) {
         console.error("Profile check error:", error);
