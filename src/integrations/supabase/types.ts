@@ -151,7 +151,7 @@ export type Database = {
           context?: Json | null
           created_at?: string
           error_message: string
-          id?: string
+          id: string
           stack_trace?: string | null
           user_id?: string | null
         }
@@ -519,6 +519,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_profile: {
+        Args: {
+          p_id: string
+          p_email: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: "member" | "collector" | "admin"
@@ -538,7 +546,7 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
       Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -592,10 +600,10 @@ export type TablesUpdate<
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+      Update: infer U
+    }
+    ? U
+    : never
     : never
 
 export type Enums<

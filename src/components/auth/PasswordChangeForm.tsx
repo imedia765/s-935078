@@ -10,6 +10,8 @@ import { PasswordFields } from "./PasswordFields";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { updateProfileAndEmail } from "@/utils/profileUpdateHandler";
+import { validateProfileForm } from "@/utils/profileValidation";
 
 export const PasswordChangeForm = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -39,20 +41,49 @@ export const PasswordChangeForm = () => {
           throw new Error(userError?.message || "No authenticated user found");
         }
 
+        console.log("Found authenticated user:", user.email);
+
+        // First check if member exists
         const { data: memberData, error: memberError } = await supabase
           .from('members')
           .select('*')
           .eq('email', user.email)
-          .single();
+          .maybeSingle();
 
-        if (memberError) {
+        if (memberError && memberError.code !== 'PGRST116') {
           console.error("Member data fetch error:", memberError);
           throw memberError;
         }
-        
-        console.log("Fetched member data:", memberData);
-        setUserData(memberData);
-        setIsFirstTimeLogin(memberData.first_time_login || false);
+
+        if (!memberData) {
+          console.log("No member found for email:", user.email);
+          // Create a new member record
+          const { data: newMember, error: createError } = await supabase
+            .from('members')
+            .insert({
+              email: user.email,
+              member_number: user.user_metadata.member_number || 'PENDING',
+              full_name: 'New Member',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              first_time_login: true
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error("Error creating new member:", createError);
+            throw createError;
+          }
+
+          console.log("Created new member record:", newMember);
+          setUserData(newMember);
+          setIsFirstTimeLogin(true);
+        } else {
+          console.log("Found existing member:", memberData);
+          setUserData(memberData);
+          setIsFirstTimeLogin(memberData.first_time_login || false);
+        }
       } catch (error) {
         console.error("Error fetching user data:", error);
         toast({
@@ -71,85 +102,23 @@ export const PasswordChangeForm = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const formData = new FormData(e.currentTarget);
-    const requiredFields = [
-      'fullName', 'email', 'phone', 'address', 'town', 
-      'postcode', 'dob', 'gender', 'maritalStatus'
-    ];
-
-    // Check if all required fields are filled
-    const missingFields = requiredFields.filter(field => !formData.get(field));
-    if (missingFields.length > 0) {
-      toast({
-        title: "Missing Required Fields",
-        description: "Please fill in all required fields to complete your profile.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      setIsLoading(true);
+      const formData = new FormData(e.currentTarget);
       
-      const isValid = await checkSession();
-      if (!isValid) {
-        console.log("Session expired during form submission");
-        navigate("/login");
-        return;
-      }
-
-      const updatedData = {
-        full_name: String(formData.get('fullName') || ''),
-        email: String(formData.get('email') || ''),
-        phone: String(formData.get('phone') || ''),
-        address: String(formData.get('address') || ''),
-        town: String(formData.get('town') || ''),
-        postcode: String(formData.get('postcode') || ''),
-        date_of_birth: String(formData.get('dob') || ''),
-        gender: String(formData.get('gender') || ''),
-        marital_status: String(formData.get('maritalStatus') || ''),
-        password_changed: true,
-        profile_updated: true,
-        first_time_login: false,
-        profile_completed: true
-      };
-
-      if (newPassword) {
-        const { error: passwordError } = await supabase.auth.updateUser({
-          password: newPassword,
-        });
-
-        if (passwordError) throw passwordError;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        throw new Error("User session expired");
-      }
-
-      const { error: updateError } = await supabase
-        .from('members')
-        .update(updatedData)
-        .eq('email', user.email);
-
-      if (updateError) throw updateError;
+      // Validate form data
+      validateProfileForm(formData, newPassword, confirmPassword);
+      
+      // Perform the update
+      await updateProfileAndEmail(formData, newPassword, userData.email);
 
       toast({
         title: "Profile updated",
-        description: "Your profile has been updated successfully",
+        description: "Your profile has been updated successfully. Please check your email to verify your new email address.",
       });
       
-      // After successful update, allow navigation
+      // After successful update, navigate to admin dashboard
       navigate("/admin");
     } catch (error) {
       console.error("Update error:", error);
@@ -163,7 +132,7 @@ export const PasswordChangeForm = () => {
     }
   };
 
-  if (isLoading) {
+  if (!userData) {
     return (
       <div className="flex justify-center items-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -177,7 +146,7 @@ export const PasswordChangeForm = () => {
         <Alert className="mb-6 bg-blue-50 border-blue-200">
           <InfoIcon className="h-4 w-4 text-blue-500" />
           <AlertDescription className="text-sm text-blue-700">
-            Welcome! Please complete your profile information. All fields are required for first-time login.
+            Welcome! Please complete your profile information and update your email. All fields are required for first-time login.
           </AlertDescription>
         </Alert>
       )}
