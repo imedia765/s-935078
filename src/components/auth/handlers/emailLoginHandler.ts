@@ -60,7 +60,7 @@ export const handleEmailLogin = async (
     return true;
   } catch (error) {
     console.error("Login process error:", error);
-    toast({
+    toast.toast({
       title: "Login failed",
       description: error instanceof Error ? error.message : "An error occurred during login",
       variant: "destructive",
