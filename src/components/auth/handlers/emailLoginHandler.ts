@@ -1,86 +1,69 @@
 import { supabase } from "@/integrations/supabase/client";
-import { SUPABASE_URL, SUPABASE_KEY } from "@/config/supabase";
-import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
-
-type Toast = {
-  title?: string;
-  description?: React.ReactNode;
-  variant?: "default" | "destructive";
-  action?: ToastActionElement;
-  children?: React.ReactNode;
-};
+import { Toast } from "@/components/ui/use-toast";
 
 export const handleEmailLogin = async (
   email: string,
   password: string,
-  toast: (props: Toast) => void
+  toast: Toast
 ) => {
   try {
     console.log("Attempting email login for:", email);
     
-    const { data: memberData, error: memberError } = await supabase
-      .from('members')
-      .select('id, email_verified, profile_updated')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (memberError && memberError.code !== 'PGRST116') {
-      console.error("Member lookup error:", memberError);
-      throw new Error("Error looking up member details");
-    }
-
-    if (!memberData) {
-      console.error("No member found with email:", email);
-      throw new Error("No member found with this email address. Please check your credentials or use the Member ID login if you haven't updated your profile yet.");
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // Sign in the user
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      console.error("Sign in error:", error);
-      if (error.message === "Email not confirmed") {
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/confirm-user-email`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_KEY}`
-          },
-          body: JSON.stringify({ email })
-        });
+    if (signInError) {
+      console.error("Sign in error:", signInError);
+      throw signInError;
+    }
 
-        if (!response.ok) {
-          console.error("Error verifying email:", await response.text());
-          throw new Error("Unable to verify email. Please contact support.");
-        }
+    if (!signInData.user) {
+      throw new Error("No user data returned after login");
+    }
 
-        const { error: retryError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (retryError) {
-          if (retryError.message.includes("Invalid login credentials")) {
-            throw new Error("Invalid email or password. Please try again.");
-          }
-          throw retryError;
+    console.log("User signed in successfully:", signInData.user.id);
+
+    // Check if profile exists
+    const { data: existingProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', signInData.user.id)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error("Error checking profile:", profileError);
+      throw profileError;
+    }
+
+    // If no profile exists, create one
+    if (!existingProfile) {
+      console.log("Creating new profile for user:", signInData.user.id);
+      
+      const { error: createError } = await supabase.rpc(
+        'create_profile',
+        {
+          p_id: signInData.user.id,
+          p_email: email,
+          p_user_id: signInData.user.id
         }
-      } else if (error.message.includes("Invalid login credentials")) {
-        throw new Error("Invalid email or password. Please try again.");
-      } else {
-        throw error;
+      );
+
+      if (createError) {
+        console.error("Error creating profile:", createError);
+        throw createError;
       }
     }
 
-    console.log("Login successful:", data);
     return true;
   } catch (error) {
-    console.error("Email login error:", error);
+    console.error("Login process error:", error);
     toast({
       title: "Login failed",
+      description: error instanceof Error ? error.message : "An error occurred during login",
       variant: "destructive",
-      children: error instanceof Error ? error.message : "An error occurred during login"
     });
     return false;
   }
