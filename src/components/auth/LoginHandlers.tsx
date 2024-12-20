@@ -1,4 +1,4 @@
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { handleEmailLogin } from "./handlers/emailLoginHandler";
 import { handleMemberIdLogin } from "./handlers/memberIdLoginHandler";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,7 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
       // Clear any existing session first
       await supabase.auth.signOut();
       
-      const success = await handleEmailLogin(email, password, toast);
+      const success = await handleEmailLogin(email, password, { toast });
       if (success) {
         toast({
           title: "Login successful",
@@ -44,7 +44,7 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
       // Clear any existing session first
       await supabase.auth.signOut();
       
-      const success = await handleMemberIdLogin(memberId, password, toast);
+      const success = await handleMemberIdLogin(memberId, password, { toast });
       if (success) {
         toast({
           title: "Login successful",

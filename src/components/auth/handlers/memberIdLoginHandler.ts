@@ -1,10 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
-import { type ToastType } from "@/hooks/use-toast";
+import { ToastType } from "@/hooks/use-toast";
 
 export const handleMemberIdLogin = async (
   memberId: string,
   password: string,
-  toast: ToastType
+  { toast }: ToastType
 ) => {
   try {
     console.log("Attempting member ID login for:", memberId);
@@ -72,7 +72,7 @@ export const handleMemberIdLogin = async (
     return true;
   } catch (error) {
     console.error("Login process error:", error);
-    toast.toast({
+    toast({
       title: "Login failed",
       description: error instanceof Error ? error.message : "An error occurred during login",
       variant: "destructive",
