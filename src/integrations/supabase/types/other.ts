@@ -1,7 +1,2 @@
-export interface Views {
-  [_ in never]: never
-}
-
-export interface CompositeTypes {
-  [_ in never]: never
-}
+export type Views = Record<string, never>;
+export type CompositeTypes = Record<string, never>;

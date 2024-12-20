@@ -1,8 +1,8 @@
-import { Json } from './json';
-import { Tables, TablesInsert, TablesUpdate } from './tables';
-import { Enums } from './enums';
-import { Functions } from './functions';
-import { Views, CompositeTypes } from './other';
+import type { Functions } from './functions';
+import type { Tables } from './tables.types';
+import type { Views, CompositeTypes } from './other';
+import type { Enums } from './enums';
+import type { Json } from './json';
 
 export type Database = {
   public: {
@@ -14,4 +14,4 @@ export type Database = {
   }
 }
 
-export type { Json, Tables, TablesInsert, TablesUpdate, Enums };
+export type { Json, Functions, Tables, Enums };
