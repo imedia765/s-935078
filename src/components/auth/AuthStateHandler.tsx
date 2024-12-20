@@ -24,11 +24,17 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
         if (session) {
           console.log("Active session found");
           setIsLoggedIn(true);
-          navigate("/admin/profile");
+          // Only navigate if we're not already on a valid route
+          if (window.location.pathname === '/') {
+            navigate("/admin/profile");
+          }
         } else {
           console.log("No active session");
           setIsLoggedIn(false);
-          navigate("/login");
+          // Only navigate to login if we're not already there
+          if (!['/login', '/register'].includes(window.location.pathname)) {
+            navigate("/login");
+          }
         }
       } catch (error) {
         console.error("Session check failed:", error);
@@ -47,13 +53,19 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
       localStorage.removeItem('supabase.auth.token');
       sessionStorage.removeItem('supabase.auth.token');
       
-      toast({
-        title: "Authentication Error",
-        description: "Please sign in again",
-        variant: "destructive",
-      });
+      // Only show toast if it's not a refresh token error
+      if (!error.message?.includes('refresh_token_not_found')) {
+        toast({
+          title: "Authentication Error",
+          description: "Please sign in again",
+          variant: "destructive",
+        });
+      }
       
-      navigate("/login");
+      // Only navigate if we're not already on the login page
+      if (window.location.pathname !== '/login') {
+        navigate("/login");
+      }
     };
 
     checkSession();
@@ -95,7 +107,10 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
           if (!session) {
             console.log("No initial session");
             setIsLoggedIn(false);
-            navigate("/login");
+            // Only navigate if we're not already on a valid public route
+            if (!['/login', '/register', '/'].includes(window.location.pathname)) {
+              navigate("/login");
+            }
           }
           break;
       }
