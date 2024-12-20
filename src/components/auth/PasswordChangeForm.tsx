@@ -105,6 +105,11 @@ export const PasswordChangeForm = () => {
     setIsLoading(true);
     
     try {
+      // Check if the new password matches the default password hash
+      if (newPassword && userData.default_password_hash === newPassword) {
+        throw new Error("New password must be different from your current password");
+      }
+
       const formData = new FormData(e.currentTarget);
       
       // Validate form data
