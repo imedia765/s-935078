@@ -1,10 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Toast } from "@/components/ui/use-toast";
+import { type ToastType } from "@/hooks/use-toast";
 
 export const handleMemberIdLogin = async (
   memberId: string,
   password: string,
-  toast: Toast
+  toast: ToastType
 ) => {
   try {
     console.log("Attempting member ID login for:", memberId);
