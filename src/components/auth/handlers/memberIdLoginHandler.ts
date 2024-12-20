@@ -37,6 +37,12 @@ export const handleMemberIdLogin = async (
 
     console.log("Attempting login with email:", loginEmail);
 
+    // For first-time login, ensure password matches member ID exactly
+    if (memberData.first_time_login && password !== memberId) {
+      console.error("First-time login password mismatch");
+      throw new Error("For first-time login, your password must be exactly the same as your Member ID");
+    }
+
     // Sign in with email and password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: loginEmail,
@@ -46,7 +52,11 @@ export const handleMemberIdLogin = async (
     if (signInError) {
       console.error("Sign in error:", signInError);
       if (signInError.message.includes("Invalid login credentials")) {
-        throw new Error("Invalid password. For first-time login, use your Member ID as the password.");
+        if (memberData.first_time_login) {
+          throw new Error("For first-time login, use your Member ID (e.g. TM20001) as both username and password");
+        } else {
+          throw new Error("Invalid password. Please try again or contact support if you need help.");
+        }
       }
       throw signInError;
     }
