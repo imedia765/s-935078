@@ -12,7 +12,11 @@ interface ProfileCompletionGuardProps {
   children: React.ReactNode;
 }
 
-type ProfileData = (Profile | Member) & {
+type ProfileData = {
+  id: string;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
   profile_completed: boolean;
 };
 
@@ -54,7 +58,13 @@ export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps
             .single();
 
           if (createError) throw createError;
-          return newProfile as ProfileData;
+          return {
+            id: newProfile.id,
+            email: newProfile.email,
+            created_at: newProfile.created_at,
+            updated_at: newProfile.updated_at,
+            profile_completed: false
+          } as ProfileData;
         }
 
         // Get member data to check profile completion
@@ -66,10 +76,22 @@ export const ProfileCompletionGuard = ({ children }: ProfileCompletionGuardProps
 
         if (memberError) {
           // If member data doesn't exist, return profile with profile_completed = false
-          return { ...existingProfile, profile_completed: false } as ProfileData;
+          return {
+            id: existingProfile.id,
+            email: existingProfile.email,
+            created_at: existingProfile.created_at,
+            updated_at: existingProfile.updated_at,
+            profile_completed: false
+          } as ProfileData;
         }
         
-        return memberData as ProfileData;
+        return {
+          id: memberData.id,
+          email: memberData.email,
+          created_at: memberData.created_at,
+          updated_at: memberData.updated_at,
+          profile_completed: memberData.profile_completed ?? false
+        } as ProfileData;
       } catch (error) {
         console.error("Profile check error:", error);
         throw error;
