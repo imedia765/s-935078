@@ -1,10 +1,5 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+import type { Database } from './database';
+import type { Json } from './json';
 
 export interface AdminNote {
   Row: {
@@ -31,22 +26,6 @@ export interface AdminNote {
     note?: string
     updated_at?: string
   }
-  Relationships: [
-    {
-      foreignKeyName: "admin_notes_admin_id_fkey"
-      columns: ["admin_id"]
-      isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },
-    {
-      foreignKeyName: "admin_notes_member_id_fkey"
-      columns: ["member_id"]
-      isOneToOne: false
-      referencedRelation: "members"
-      referencedColumns: ["id"]
-    },
-  ]
 }
 
 export interface Collector {
@@ -304,7 +283,6 @@ export interface Profile {
     updated_at?: string
     user_id?: string | null
   }
-  Relationships: []
 }
 
 export interface Registration {

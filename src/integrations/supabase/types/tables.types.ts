@@ -1,7 +1,10 @@
 import type { Database } from './database';
+import type { Json } from './json';
+import { AdminNote } from './tables';
+import { Profile } from './tables';
 
 export interface Tables {
-  admin_notes: AdminNotes;
+  admin_notes: AdminNote;
   codebase_backups: CodebaseBackups;
   collectors: Collectors;
   database_logs: DatabaseLogs;
@@ -9,37 +12,10 @@ export interface Tables {
   family_members: FamilyMembers;
   members: Members;
   payments: Payments;
-  profiles: Profiles;
+  profiles: Profile;
   registrations: Registrations;
   support_tickets: SupportTickets;
   ticket_responses: TicketResponses;
-}
-
-export interface AdminNotes {
-  Row: {
-    id: string;
-    member_id: string | null;
-    admin_id: string | null;
-    note: string;
-    created_at: string;
-    updated_at: string;
-  }
-  Insert: {
-    id?: string;
-    member_id?: string | null;
-    admin_id?: string | null;
-    note: string;
-    created_at?: string;
-    updated_at?: string;
-  }
-  Update: {
-    id?: string;
-    member_id?: string | null;
-    admin_id?: string | null;
-    note?: string;
-    created_at?: string;
-    updated_at?: string;
-  }
 }
 
 export interface CodebaseBackups {
@@ -237,7 +213,7 @@ export interface Members {
     membership_type?: string | null;
     password_changed?: boolean | null;
     phone?: string | null;
-    postcode?: string;
+    postcode?: string | null;
     profile_completed?: boolean | null;
     profile_updated?: boolean | null;
     registration_completed?: boolean | null;
@@ -312,33 +288,6 @@ export interface Payments {
     payment_type?: string;
     status?: string | null;
     updated_at?: string;
-  }
-}
-
-export interface Profiles {
-  Row: {
-    id: string;
-    user_id: string | null;
-    email: string | null;
-    created_at: string;
-    updated_at: string;
-    role: Database['public']['Enums']['user_role'] | null;
-  }
-  Insert: {
-    id?: string;
-    user_id?: string | null;
-    email?: string | null;
-    created_at?: string;
-    updated_at?: string;
-    role?: Database['public']['Enums']['user_role'] | null;
-  }
-  Update: {
-    id?: string;
-    user_id?: string | null;
-    email?: string | null;
-    created_at?: string;
-    updated_at?: string;
-    role?: Database['public']['Enums']['user_role'] | null;
   }
 }
 
