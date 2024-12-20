@@ -43,6 +43,23 @@ export const handleMemberIdLogin = async (
       throw new Error("For first-time login, your password must be exactly the same as your Member ID");
     }
 
+    // If it's a first-time login, try to create the auth user first
+    if (memberData.first_time_login) {
+      try {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: loginEmail,
+          password: memberId, // Use member ID as initial password
+        });
+
+        if (signUpError && !signUpError.message.includes('User already registered')) {
+          console.error("Error creating auth user:", signUpError);
+          throw signUpError;
+        }
+      } catch (error) {
+        console.log("User might already exist, proceeding with login");
+      }
+    }
+
     // Sign in with email and password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: loginEmail,
