@@ -15,16 +15,11 @@ export function NavigationMenu() {
 
   const handleLogout = async () => {
     try {
-      console.log("Attempting to logout...");
+      console.log("NavigationMenu: Initiating logout...");
       await logout();
-      console.log("Logout successful, redirecting to login page");
-      navigate("/login");
-      toast({
-        title: "Logged out successfully",
-        description: "Come back soon!",
-      });
+      // Note: navigation is now handled in the AuthContext logout function
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("NavigationMenu logout error:", error);
       toast({
         title: "Logout failed",
         description: "Please try again",

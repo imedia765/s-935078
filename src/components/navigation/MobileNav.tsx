@@ -21,6 +21,7 @@ export const MobileNav = ({
 }: MobileNavProps) => {
   const onLogoutClick = async () => {
     try {
+      console.log("MobileNav: Initiating logout...");
       await handleLogout();
       setOpen(false);
     } catch (error) {

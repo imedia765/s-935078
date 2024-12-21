@@ -13,6 +13,7 @@ export const DesktopNav = ({ isLoggedIn, handleLogout }: DesktopNavProps) => {
 
   const onLogoutClick = async () => {
     try {
+      console.log("DesktopNav: Initiating logout...");
       await handleLogout();
     } catch (error) {
       console.error("Desktop logout error:", error);

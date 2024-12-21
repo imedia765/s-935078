@@ -79,8 +79,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log("Starting logout process...");
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase signOut error:", error);
+        throw error;
+      }
+      
+      console.log("Successfully signed out from Supabase");
       
       // Clear any cached data
       localStorage.clear();
@@ -90,8 +96,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(false);
       setUserRole(null);
       
+      console.log("Local storage and state cleared");
+      
       // Navigate to login
       navigate('/login');
+      
+      console.log("Navigation to login complete");
       
       toast({
         title: "Logged out successfully",
@@ -104,6 +114,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
+      // Even if there's an error, try to force a clean state
+      setIsAuthenticated(false);
+      setUserRole(null);
+      navigate('/login');
     }
   };
 
