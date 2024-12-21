@@ -55,6 +55,9 @@ export default function Login() {
         title: "Login successful",
         description: "Welcome back!",
       });
+      
+      // Redirect to admin/profile after successful login
+      navigate("/admin/profile");
     } catch (error) {
       console.error("Login error:", error);
       toast({
@@ -137,4 +140,4 @@ export default function Login() {
       </Card>
     </div>
   );
-};
+}
