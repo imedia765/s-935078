@@ -71,12 +71,21 @@ export function MemberCard({
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      // First check if there are any related records in family_members
+      const { data: familyMembers, error: familyError } = await supabase
+        .from('family_members')
+        .delete()
+        .eq('member_id', member.id);
+
+      if (familyError) throw familyError;
+
+      // Then delete the member
+      const { error: memberError } = await supabase
         .from('members')
         .delete()
         .eq('id', member.id);
 
-      if (error) throw error;
+      if (memberError) throw memberError;
 
       toast({
         title: "Member Removed",
@@ -84,11 +93,11 @@ export function MemberCard({
       });
       
       onUpdate?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting member:', error);
       toast({
         title: "Error",
-        description: "Failed to remove member",
+        description: error.message || "Failed to remove member",
         variant: "destructive",
       });
     } finally {

@@ -18,6 +18,8 @@ export interface Member {
   membership_type: string | null;
   collector: string | null;
   cors_enabled: boolean | null;
+  first_time_login: boolean | null;
+  profile_completed: boolean | null;
   name?: string; // Added for CoveredMembersOverview compatibility
   coveredMembers?: {
     spouses?: Array<{ name: string; dateOfBirth: string }>;

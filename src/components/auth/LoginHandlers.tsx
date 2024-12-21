@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { getMemberByMemberId } from "@/utils/memberAuth";
 
 export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
   const { toast } = useToast();
@@ -11,38 +12,18 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
     const password = formData.get("password") as string;
 
     try {
-      console.log("Attempting email login for:", email);
-      
-      // First check if this is a valid member email
-      const { data: memberData, error: memberError } = await supabase
-        .from('members')
-        .select('id, email_verified, profile_updated')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (memberError) {
-        console.error("Member lookup error:", memberError);
-        throw new Error("Error looking up member details");
-      }
-
-      if (!memberData) {
-        console.error("No member found with email:", email);
-        throw new Error("No member found with this email address. Please check your credentials or use the Member ID login if you haven't updated your profile yet.");
-      }
-
-      // Attempt to sign in
+      console.log("Attempting email login with:", { email });
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error("Sign in error:", error);
+        console.error("Email login error:", error);
         throw error;
       }
 
       console.log("Login successful:", data);
-
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -52,7 +33,7 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
       console.error("Email login error:", error);
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred during login",
+        description: error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive",
       });
     }
@@ -62,53 +43,101 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const memberId = (formData.get("memberId") as string).toUpperCase().trim();
-    const password = formData.get("memberPassword") as string;
+    const password = formData.get("password") as string;
 
     try {
       console.log("Attempting member ID login for:", memberId);
-      
-      // First, get the member details
-      const { data: member, error: memberError } = await supabase
-        .from('members')
-        .select('email, default_password_hash')
-        .eq('member_number', memberId)
-        .maybeSingle();
-
-      if (memberError) {
-        console.error("Member lookup error:", memberError);
-        throw new Error("Error looking up member details");
-      }
+      const member = await getMemberByMemberId(memberId);
 
       if (!member) {
-        console.error("No member found with ID:", memberId);
-        throw new Error("Invalid Member ID. Please check your credentials and try again.");
+        throw new Error("Member ID not found");
       }
 
+      // For first time login
+      if (member.first_time_login) {
+        console.log("First time login detected for member:", memberId);
+
+        // Check if member has an email
+        if (!member.email) {
+          throw new Error("Email address required for registration. Please contact support.");
+        }
+
+        // Try signing in first in case user already exists
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: member.email,
+          password,
+        });
+
+        if (!signInError) {
+          console.log("Existing user found and signed in:", signInData);
+          toast({
+            title: "Login successful",
+            description: "Welcome back!",
+          });
+          setIsLoggedIn(true);
+          return;
+        }
+
+        // If sign in failed, create new user with member's email
+        console.log("Creating new auth user with email:", member.email);
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: member.email,
+          password,
+          options: {
+            data: {
+              member_id: member.id,
+              member_number: member.member_number
+            }
+          }
+        });
+
+        if (signUpError) {
+          console.error("Sign up error:", signUpError);
+          throw signUpError;
+        }
+
+        // Attempt immediate login after signup
+        const { error: newSignInError } = await supabase.auth.signInWithPassword({
+          email: member.email,
+          password,
+        });
+
+        if (newSignInError) {
+          console.error("Post-signup sign in error:", newSignInError);
+          throw newSignInError;
+        }
+
+        toast({
+          title: "First-time login successful",
+          description: "Please complete your profile setup",
+        });
+        setIsLoggedIn(true);
+        return;
+      }
+
+      // For returning users
       if (!member.email) {
-        console.error("No email found for member:", memberId);
-        throw new Error("No email associated with this Member ID. Please contact support.");
+        throw new Error("No email associated with this member");
       }
 
-      // Attempt to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      console.log("Attempting login with email:", member.email);
+      const { error } = await supabase.auth.signInWithPassword({
         email: member.email,
-        password: password,
+        password,
       });
 
-      if (signInError) {
-        console.error("Sign in error:", signInError);
-        throw signInError;
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
       }
-
-      console.log("Login successful for member:", memberId);
 
       toast({
         title: "Login successful",
-        description: "Welcome! Please update your profile information.",
+        description: "Welcome back!",
       });
       setIsLoggedIn(true);
     } catch (error) {
-      console.error("Member ID login error:", error);
+      console.error("Login process error:", error);
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Invalid Member ID or password",
