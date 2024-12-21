@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 
 interface Member {
   id: string;
@@ -18,9 +19,10 @@ interface Member {
 
 export function UserManagementSection() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showPending, setShowPending] = useState(false);
 
   const { data: members, isLoading } = useQuery({
-    queryKey: ['members', searchTerm],
+    queryKey: ['members', searchTerm, showPending],
     queryFn: async () => {
       let query = supabase
         .from('members')
@@ -29,6 +31,10 @@ export function UserManagementSection() {
 
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+      }
+
+      if (showPending) {
+        query = query.or('member_number.is.null,member_number.eq.');
       }
 
       const { data, error } = await query;
@@ -49,10 +55,19 @@ export function UserManagementSection() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <UserSearch 
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
+          <div className="flex items-center justify-between">
+            <UserSearch 
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+            />
+            <Button
+              variant={showPending ? "secondary" : "outline"}
+              onClick={() => setShowPending(!showPending)}
+              className="ml-2"
+            >
+              {showPending ? "Show All" : "Show Pending"}
+            </Button>
+          </div>
           
           {isLoading ? (
             <div className="flex justify-center py-8">
@@ -73,7 +88,7 @@ export function UserManagementSection() {
                   <TableBody>
                     {members.map((member) => (
                       <TableRow key={member.id}>
-                        <TableCell>{member.member_number}</TableCell>
+                        <TableCell>{member.member_number || 'Pending'}</TableCell>
                         <TableCell>{member.full_name}</TableCell>
                         <TableCell>{member.email || 'Not set'}</TableCell>
                         <TableCell>
