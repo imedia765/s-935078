@@ -8,6 +8,7 @@ import { SupportSection } from "@/components/profile/SupportSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { InfoCard } from "@/components/InfoCard";
 
 export default function Profile() {
   const [searchDate, setSearchDate] = useState("");
@@ -113,6 +114,21 @@ export default function Profile() {
       <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
         Member Profile
       </h1>
+
+      {memberData && (
+        <InfoCard title="Member Information">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Member ID</p>
+              <p className="text-lg font-semibold">{memberData.member_number}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Collector</p>
+              <p className="text-lg font-semibold">{memberData.collector || "Not assigned"}</p>
+            </div>
+          </div>
+        </InfoCard>
+      )}
 
       <div className="space-y-6">
         <AccountSettingsSection memberData={memberData} />
