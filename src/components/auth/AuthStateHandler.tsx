@@ -19,7 +19,7 @@ export const AuthStateHandler = () => {
         return;
       }
 
-      // Check if user is first time login
+      // Check if user is first time login or profile not completed
       const { data: memberData, error } = await supabase
         .from('members')
         .select('first_time_login, profile_completed')
@@ -40,6 +40,9 @@ export const AuthStateHandler = () => {
           });
           navigate('/admin/profile');
         }
+      } else if (location.pathname === '/login' || location.pathname === '/register') {
+        // If already logged in and profile completed, redirect to admin dashboard
+        navigate('/admin');
       }
     };
 
