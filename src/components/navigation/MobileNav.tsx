@@ -23,7 +23,6 @@ export const MobileNav = ({
     try {
       await handleLogout();
       setOpen(false);
-      handleNavigation("/login");
     } catch (error) {
       console.error("Mobile logout error:", error);
     }

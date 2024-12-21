@@ -13,6 +13,26 @@ export function NavigationMenu() {
   const { toast } = useToast();
   const { isAuthenticated, userRole, logout } = useAuth();
 
+  const handleLogout = async () => {
+    try {
+      console.log("Attempting to logout...");
+      await logout();
+      console.log("Logout successful, redirecting to login page");
+      navigate("/login");
+      toast({
+        title: "Logged out successfully",
+        description: "Come back soon!",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleNavigation = (path: string) => {
     setOpen(false);
     navigate(path);
@@ -32,12 +52,12 @@ export function NavigationMenu() {
 
         <DesktopNav 
           isLoggedIn={isAuthenticated} 
-          handleLogout={logout} 
+          handleLogout={handleLogout} 
         />
         
         <MobileNav 
           isLoggedIn={isAuthenticated}
-          handleLogout={logout}
+          handleLogout={handleLogout}
           open={open}
           setOpen={setOpen}
           handleNavigation={handleNavigation}
