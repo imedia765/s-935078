@@ -32,8 +32,8 @@ const App: React.FC = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
-              <AuthProvider>
-                <BrowserRouter>
+              <BrowserRouter>
+                <AuthProvider>
                   <div className="min-h-screen flex flex-col">
                     <NavigationMenu />
                     <div className="flex-grow">
@@ -41,8 +41,8 @@ const App: React.FC = () => {
                     </div>
                     <Footer />
                   </div>
-                </BrowserRouter>
-              </AuthProvider>
+                </AuthProvider>
+              </BrowserRouter>
             </TooltipProvider>
           </ThemeProvider>
         </QueryClientProvider>
