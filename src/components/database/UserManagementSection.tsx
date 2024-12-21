@@ -5,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserSearch } from "./UserSearch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { ActivateMemberDialog } from "./ActivateMemberDialog";
 
 interface Member {
   id: string;
@@ -20,8 +21,9 @@ interface Member {
 export function UserManagementSection() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showPending, setShowPending] = useState(false);
+  const [activatingMember, setActivatingMember] = useState<Member | null>(null);
 
-  const { data: members, isLoading } = useQuery({
+  const { data: members, isLoading, refetch } = useQuery({
     queryKey: ['members', searchTerm, showPending],
     queryFn: async () => {
       let query = supabase
@@ -83,6 +85,7 @@ export function UserManagementSection() {
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Password Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -98,6 +101,18 @@ export function UserManagementSection() {
                             {member.password_changed ? 'Updated' : 'Not Updated'}
                           </Badge>
                         </TableCell>
+                        <TableCell>
+                          {!member.member_number && (
+                            <Button
+                              size="sm"
+                              onClick={() => setActivatingMember(member)}
+                              className="flex items-center gap-2"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                              Activate
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -111,6 +126,15 @@ export function UserManagementSection() {
           )}
         </div>
       </CardContent>
+
+      {activatingMember && (
+        <ActivateMemberDialog
+          member={activatingMember}
+          isOpen={true}
+          onClose={() => setActivatingMember(null)}
+          onUpdate={refetch}
+        />
+      )}
     </Card>
   );
 }
