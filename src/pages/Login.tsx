@@ -91,23 +91,22 @@ export default function Login() {
         return;
       }
 
-      // For members without completed profile, redirect to registration
-      navigate('/register', { 
-        state: { 
-          memberId: member.member_number,
-          prefilledData: {
-            fullName: member.full_name,
-            address: member.address,
-            town: member.town,
-            postCode: member.postcode,
-            mobile: member.phone,
-            dob: member.date_of_birth,
-            gender: member.gender,
-            maritalStatus: member.marital_status,
-            email: member.email?.includes('@temp.pwaburton.org') ? '' : member.email
-          }
-        }
+      // For members without completed profile, redirect to profile page
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: member.email,
+        password: password,
       });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      toast({
+        title: "Login successful",
+        description: "Please complete your profile information",
+      });
+      navigate('/admin/profile');
+
     } catch (error) {
       console.error("Member ID login error:", error);
       toast({
