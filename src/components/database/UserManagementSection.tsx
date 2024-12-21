@@ -6,6 +6,7 @@ import { UserSearch } from "./UserSearch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Member {
   id: string;
@@ -58,34 +59,36 @@ export function UserManagementSection() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : members?.length ? (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Member Number</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Password Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {members.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>{member.member_number}</TableCell>
-                      <TableCell>{member.full_name}</TableCell>
-                      <TableCell>{member.email || 'Not set'}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={member.password_changed ? "success" : "destructive"}
-                        >
-                          {member.password_changed ? 'Updated' : 'Not Updated'}
-                        </Badge>
-                      </TableCell>
+            <ScrollArea className="h-[600px] rounded-md border">
+              <div className="rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Member Number</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Password Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {members.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell>{member.member_number}</TableCell>
+                        <TableCell>{member.full_name}</TableCell>
+                        <TableCell>{member.email || 'Not set'}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={member.password_changed ? "success" : "destructive"}
+                          >
+                            {member.password_changed ? 'Updated' : 'Not Updated'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </ScrollArea>
           ) : (
             <div className="text-center py-4 text-muted-foreground">
               No members found
