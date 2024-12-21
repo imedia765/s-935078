@@ -67,45 +67,73 @@ export default function Login() {
         throw new Error("Member ID not found");
       }
 
-      // Check if member has completed registration and profile is updated
-      if (member.profile_updated) {
-        // If profile is updated, sign in and redirect to dashboard
+      // For first time login
+      if (member.first_time_login) {
+        console.log("First time login detected for member:", memberId);
+
+        // Check if member has an email
+        if (!member.email) {
+          throw new Error("Email address required for registration. Please contact support.");
+        }
+
+        // Create new auth user with member's email
+        console.log("Creating new auth user with email:", member.email);
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: member.email,
+          password,
+          options: {
+            data: {
+              member_id: member.id,
+              member_number: member.member_number
+            }
+          }
+        });
+
+        if (signUpError) {
+          console.error("Sign up error:", signUpError);
+          throw signUpError;
+        }
+
+        // Attempt immediate login after signup
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: member.email,
-          password: password,
+          password,
         });
 
         if (signInError) {
-          if (signInError.message === "Email not confirmed") {
-            setShowEmailConfirmation(true);
-            throw new Error("Please check your email for confirmation link");
-          }
+          console.error("Post-signup sign in error:", signInError);
           throw signInError;
         }
 
         toast({
-          title: "Login successful",
-          description: "Welcome back!",
+          title: "First-time login successful",
+          description: "Please complete your profile setup",
         });
-        navigate('/admin');
+        navigate('/admin/profile');
         return;
       }
 
-      // For members without completed profile, redirect to profile page
+      // For returning users
+      if (!member.email) {
+        throw new Error("No email associated with this member");
+      }
+
+      console.log("Attempting login with email:", member.email);
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: member.email,
-        password: password,
+        password,
       });
 
       if (signInError) {
+        console.error("Login error:", signInError);
         throw signInError;
       }
 
       toast({
         title: "Login successful",
-        description: "Please complete your profile information",
+        description: "Welcome back!",
       });
-      navigate('/admin/profile');
+      navigate('/admin');
 
     } catch (error) {
       console.error("Member ID login error:", error);
