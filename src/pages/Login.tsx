@@ -35,8 +35,15 @@ export default function Login() {
       const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
       console.log("Attempting login with temp email:", tempEmail);
 
-      // Try to sign up first (in case this is first time)
-      try {
+      // Attempt to sign in directly first
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: tempEmail,
+        password: password,
+      });
+
+      // If sign in fails, try to sign up
+      if (signInError && signInError.message.includes('Invalid login credentials')) {
+        console.log("Sign in failed, attempting signup");
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: tempEmail,
           password: password,
@@ -45,22 +52,19 @@ export default function Login() {
         if (signUpError && !signUpError.message.includes('User already registered')) {
           throw signUpError;
         }
-      } catch (signUpError) {
-        console.log("Sign up attempt (expected to fail if user exists):", signUpError);
+
+        // Try signing in again after signup attempt
+        const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+          email: tempEmail,
+          password: password,
+        });
+
+        if (retryError) throw retryError;
+        if (retryData) data = retryData;
       }
 
-      // Now attempt to sign in
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: tempEmail,
-        password: password,
-      });
-
-      if (signInError) {
-        console.error("Sign in error:", signInError);
-        if (signInError.message.includes('Invalid login credentials')) {
-          throw new Error("Invalid Member ID or password. Please check your credentials.");
-        }
-        throw signInError;
+      if (!data?.user) {
+        throw new Error("Authentication failed. Please try again.");
       }
 
       console.log("Login successful:", data);
