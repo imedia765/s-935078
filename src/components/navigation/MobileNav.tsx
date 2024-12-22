@@ -1,6 +1,6 @@
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, Link2Icon, InfoIcon, Stethoscope } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface MobileNavProps {
@@ -33,23 +33,26 @@ export const MobileNav = ({ isLoggedIn, handleLogout, open, setOpen }: MobileNav
           </div>
           <Button
             variant="outline"
-            className="justify-start"
+            className="justify-start gap-2"
             onClick={() => handleNavigation("/terms")}
           >
+            <Link2Icon className="h-4 w-4" />
             Terms
           </Button>
           <Button
             variant="outline"
-            className="justify-start"
+            className="justify-start gap-2"
             onClick={() => handleNavigation("/collector-responsibilities")}
           >
+            <InfoIcon className="h-4 w-4" />
             Collector Info
           </Button>
           <Button
             variant="outline"
-            className="justify-start"
+            className="justify-start gap-2"
             onClick={() => handleNavigation("/medical-examiner-process")}
           >
+            <Stethoscope className="h-4 w-4" />
             Medical Process
           </Button>
           {isLoggedIn ? (
