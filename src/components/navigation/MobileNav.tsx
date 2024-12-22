@@ -31,6 +31,27 @@ export const MobileNav = ({ isLoggedIn, handleLogout, open, setOpen }: MobileNav
           <div className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-4">
             Menu
           </div>
+          <Button
+            variant="outline"
+            className="justify-start"
+            onClick={() => handleNavigation("/terms")}
+          >
+            Terms
+          </Button>
+          <Button
+            variant="outline"
+            className="justify-start"
+            onClick={() => handleNavigation("/collector-responsibilities")}
+          >
+            Collector Info
+          </Button>
+          <Button
+            variant="outline"
+            className="justify-start"
+            onClick={() => handleNavigation("/medical-examiner-process")}
+          >
+            Medical Process
+          </Button>
           {isLoggedIn ? (
             <>
               <Button

@@ -145,11 +145,24 @@ export function NavigationMenu() {
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container flex h-14 items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            PWA Burton
-          </span>
-        </Link>
+        <div className="flex items-center space-x-4">
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              PWA Burton
+            </span>
+          </Link>
+          <div className="hidden md:flex items-center space-x-4">
+            <Link to="/terms" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Terms
+            </Link>
+            <Link to="/collector-responsibilities" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Collector Info
+            </Link>
+            <Link to="/medical-examiner-process" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Medical Process
+            </Link>
+          </div>
+        </div>
 
         <DesktopNav isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
         
