@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -25,9 +23,9 @@ export default function Login() {
       // First, get the member details
       const { data: member, error: memberError } = await supabase
         .from('members')
-        .select('id, email, password_changed, member_number, default_password_hash')
+        .select('id, email, password_changed, member_number')
         .eq('member_number', cleanMemberId)
-        .maybeSingle();
+        .single();
 
       if (memberError) {
         console.error("Member lookup error:", memberError);
@@ -41,64 +39,25 @@ export default function Login() {
       const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
       console.log("Attempting login with temp email:", tempEmail);
 
-      let authResponse;
+      // Attempt to sign in
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: tempEmail,
+        password: password,
+      });
 
-      try {
-        // First attempt to sign in
-        authResponse = await supabase.auth.signInWithPassword({
-          email: tempEmail,
-          password: password,
-        });
-
-        if (authResponse.error) {
-          console.log("Sign in failed:", authResponse.error.message);
-          
-          // If login fails, try to sign up
-          if (authResponse.error.message.includes('Invalid login credentials')) {
-            console.log("Attempting signup for new user");
-            const signUpResponse = await supabase.auth.signUp({
-              email: tempEmail,
-              password: password,
-            });
-
-            if (signUpResponse.error && !signUpResponse.error.message.includes('User already registered')) {
-              throw signUpResponse.error;
-            }
-
-            // Try signing in again after signup
-            authResponse = await supabase.auth.signInWithPassword({
-              email: tempEmail,
-              password: password,
-            });
-          }
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        if (signInError.message.includes('Invalid login credentials')) {
+          throw new Error("Invalid Member ID or password. Please check your credentials and try again.");
         }
-      } catch (authError) {
-        console.error("Authentication error:", authError);
-        throw new Error("Authentication failed. Please try again.");
+        throw signInError;
       }
 
-      if (authResponse.error || !authResponse.data?.user) {
-        console.error("Final auth error:", authResponse.error);
-        throw new Error("Authentication failed. Please check your credentials and try again.");
+      if (!authData.user) {
+        throw new Error("Login failed. Please try again.");
       }
 
-      console.log("Login successful:", authResponse.data);
-
-      // Update auth_user_id if not set
-      if (authResponse.data.user && member.id) {
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ 
-            auth_user_id: authResponse.data.user.id,
-            email_verified: true,
-            profile_updated: true
-          })
-          .eq('id', member.id);
-
-        if (updateError) {
-          console.error("Error updating member:", updateError);
-        }
-      }
+      console.log("Login successful:", authData);
 
       toast({
         title: "Login successful",
@@ -139,7 +98,7 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Input
+              <input
                 id="memberId"
                 name="memberId"
                 type="text"
@@ -148,11 +107,11 @@ export default function Login() {
                 onChange={(e) => setMemberId(e.target.value.toUpperCase())}
                 required
                 disabled={isLoading}
-                className="uppercase"
+                className="w-full px-3 py-2 border rounded-md uppercase bg-background"
               />
             </div>
             <div className="space-y-2">
-              <Input
+              <input
                 id="password"
                 name="password"
                 type="password"
@@ -161,11 +120,16 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                className="w-full px-3 py-2 border rounded-md bg-background"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md transition-colors"
+            >
               {isLoading ? "Logging in..." : "Login"}
-            </Button>
+            </button>
           </form>
         </CardContent>
       </Card>
