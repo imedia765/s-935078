@@ -1,27 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Menu, X, Link2Icon, InfoIcon, Stethoscope, LogIn, LogOut, User } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, Link2Icon, InfoIcon, Stethoscope } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 
-interface MobileNavProps {
-  isLoggedIn: boolean;
-  handleLogout: () => Promise<void>;
-}
-
-export const MobileNav = ({ isLoggedIn, handleLogout }: MobileNavProps) => {
-  const navigate = useNavigate();
+export const MobileNav = () => {
   const [open, setOpen] = useState(false);
-
-  const handleNavigation = (path: string) => {
-    setOpen(false);
-    navigate(path);
-  };
-
-  const handleLogoutClick = async () => {
-    await handleLogout();
-    setOpen(false);
-  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -46,72 +30,36 @@ export const MobileNav = ({ isLoggedIn, handleLogout }: MobileNavProps) => {
             <Button
               variant="outline"
               className="w-full justify-start gap-2"
-              onClick={() => handleNavigation("/terms")}
+              asChild
             >
-              <Link2Icon className="h-4 w-4" />
-              Terms
+              <Link to="/terms" onClick={() => setOpen(false)}>
+                <Link2Icon className="h-4 w-4" />
+                Terms
+              </Link>
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start gap-2"
-              onClick={() => handleNavigation("/collector-responsibilities")}
+              asChild
             >
-              <InfoIcon className="h-4 w-4" />
-              Collector Info
+              <Link to="/collector-responsibilities" onClick={() => setOpen(false)}>
+                <InfoIcon className="h-4 w-4" />
+                Collector Info
+              </Link>
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start gap-2"
-              onClick={() => handleNavigation("/medical-examiner-process")}
+              asChild
             >
-              <Stethoscope className="h-4 w-4" />
-              Medical Process
+              <Link to="/medical-examiner-process" onClick={() => setOpen(false)}>
+                <Stethoscope className="h-4 w-4" />
+                Medical Process
+              </Link>
             </Button>
-          </div>
-
-          <div className="pt-4 border-t space-y-3">
-            {isLoggedIn ? (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => handleNavigation("/admin")}
-                >
-                  <User className="h-4 w-4" />
-                  Admin Panel
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={handleLogoutClick}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => handleNavigation("/login")}
-                >
-                  <LogIn className="h-4 w-4" />
-                  Login
-                </Button>
-                <Button
-                  variant="default"
-                  className="w-full justify-start gap-2"
-                  onClick={() => handleNavigation("/register")}
-                >
-                  <User className="h-4 w-4" />
-                  Register
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </SheetContent>
     </Sheet>
   );
-};
+}
