@@ -8,11 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 export const PasswordChangeForm = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     
     if (newPassword !== confirmPassword) {
       toast({
@@ -20,40 +23,71 @@ export const PasswordChangeForm = () => {
         description: "Please make sure your passwords match",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+      // First get the current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        throw new Error("Please log in again to change your password");
+      }
+
+      if (!session) {
+        throw new Error("No active session found. Please log in again.");
+      }
+
+      // Update the password
+      const { data: userData, error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
       });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Update the password_changed flag in members table
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        const { error: updateError } = await supabase
+      // Update the member record
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .select('id')
+        .eq('email', session.user.email)
+        .maybeSingle();
+
+      if (memberError) throw memberError;
+
+      if (memberData) {
+        const { error: updateMemberError } = await supabase
           .from('members')
-          .update({ password_changed: true })
-          .eq('email', user.email);
+          .update({ 
+            auth_user_id: session.user.id,
+            password_changed: true,
+            first_time_login: false,
+            phone: phoneNumber,
+            profile_updated: true,
+            email_verified: true
+          })
+          .eq('id', memberData.id);
 
-        if (updateError) throw updateError;
+        if (updateMemberError) throw updateMemberError;
       }
 
       toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully",
+        title: "Profile updated",
+        description: "Your password and contact details have been updated successfully",
       });
       
-      navigate("/admin");
+      // Redirect to admin/profile after password change
+      navigate("/admin/profile");
     } catch (error) {
-      console.error("Password change error:", error);
+      console.error("Profile update error:", error);
       toast({
-        title: "Password change failed",
-        description: error instanceof Error ? error.message : "Failed to update password",
+        title: "Update failed",
+        description: error instanceof Error ? error.message : "Failed to update profile",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -67,6 +101,7 @@ export const PasswordChangeForm = () => {
           onChange={(e) => setNewPassword(e.target.value)}
           required
           minLength={6}
+          disabled={isLoading}
         />
       </div>
       <div className="space-y-2">
@@ -77,10 +112,20 @@ export const PasswordChangeForm = () => {
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
           minLength={6}
+          disabled={isLoading}
         />
       </div>
-      <Button type="submit" className="w-full">
-        Change Password
+      <div className="space-y-2">
+        <Input
+          type="tel"
+          placeholder="Contact Number"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+          disabled={isLoading}
+        />
+      </div>
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? "Updating Profile..." : "Update Profile"}
       </Button>
     </form>
   );

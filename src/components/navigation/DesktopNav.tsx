@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 import { ThemeToggle } from "../ThemeToggle";
-import { useNavigate } from "react-router-dom";
 
 interface DesktopNavProps {
   isLoggedIn: boolean;
@@ -9,22 +8,11 @@ interface DesktopNavProps {
 }
 
 export const DesktopNav = ({ isLoggedIn, handleLogout }: DesktopNavProps) => {
-  const navigate = useNavigate();
-
-  const onLogoutClick = async () => {
-    try {
-      console.log("DesktopNav: Initiating logout...");
-      await handleLogout();
-    } catch (error) {
-      console.error("Desktop logout error:", error);
-    }
-  };
-
   return (
     <div className="hidden md:flex items-center space-x-2">
       {isLoggedIn ? (
         <>
-          <Button variant="outline" size="sm" onClick={onLogoutClick}>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
             Logout
           </Button>
           <Link to="/admin">
@@ -34,18 +22,18 @@ export const DesktopNav = ({ isLoggedIn, handleLogout }: DesktopNavProps) => {
           </Link>
         </>
       ) : (
-        <>
-          <Link to="/login">
-            <Button variant="outline" size="sm">
-              Login
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button variant="default" size="sm">
-              Register
-            </Button>
-          </Link>
-        </>
+        <Link to="/login">
+          <Button variant="outline" size="sm">
+            Login
+          </Button>
+        </Link>
+      )}
+      {!isLoggedIn && (
+        <Link to="/register">
+          <Button variant="default" size="sm">
+            Register
+          </Button>
+        </Link>
       )}
       <ThemeToggle />
     </div>

@@ -8,7 +8,6 @@ import { SupportSection } from "@/components/profile/SupportSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { InfoCard } from "@/components/InfoCard";
 
 export default function Profile() {
   const [searchDate, setSearchDate] = useState("");
@@ -25,6 +24,7 @@ export default function Profile() {
         navigate("/login");
         return;
       }
+      console.log("Current session:", session);
       setUserEmail(session.user.email);
     };
 
@@ -34,6 +34,7 @@ export default function Profile() {
       if (!session) {
         navigate("/login");
       } else {
+        console.log("Auth state changed:", event, session);
         setUserEmail(session.user.email);
       }
     });
@@ -50,34 +51,53 @@ export default function Profile() {
     queryFn: async () => {
       console.log('Fetching profile for email:', userEmail);
       
-      const { data, error } = await supabase
-        .from('members')
-        .select('*, family_members(*)')
-        .eq('email', userEmail)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('members')
+          .select(`
+            *,
+            family_members (
+              id,
+              name,
+              relationship,
+              date_of_birth,
+              gender
+            )
+          `)
+          .eq('email', userEmail)
+          .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast({
+            title: "Error fetching profile",
+            description: error.message,
+            variant: "destructive",
+          });
+          return null;
+        }
+
+        if (!data) {
+          console.log('No profile found for email:', userEmail);
+          toast({
+            title: "Profile not found",
+            description: "No member profile found for this email address.",
+            variant: "destructive",
+          });
+          return null;
+        }
+
+        console.log('Found profile:', data);
+        return data;
+      } catch (error) {
+        console.error('Error in profile fetch:', error);
         toast({
-          title: "Error fetching profile",
-          description: error.message,
+          title: "Error",
+          description: "An unexpected error occurred while fetching your profile.",
           variant: "destructive",
         });
         return null;
       }
-
-      if (!data) {
-        console.log('No profile found for email:', userEmail);
-        toast({
-          title: "Profile not found",
-          description: "No member profile found for this email address.",
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      console.log('Found profile:', data);
-      return data;
     },
   });
 
@@ -114,21 +134,6 @@ export default function Profile() {
       <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
         Member Profile
       </h1>
-
-      {memberData && (
-        <InfoCard title="Member Information">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Member ID</p>
-              <p className="text-lg font-semibold">{memberData.member_number}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Collector</p>
-              <p className="text-lg font-semibold">{memberData.collector || "Not assigned"}</p>
-            </div>
-          </div>
-        </InfoCard>
-      )}
 
       <div className="space-y-6">
         <AccountSettingsSection memberData={memberData} />

@@ -4,7 +4,7 @@ import { MemberIdLoginForm } from "./MemberIdLoginForm";
 
 interface LoginTabsProps {
   onEmailSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
-  onMemberIdSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  onMemberIdSubmit: (memberId: string, password: string) => Promise<void>;
   isLoading?: boolean;
 }
 
