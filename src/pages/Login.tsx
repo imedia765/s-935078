@@ -18,21 +18,24 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    console.log("Login attempt with:", { identifier });
+    const cleanIdentifier = identifier.trim().toUpperCase();
+    console.log("Login attempt with:", { identifier: cleanIdentifier });
 
     try {
-      // Check if input is an email or member ID
-      const isEmail = identifier.includes('@') && !identifier.includes('@temp.pwaburton.org');
+      const isEmail = cleanIdentifier.includes('@') && !cleanIdentifier.includes('@temp.pwaburton.org');
       
       if (isEmail) {
-        // Check if member has updated their password
-        const { data: member } = await supabase
+        // Email login flow
+        const { data: member, error: memberError } = await supabase
           .from('members')
-          .select('password_changed, email_verified')
-          .eq('email', identifier)
-          .single();
+          .select('id, password_changed, email_verified')
+          .eq('email', cleanIdentifier)
+          .maybeSingle();
 
-        if (!member?.password_changed) {
+        if (memberError) throw memberError;
+        if (!member) throw new Error("No member found with this email address.");
+        
+        if (!member.password_changed) {
           toast({
             title: "Password not updated",
             description: "Please use the 'First Time Login' button below if you haven't changed your password yet.",
@@ -41,28 +44,69 @@ export default function Login() {
           setIsLoading(false);
           return;
         }
+
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: cleanIdentifier,
+          password,
+        });
+
+        if (signInError) throw signInError;
+        console.log("Email login successful:", data);
+
+      } else {
+        // Member ID login flow
+        const { data: member, error: memberError } = await supabase
+          .from('members')
+          .select('id, email, password_changed, member_number')
+          .eq('member_number', cleanIdentifier)
+          .maybeSingle();
+
+        if (memberError) throw memberError;
+        if (!member) throw new Error("Invalid Member ID. Please check your credentials.");
+
+        const tempEmail = `${cleanIdentifier.toLowerCase()}@temp.pwaburton.org`;
+        console.log("Attempting login with temp email:", tempEmail);
+
+        // For first-time login or if password hasn't been changed, use member ID as password
+        const shouldUseMemberIdAsPassword = !member.password_changed;
+        const loginPassword = shouldUseMemberIdAsPassword ? cleanIdentifier : password;
+
+        console.log("Login attempt details:", {
+          email: tempEmail,
+          isFirstTimeLogin: shouldUseMemberIdAsPassword,
+        });
+
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: tempEmail,
+          password: loginPassword,
+        });
+
+        if (signInError) {
+          console.error("Sign in error:", signInError);
+          if (signInError.message.includes('Invalid login credentials')) {
+            throw new Error(
+              shouldUseMemberIdAsPassword 
+                ? "For first-time login, use your Member ID as both username and password."
+                : "Invalid Member ID or password. Please check your credentials."
+            );
+          }
+          throw signInError;
+        }
+
+        console.log("Member ID login successful:", data);
       }
-
-      // Attempt login
-      const { error } = await supabase.auth.signInWithPassword({
-        email: isEmail ? identifier : `${identifier}@temp.pwaburton.org`,
-        password: password,
-      });
-
-      if (error) throw error;
 
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
       
-      // Redirect to admin/profile after successful login
       navigate("/admin/profile");
     } catch (error) {
       console.error("Login error:", error);
       toast({
         title: "Login failed",
-        description: "Invalid credentials. Please check your email/member ID and password.",
+        description: error instanceof Error ? error.message : "Invalid credentials. Please check your email/member ID and password.",
         variant: "destructive",
       });
     } finally {

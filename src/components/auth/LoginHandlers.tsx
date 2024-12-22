@@ -16,7 +16,7 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
       // First check if this is a valid member email
       const { data: memberData, error: memberError } = await supabase
         .from('members')
-        .select('id, email_verified, profile_updated, password_changed')
+        .select('id, email_verified, profile_updated, password_changed, auth_user_id')
         .eq('email', email)
         .maybeSingle();
 
@@ -41,6 +41,22 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
           throw new Error("Invalid email or password. Please try again.");
         }
         throw error;
+      }
+
+      // Update auth_user_id if not set
+      if (!memberData.auth_user_id && data.user) {
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ 
+            auth_user_id: data.user.id,
+            email_verified: true,
+            profile_updated: true
+          })
+          .eq('id', memberData.id);
+
+        if (updateError) {
+          console.error('Error updating auth_user_id:', updateError);
+        }
       }
 
       console.log("Login successful:", data);
@@ -78,7 +94,7 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
       // First, get the member details
       const { data: member, error: memberError } = await supabase
         .from('members')
-        .select('email, default_password_hash, password_changed')
+        .select('id, email, default_password_hash, password_changed, auth_user_id')
         .eq('member_number', memberId)
         .maybeSingle();
 
@@ -96,7 +112,7 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
       }
 
       // Attempt to sign in with the email
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: member.email,
         password: password,
       });
@@ -107,6 +123,22 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
           throw new Error("Invalid Member ID or password. Please try again.");
         }
         throw signInError;
+      }
+
+      // Update auth_user_id if not set
+      if (!member.auth_user_id && data.user) {
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ 
+            auth_user_id: data.user.id,
+            email_verified: true,
+            profile_updated: true
+          })
+          .eq('id', member.id);
+
+        if (updateError) {
+          console.error('Error updating auth_user_id:', updateError);
+        }
       }
 
       // Check if password needs to be changed
@@ -132,35 +164,8 @@ export const useLoginHandlers = (setIsLoggedIn: (value: boolean) => void) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    console.log("Google login attempt started");
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + "/admin/profile",
-        },
-      });
-
-      if (error) throw error;
-      
-      toast({
-        title: "Redirecting to Google",
-        description: "Please wait while we redirect you to Google sign-in...",
-      });
-    } catch (error) {
-      console.error("Google login error:", error);
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred during Google login",
-        variant: "destructive",
-      });
-    }
-  };
-
   return {
     handleEmailSubmit,
     handleMemberIdSubmit,
-    handleGoogleLogin,
   };
 };

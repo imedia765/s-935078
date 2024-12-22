@@ -16,6 +16,7 @@ interface Member {
   member_number: string;
   password_changed: boolean;
   email: string | null;
+  status: string;
 }
 
 export function UserManagementSection() {
@@ -102,7 +103,7 @@ export function UserManagementSection() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {!member.member_number && (
+                          {(!member.member_number || member.status === 'pending') && (
                             <Button
                               size="sm"
                               onClick={() => setActivatingMember(member)}

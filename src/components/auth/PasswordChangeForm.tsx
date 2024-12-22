@@ -41,23 +41,36 @@ export const PasswordChangeForm = () => {
       }
 
       // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
+      const { data: userData, error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
 
       if (updateError) throw updateError;
 
-      // Update the password_changed flag and phone number in members table
-      const { error: memberUpdateError } = await supabase
+      // Update the member record
+      const { data: memberData, error: memberError } = await supabase
         .from('members')
-        .update({ 
-          password_changed: true,
-          first_time_login: false,
-          phone: phoneNumber
-        })
-        .eq('email', session.user.email);
+        .select('id')
+        .eq('email', session.user.email)
+        .maybeSingle();
 
-      if (memberUpdateError) throw memberUpdateError;
+      if (memberError) throw memberError;
+
+      if (memberData) {
+        const { error: updateMemberError } = await supabase
+          .from('members')
+          .update({ 
+            auth_user_id: session.user.id,
+            password_changed: true,
+            first_time_login: false,
+            phone: phoneNumber,
+            profile_updated: true,
+            email_verified: true
+          })
+          .eq('id', memberData.id);
+
+        if (updateMemberError) throw updateMemberError;
+      }
 
       toast({
         title: "Profile updated",
