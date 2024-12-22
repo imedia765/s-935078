@@ -29,52 +29,67 @@ export default function Login() {
         .eq('member_number', cleanMemberId)
         .maybeSingle();
 
-      if (memberError) throw memberError;
-      if (!member) throw new Error("Invalid Member ID. Please check your credentials.");
+      if (memberError) {
+        console.error("Member lookup error:", memberError);
+        throw new Error("Error checking member status");
+      }
+
+      if (!member) {
+        throw new Error("Invalid Member ID. Please check your credentials.");
+      }
 
       const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
       console.log("Attempting login with temp email:", tempEmail);
 
-      // Attempt to sign in directly first
-      let { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: tempEmail,
-        password: password,
-      });
+      let authResponse;
 
-      // If sign in fails, try to sign up
-      if (signInError && signInError.message.includes('Invalid login credentials')) {
-        console.log("Sign in failed, attempting signup");
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      try {
+        // First attempt to sign in
+        authResponse = await supabase.auth.signInWithPassword({
           email: tempEmail,
           password: password,
         });
-        
-        if (signUpError && !signUpError.message.includes('User already registered')) {
-          throw signUpError;
+
+        if (authResponse.error) {
+          console.log("Sign in failed:", authResponse.error.message);
+          
+          // If login fails, try to sign up
+          if (authResponse.error.message.includes('Invalid login credentials')) {
+            console.log("Attempting signup for new user");
+            const signUpResponse = await supabase.auth.signUp({
+              email: tempEmail,
+              password: password,
+            });
+
+            if (signUpResponse.error && !signUpResponse.error.message.includes('User already registered')) {
+              throw signUpResponse.error;
+            }
+
+            // Try signing in again after signup
+            authResponse = await supabase.auth.signInWithPassword({
+              email: tempEmail,
+              password: password,
+            });
+          }
         }
-
-        // Try signing in again after signup attempt
-        const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-          email: tempEmail,
-          password: password,
-        });
-
-        if (retryError) throw retryError;
-        if (retryData) data = retryData;
-      }
-
-      if (!data?.user) {
+      } catch (authError) {
+        console.error("Authentication error:", authError);
         throw new Error("Authentication failed. Please try again.");
       }
 
-      console.log("Login successful:", data);
+      if (authResponse.error || !authResponse.data?.user) {
+        console.error("Final auth error:", authResponse.error);
+        throw new Error("Authentication failed. Please check your credentials and try again.");
+      }
+
+      console.log("Login successful:", authResponse.data);
 
       // Update auth_user_id if not set
-      if (data.user && member.id) {
+      if (authResponse.data.user && member.id) {
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
-            auth_user_id: data.user.id,
+            auth_user_id: authResponse.data.user.id,
             email_verified: true,
             profile_updated: true
           })
