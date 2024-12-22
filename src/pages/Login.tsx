@@ -36,7 +36,7 @@ export default function Login() {
       console.log("Attempting login with temp email:", tempEmail);
 
       // Attempt to sign in directly first
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      let { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: tempEmail,
         password: password,
       });
