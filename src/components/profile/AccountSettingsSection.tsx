@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { NextOfKinSection } from "@/components/registration/NextOfKinSection";
 import { SpousesSection } from "@/components/registration/SpousesSection";
 import { DependantsSection } from "@/components/registration/DependantsSection";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Icons } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/use-toast";
 import { Member } from "@/components/members/types";
@@ -26,19 +25,19 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
   };
 
   return (
-    <Collapsible>
-      <CollapsibleTrigger asChild>
-        <Button 
-          variant="default"
-          className="flex items-center gap-2 w-full justify-between bg-primary hover:bg-primary/90"
-        >
-          <div className="flex items-center gap-2">
-            <Cog className="h-4 w-4" />
-            <span>Profile Settings</span>
-          </div>
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-6 pt-4">
+    <div className="space-y-6">
+      <Button 
+        variant="default"
+        className="flex items-center gap-2 w-full justify-between bg-primary hover:bg-primary/90"
+        disabled
+      >
+        <div className="flex items-center gap-2">
+          <Cog className="h-4 w-4" />
+          <span>Profile Settings</span>
+        </div>
+      </Button>
+
+      <div className="space-y-6 pt-4">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
@@ -134,7 +133,7 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
         <div className="flex justify-end">
           <Button className="bg-green-500 hover:bg-green-600">Update Profile</Button>
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      </div>
+    </div>
   );
 };
