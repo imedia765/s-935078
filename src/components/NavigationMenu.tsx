@@ -2,6 +2,8 @@ import { ThemeToggle } from "./ThemeToggle";
 import { NavLogo } from "./navigation/NavLogo";
 import { NavLinks } from "./navigation/NavLinks";
 import { MobileNav } from "./navigation/MobileNav";
+import { Button } from "./ui/button";
+import { Link } from "react-router-dom";
 
 export function NavigationMenu() {
   return (
@@ -14,6 +16,16 @@ export function NavigationMenu() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-2">
+          <Link to="/register">
+            <Button variant="default" size="sm">
+              Register
+            </Button>
+          </Link>
+          <Link to="/admin">
+            <Button variant="outline" size="sm">
+              Admin Panel
+            </Button>
+          </Link>
           <ThemeToggle />
         </div>
 
