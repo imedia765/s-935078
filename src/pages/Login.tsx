@@ -22,10 +22,10 @@ export default function Login() {
     console.log("Login attempt with member ID:", cleanMemberId);
 
     try {
-      // Member ID login flow
+      // First, get the member details
       const { data: member, error: memberError } = await supabase
         .from('members')
-        .select('id, email, password_changed, member_number')
+        .select('id, email, password_changed, member_number, default_password_hash')
         .eq('member_number', cleanMemberId)
         .maybeSingle();
 
@@ -35,6 +35,21 @@ export default function Login() {
       const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
       console.log("Attempting login with temp email:", tempEmail);
 
+      // Try to sign up first (in case this is first time)
+      try {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: tempEmail,
+          password: password,
+        });
+        
+        if (signUpError && !signUpError.message.includes('User already registered')) {
+          throw signUpError;
+        }
+      } catch (signUpError) {
+        console.log("Sign up attempt (expected to fail if user exists):", signUpError);
+      }
+
+      // Now attempt to sign in
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: tempEmail,
         password: password,
@@ -48,14 +63,34 @@ export default function Login() {
         throw signInError;
       }
 
-      console.log("Member ID login successful:", data);
+      console.log("Login successful:", data);
+
+      // Update auth_user_id if not set
+      if (data.user && member.id) {
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ 
+            auth_user_id: data.user.id,
+            email_verified: true,
+            profile_updated: true
+          })
+          .eq('id', member.id);
+
+        if (updateError) {
+          console.error("Error updating member:", updateError);
+        }
+      }
 
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
       
-      navigate("/admin/profile");
+      if (!member.password_changed) {
+        navigate("/change-password");
+      } else {
+        navigate("/admin/profile");
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast({
