@@ -17,7 +17,7 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     const cleanMemberId = memberId.toUpperCase().trim();
-    console.log("Login attempt with member ID:", cleanMemberId);
+    console.log("Starting login attempt with member ID:", cleanMemberId);
 
     try {
       // First, get the member details
@@ -25,17 +25,21 @@ export default function Login() {
         .from('members')
         .select('id, email, password_changed, member_number')
         .eq('member_number', cleanMemberId)
-        .single();
+        .maybeSingle();
 
       if (memberError) {
         console.error("Member lookup error:", memberError);
-        throw new Error("Error checking member status");
+        throw new Error("Error checking member status. Please try again later.");
       }
 
       if (!member) {
-        throw new Error("Invalid Member ID. Please check your credentials.");
+        console.error("No member found with ID:", cleanMemberId);
+        throw new Error("Invalid Member ID. Please check your credentials and try again.");
       }
 
+      console.log("Member found:", { memberId: member.member_number, hasEmail: !!member.email });
+
+      // Generate temp email for authentication
       const tempEmail = `${cleanMemberId.toLowerCase()}@temp.pwaburton.org`;
       console.log("Attempting login with temp email:", tempEmail);
 
@@ -57,7 +61,7 @@ export default function Login() {
         throw new Error("Login failed. Please try again.");
       }
 
-      console.log("Login successful:", authData);
+      console.log("Login successful, user:", authData.user.id);
 
       toast({
         title: "Login successful",
@@ -65,8 +69,10 @@ export default function Login() {
       });
       
       if (!member.password_changed) {
+        console.log("Redirecting to change password page");
         navigate("/change-password");
       } else {
+        console.log("Redirecting to profile page");
         navigate("/admin/profile");
       }
     } catch (error) {
@@ -115,7 +121,7 @@ export default function Login() {
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Password"
+                placeholder="Password (same as Member ID)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
