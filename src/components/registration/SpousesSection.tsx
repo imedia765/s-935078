@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -16,104 +16,112 @@ interface SpousesSectionProps {
   defaultOpen?: boolean;
 }
 
-export const SpousesSection = ({ memberId, defaultOpen = true }: SpousesSectionProps) => {
-  const [spouses, setSpouses] = useState<Spouse[]>([]);
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+export interface SpousesSectionRef {
+  saveSpouses: () => Promise<void>;
+}
 
-  // Fetch existing spouses on component mount
-  useEffect(() => {
-    const fetchSpouses = async () => {
-      if (!memberId) return;
+export const SpousesSection = forwardRef<SpousesSectionRef, SpousesSectionProps>(
+  ({ memberId, defaultOpen = true }, ref) => {
+    const [spouses, setSpouses] = useState<Spouse[]>([]);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
 
-      const { data, error } = await supabase
-        .from('family_members')
-        .select('id, name, date_of_birth')
-        .eq('member_id', memberId)
-        .eq('relationship', 'spouse');
+    // Fetch existing spouses on component mount
+    useEffect(() => {
+      const fetchSpouses = async () => {
+        if (!memberId) return;
 
-      if (error) {
-        console.error('Error fetching spouses:', error);
-        return;
-      }
+        const { data, error } = await supabase
+          .from('family_members')
+          .select('id, name, date_of_birth')
+          .eq('member_id', memberId)
+          .eq('relationship', 'spouse');
 
-      if (data) {
-        setSpouses(data.map(spouse => ({
-          id: spouse.id,
-          name: spouse.name,
-          dateOfBirth: spouse.date_of_birth || ''
-        })));
-      }
+        if (error) {
+          console.error('Error fetching spouses:', error);
+          return;
+        }
+
+        if (data) {
+          setSpouses(data.map(spouse => ({
+            id: spouse.id,
+            name: spouse.name,
+            dateOfBirth: spouse.date_of_birth || ''
+          })));
+        }
+      };
+
+      fetchSpouses();
+    }, [memberId]);
+
+    const addSpouse = () => {
+      setSpouses([...spouses, { name: "", dateOfBirth: "" }]);
+      setIsOpen(true);
     };
 
-    fetchSpouses();
-  }, [memberId]);
-
-  const addSpouse = () => {
-    setSpouses([...spouses, { name: "", dateOfBirth: "" }]);
-    setIsOpen(true);
-  };
-
-  const removeSpouse = async (index: number) => {
-    const spouse = spouses[index];
-    if (spouse.id && memberId) {
-      // Delete from database if it exists
-      const { error } = await supabase
-        .from('family_members')
-        .delete()
-        .eq('id', spouse.id);
-
-      if (error) {
-        console.error('Error deleting spouse:', error);
-        return;
-      }
-    }
-
-    setSpouses(spouses.filter((_, i) => i !== index));
-  };
-
-  const updateSpouse = (index: number, field: keyof Spouse, value: string) => {
-    const newSpouses = [...spouses];
-    newSpouses[index] = { ...newSpouses[index], [field]: value };
-    setSpouses(newSpouses);
-  };
-
-  const saveSpouses = async () => {
-    if (!memberId) return;
-
-    for (const spouse of spouses) {
-      if (spouse.id) {
-        // Update existing spouse
+    const removeSpouse = async (index: number) => {
+      const spouse = spouses[index];
+      if (spouse.id && memberId) {
         const { error } = await supabase
           .from('family_members')
-          .update({
-            name: spouse.name,
-            date_of_birth: spouse.dateOfBirth || null,
-            updated_at: new Date().toISOString()
-          })
+          .delete()
           .eq('id', spouse.id);
 
         if (error) {
-          console.error('Error updating spouse:', error);
-        }
-      } else {
-        // Insert new spouse
-        const { error } = await supabase
-          .from('family_members')
-          .insert({
-            member_id: memberId,
-            name: spouse.name,
-            date_of_birth: spouse.dateOfBirth || null,
-            relationship: 'spouse',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) {
-          console.error('Error inserting spouse:', error);
+          console.error('Error deleting spouse:', error);
+          return;
         }
       }
-    }
-  };
+
+      setSpouses(spouses.filter((_, i) => i !== index));
+    };
+
+    const updateSpouse = (index: number, field: keyof Spouse, value: string) => {
+      const newSpouses = [...spouses];
+      newSpouses[index] = { ...newSpouses[index], [field]: value };
+      setSpouses(newSpouses);
+    };
+
+    const saveSpouses = async () => {
+      if (!memberId) return;
+
+      for (const spouse of spouses) {
+        if (spouse.id) {
+          // Update existing spouse
+          const { error } = await supabase
+            .from('family_members')
+            .update({
+              name: spouse.name,
+              date_of_birth: spouse.dateOfBirth || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', spouse.id);
+
+          if (error) {
+            console.error('Error updating spouse:', error);
+          }
+        } else {
+          // Insert new spouse
+          const { error } = await supabase
+            .from('family_members')
+            .insert({
+              member_id: memberId,
+              name: spouse.name,
+              date_of_birth: spouse.dateOfBirth || null,
+              relationship: 'spouse',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (error) {
+            console.error('Error inserting spouse:', error);
+          }
+        }
+      }
+    };
+
+    useImperativeHandle(ref, () => ({
+      saveSpouses
+    }));
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-4">
@@ -179,4 +187,7 @@ export const SpousesSection = ({ memberId, defaultOpen = true }: SpousesSectionP
       </CollapsibleContent>
     </Collapsible>
   );
-};
+  }
+);
+
+SpousesSection.displayName = "SpousesSection";

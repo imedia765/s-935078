@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -19,109 +19,117 @@ interface DependantsSectionProps {
   defaultOpen?: boolean;
 }
 
-export const DependantsSection = ({ memberId, defaultOpen = true }: DependantsSectionProps) => {
-  const [dependants, setDependants] = useState<Dependant[]>([]);
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+export interface DependantsSectionRef {
+  saveDependants: () => Promise<void>;
+}
 
-  // Fetch existing dependants on component mount
-  useEffect(() => {
-    const fetchDependants = async () => {
-      if (!memberId) return;
+export const DependantsSection = forwardRef<DependantsSectionRef, DependantsSectionProps>(
+  ({ memberId, defaultOpen = true }, ref) => {
+    const [dependants, setDependants] = useState<Dependant[]>([]);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
 
-      const { data, error } = await supabase
-        .from('family_members')
-        .select('id, name, date_of_birth, gender, relationship')
-        .eq('member_id', memberId)
-        .neq('relationship', 'spouse');
+    // Fetch existing dependants on component mount
+    useEffect(() => {
+      const fetchDependants = async () => {
+        if (!memberId) return;
 
-      if (error) {
-        console.error('Error fetching dependants:', error);
-        return;
-      }
+        const { data, error } = await supabase
+          .from('family_members')
+          .select('id, name, date_of_birth, gender, relationship')
+          .eq('member_id', memberId)
+          .neq('relationship', 'spouse');
 
-      if (data) {
-        setDependants(data.map(dep => ({
-          id: dep.id,
-          name: dep.name,
-          dateOfBirth: dep.date_of_birth || '',
-          gender: dep.gender || '',
-          category: dep.relationship
-        })));
-      }
+        if (error) {
+          console.error('Error fetching dependants:', error);
+          return;
+        }
+
+        if (data) {
+          setDependants(data.map(dep => ({
+            id: dep.id,
+            name: dep.name,
+            dateOfBirth: dep.date_of_birth || '',
+            gender: dep.gender || '',
+            category: dep.relationship
+          })));
+        }
+      };
+
+      fetchDependants();
+    }, [memberId]);
+
+    const addDependant = () => {
+      setDependants([...dependants, { name: "", dateOfBirth: "", gender: "", category: "" }]);
+      setIsOpen(true);
     };
 
-    fetchDependants();
-  }, [memberId]);
-
-  const addDependant = () => {
-    setDependants([...dependants, { name: "", dateOfBirth: "", gender: "", category: "" }]);
-    setIsOpen(true);
-  };
-
-  const removeDependant = async (index: number) => {
-    const dependant = dependants[index];
-    if (dependant.id && memberId) {
-      // Delete from database if it exists
-      const { error } = await supabase
-        .from('family_members')
-        .delete()
-        .eq('id', dependant.id);
-
-      if (error) {
-        console.error('Error deleting dependant:', error);
-        return;
-      }
-    }
-
-    setDependants(dependants.filter((_, i) => i !== index));
-  };
-
-  const updateDependant = (index: number, field: keyof Dependant, value: string) => {
-    const newDependants = [...dependants];
-    newDependants[index] = { ...newDependants[index], [field]: value };
-    setDependants(newDependants);
-  };
-
-  const saveDependants = async () => {
-    if (!memberId) return;
-
-    for (const dependant of dependants) {
-      if (dependant.id) {
-        // Update existing dependant
+    const removeDependant = async (index: number) => {
+      const dependant = dependants[index];
+      if (dependant.id && memberId) {
         const { error } = await supabase
           .from('family_members')
-          .update({
-            name: dependant.name,
-            date_of_birth: dependant.dateOfBirth || null,
-            gender: dependant.gender || null,
-            relationship: dependant.category,
-            updated_at: new Date().toISOString()
-          })
+          .delete()
           .eq('id', dependant.id);
 
         if (error) {
-          console.error('Error updating dependant:', error);
-        }
-      } else {
-        // Insert new dependant
-        const { error } = await supabase
-          .from('family_members')
-          .insert({
-            member_id: memberId,
-            name: dependant.name,
-            date_of_birth: dependant.dateOfBirth || null,
-            gender: dependant.gender || null,
-            relationship: dependant.category,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) {
-          console.error('Error inserting dependant:', error);
+          console.error('Error deleting dependant:', error);
+          return;
         }
       }
-    }
-  };
+
+      setDependants(dependants.filter((_, i) => i !== index));
+    };
+
+    const updateDependant = (index: number, field: keyof Dependant, value: string) => {
+      const newDependants = [...dependants];
+      newDependants[index] = { ...newDependants[index], [field]: value };
+      setDependants(newDependants);
+    };
+
+    const saveDependants = async () => {
+      if (!memberId) return;
+
+      for (const dependant of dependants) {
+        if (dependant.id) {
+          // Update existing dependant
+          const { error } = await supabase
+            .from('family_members')
+            .update({
+              name: dependant.name,
+              date_of_birth: dependant.dateOfBirth || null,
+              gender: dependant.gender || null,
+              relationship: dependant.category,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', dependant.id);
+
+          if (error) {
+            console.error('Error updating dependant:', error);
+          }
+        } else {
+          // Insert new dependant
+          const { error } = await supabase
+            .from('family_members')
+            .insert({
+              member_id: memberId,
+              name: dependant.name,
+              date_of_birth: dependant.dateOfBirth || null,
+              gender: dependant.gender || null,
+              relationship: dependant.category,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (error) {
+            console.error('Error inserting dependant:', error);
+          }
+        }
+      }
+    };
+
+    useImperativeHandle(ref, () => ({
+      saveDependants
+    }));
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-4">
@@ -203,4 +211,7 @@ export const DependantsSection = ({ memberId, defaultOpen = true }: DependantsSe
       </CollapsibleContent>
     </Collapsible>
   );
-};
+  }
+);
+
+DependantsSection.displayName = "DependantsSection";
