@@ -26,7 +26,7 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
   };
 
   return (
-    <Collapsible>
+    <Collapsible defaultOpen>
       <CollapsibleTrigger asChild>
         <Button 
           variant="default"
