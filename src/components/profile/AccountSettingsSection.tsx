@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Cog, User, Mail, Phone, MapPin, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,9 @@ interface AccountSettingsSectionProps {
 export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const spousesRef = useRef<{ saveSpouses: () => Promise<void> }>(null);
+  const dependantsRef = useRef<{ saveDependants: () => Promise<void> }>(null);
+  
   const [formData, setFormData] = useState({
     full_name: memberData?.full_name || "",
     address: memberData?.address || "",
@@ -39,13 +42,6 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
     }));
   };
 
-  const handleGoogleLink = () => {
-    toast({
-      title: "Google Account Linking",
-      description: "This feature will be implemented soon.",
-    });
-  };
-
   const handleUpdateProfile = async () => {
     if (!memberData?.id) {
       toast({
@@ -60,6 +56,7 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
       setLoading(true);
       console.log("Updating profile with data:", formData);
 
+      // Update member profile
       const { error } = await supabase
         .from('members')
         .update({
@@ -79,12 +76,15 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
+      // Save spouses and dependants
+      if (spousesRef.current?.saveSpouses) {
+        await spousesRef.current.saveSpouses();
+      }
+      if (dependantsRef.current?.saveDependants) {
+        await dependantsRef.current.saveDependants();
+      }
 
-      // Also update the profiles table
+      // Update profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -104,8 +104,12 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
 
       if (profileError) {
         console.error("Error updating profile:", profileError);
-        // Don't show this error to user since the main update succeeded
       }
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
 
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -180,16 +184,6 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
             />
           </div>
           <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full h-10 bg-white hover:bg-gray-50 border-2 shadow-sm text-gray-700 font-medium"
-              onClick={handleGoogleLink}
-            >
-              <Icons.google className="mr-2 h-5 w-5" />
-              Link Google Account
-            </Button>
-          </div>
-          <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
               <Phone className="h-4 w-4" />
               Mobile No
@@ -248,8 +242,14 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
 
         <div className="space-y-6 pt-4">
           <NextOfKinSection />
-          <SpousesSection />
-          <DependantsSection />
+          <SpousesSection 
+            memberId={memberData?.id} 
+            ref={spousesRef}
+          />
+          <DependantsSection 
+            memberId={memberData?.id}
+            ref={dependantsRef}
+          />
         </div>
 
         <div className="flex justify-end">
