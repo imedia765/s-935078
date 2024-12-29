@@ -7,7 +7,7 @@ export const SupportingDocsSection = () => {
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           <img
-            src="/WhatsApp Image 2024-10-02 at 3.50.07 PM.jpeg"
+            src="/doc1.jpeg"
             alt="Medical Examiner Process Documentation 1"
             className="rounded-lg w-full h-auto shadow-lg object-contain"
             loading="lazy"
@@ -15,7 +15,7 @@ export const SupportingDocsSection = () => {
         </div>
         <div className="space-y-4">
           <img
-            src="/WhatsApp Image 2024-10-02 at 3.50.07 PM (1).jpeg"
+            src="/doc2.jpeg"
             alt="Medical Examiner Process Documentation 2"
             className="rounded-lg w-full h-auto shadow-lg object-contain"
             loading="lazy"

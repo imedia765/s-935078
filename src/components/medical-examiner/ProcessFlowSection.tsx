@@ -9,7 +9,7 @@ export const ProcessFlowSection = () => {
           View or download our comprehensive Medical Examiner Process Flow Chart:
         </p>
         <object
-          data="/Flowchart-ME-Process-NBC-Final-1.pdf"
+          data="/flowchart.pdf"
           type="application/pdf"
           width="100%"
           height="500px"
@@ -18,7 +18,7 @@ export const ProcessFlowSection = () => {
           <p className="text-muted-foreground">
             Unable to display PDF file.{" "}
             <a
-              href="/Flowchart-ME-Process-NBC-Final-1.pdf"
+              href="/flowchart.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
