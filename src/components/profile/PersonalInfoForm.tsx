@@ -22,13 +22,41 @@ interface PersonalInfoFormProps {
 export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormProps) => {
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = e.target.value;
-    onInputChange('date_of_birth', dateValue);
+    if (!dateValue) {
+      onInputChange('date_of_birth', '');
+      return;
+    }
+    
+    try {
+      // Convert the input date to a Date object
+      const date = new Date(dateValue);
+      // Format it as DD/MM/YYYY for storage
+      const formattedDate = format(date, 'dd/MM/yyyy');
+      onInputChange('date_of_birth', formattedDate);
+    } catch (error) {
+      console.error('Error formatting date:', error);
+    }
   };
 
   // Format the date for display in the input field
-  const formattedDate = formData.date_of_birth ? 
-    format(new Date(formData.date_of_birth), 'yyyy-MM-dd') : 
-    '';
+  const getFormattedDateForInput = () => {
+    if (!formData.date_of_birth) return '';
+    try {
+      // Parse the stored date (DD/MM/YYYY) to a Date object
+      const date = parse(formData.date_of_birth, 'dd/MM/yyyy', new Date());
+      // Format it as YYYY-MM-DD for the input field
+      return format(date, 'yyyy-MM-dd');
+    } catch {
+      try {
+        // Fallback: try parsing as is if it's already in a different format
+        const date = new Date(formData.date_of_birth);
+        return format(date, 'yyyy-MM-dd');
+      } catch (error) {
+        console.error('Error parsing date:', error);
+        return '';
+      }
+    }
+  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -95,7 +123,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
         </label>
         <Input 
           type="date" 
-          value={formattedDate}
+          value={getFormattedDateForInput()}
           onChange={handleDateChange}
         />
       </div>
