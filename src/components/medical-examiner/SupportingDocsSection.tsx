@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 export const SupportingDocsSection = () => {
   return (
     <div className="rounded-lg border bg-card p-6">
-      <h2 className="text-xl font-semibold mb-4 text-foreground">Supporting Documentation</h2>
+      <h2 className="text-xl font-semibold mb-4 text-primary">Supporting Documentation</h2>
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           <img

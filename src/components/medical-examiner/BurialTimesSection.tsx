@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export const BurialTimesSection = () => {
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-3 text-foreground">Burial Times</h3>
+      <h3 className="text-lg font-semibold mb-3 text-primary">Burial Times</h3>
       <p className="text-sm text-muted-foreground mb-3">
         Out of hours burial (Monday to Friday only 4-7pm) may take place by special arrangement
         subject to availability of staff and safe lighting conditions: £180.00 per hour (50% reduction if less than 30 minutes)

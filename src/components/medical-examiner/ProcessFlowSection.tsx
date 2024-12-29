@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export const ProcessFlowSection = () => {
   return (
     <div className="rounded-lg border bg-card p-6">
-      <h2 className="text-xl font-semibold mb-4 text-foreground">Process Flow Chart</h2>
+      <h2 className="text-xl font-semibold mb-4 text-primary">Process Flow Chart</h2>
       <div className="space-y-4">
         <p className="text-muted-foreground">
           View or download our comprehensive Medical Examiner Process Flow Chart:
