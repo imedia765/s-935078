@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Mail, Phone, MapPin, Calendar } from "lucide-react";
-import { Member } from "@/components/members/types";
+import { format, parse } from "date-fns";
 
 interface PersonalInfoFormProps {
   formData: {
@@ -20,6 +20,16 @@ interface PersonalInfoFormProps {
 }
 
 export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormProps) => {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dateValue = e.target.value;
+    onInputChange('date_of_birth', dateValue);
+  };
+
+  // Format the date for display in the input field
+  const formattedDate = formData.date_of_birth ? 
+    format(new Date(formData.date_of_birth), 'yyyy-MM-dd') : 
+    '';
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div className="space-y-2">
@@ -81,12 +91,12 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
       <div className="space-y-2">
         <label className="text-sm font-medium flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          Date of Birth
+          Date of Birth (DD/MM/YYYY)
         </label>
         <Input 
           type="date" 
-          value={formData.date_of_birth} 
-          onChange={(e) => onInputChange('date_of_birth', e.target.value)}
+          value={formattedDate}
+          onChange={handleDateChange}
         />
       </div>
       <div className="space-y-2">
