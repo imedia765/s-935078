@@ -20,10 +20,22 @@ export function CollectorList({
   isLoading,
   searchTerm,
 }: CollectorListProps) {
-  const filteredCollectors = collectors?.filter(collector =>
-    collector.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    collector.number.includes(searchTerm)
-  ) ?? [];
+  // Filter collectors based on search term
+  const filteredCollectors = collectors?.filter(collector => {
+    const matchesName = collector.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesNumber = collector.number.includes(searchTerm);
+    const matchesPrefix = collector.prefix.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Count only active members
+    const activeMembers = collector.members?.filter(member => 
+      member.status === 'active' || member.status === null
+    ) || [];
+    
+    // Log member counts for debugging
+    console.log(`Collector ${collector.name} has ${activeMembers.length} active members`);
+    
+    return matchesName || matchesNumber || matchesPrefix;
+  }) ?? [];
 
   if (isLoading) {
     return (
@@ -32,6 +44,16 @@ export function CollectorList({
       </div>
     );
   }
+
+  // Log total active members for debugging
+  const totalActiveMembers = collectors?.reduce((total, collector) => {
+    const activeMembers = collector.members?.filter(member => 
+      member.status === 'active' || member.status === null
+    ) || [];
+    return total + activeMembers.length;
+  }, 0) || 0;
+  
+  console.log(`Fetched total active members: ${totalActiveMembers}`);
 
   if (filteredCollectors.length === 0) {
     return (

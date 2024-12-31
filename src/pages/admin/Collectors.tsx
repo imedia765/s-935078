@@ -30,10 +30,19 @@ export default function Collectors() {
         throw collectorsError;
       }
 
-      // Then, get all members
+      // Then, get all members with their collector information
       const { data: membersData, error: membersError } = await supabase
         .from('members')
-        .select('*')
+        .select(`
+          id,
+          member_number,
+          full_name,
+          email,
+          phone,
+          address,
+          status,
+          collector_id
+        `)
         .order('full_name');
 
       if (membersError) {
@@ -41,25 +50,15 @@ export default function Collectors() {
         throw membersError;
       }
 
-      // Helper function to normalize collector names for comparison
-      const normalizeCollectorName = (name: string) => {
-        if (!name) return '';
-        return name.toLowerCase()
-          .replace(/[\/&,.-]/g, '') // Remove special characters
-          .replace(/\s+/g, '')      // Remove all whitespace
-          .trim();
-      };
-
-      // Map members to their collectors using normalized name matching
+      // Map members to their collectors
       const enhancedCollectorsData = collectorsData.map(collector => {
-        const collectorMembers = membersData.filter(member => {
-          if (!member.collector) return false;
-          
-          const normalizedCollectorName = normalizeCollectorName(collector.name);
-          const normalizedMemberCollector = normalizeCollectorName(member.collector);
-          
-          return normalizedCollectorName === normalizedMemberCollector;
-        });
+        // Filter members by collector_id
+        const collectorMembers = membersData.filter(member => 
+          member.collector_id === collector.id
+        );
+
+        // Log member count for debugging
+        console.log(`Collector ${collector.name} has ${collectorMembers.length} members`);
 
         return {
           ...collector,
