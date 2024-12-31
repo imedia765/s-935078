@@ -30,6 +30,18 @@ export default function Collectors() {
         throw collectorsError;
       }
 
+      // Get total member count first
+      const { count: totalMemberCount, error: countError } = await supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error getting total count:', countError);
+        throw countError;
+      }
+
+      console.log('Total members in database:', totalMemberCount);
+
       // Then, get all members with their collector information
       const { data: membersData, error: membersError } = await supabase
         .from('members')
@@ -43,8 +55,7 @@ export default function Collectors() {
           status,
           collector_id,
           collector
-        `)
-        .order('full_name');
+        `);
 
       if (membersError) {
         console.error('Error fetching members:', membersError);
@@ -65,30 +76,44 @@ export default function Collectors() {
           member.collector_id === collector.id
         );
 
-        // Log member count for debugging
-        console.log(`Collector ${collector.name} has ${collectorMembers.length} members`);
-
-        // Also log active member count
+        // Log all counts for debugging
+        console.log(`Collector ${collector.name}:`);
+        console.log(`- Total members: ${collectorMembers.length}`);
+        
         const activeMembers = collectorMembers.filter(member => 
           member.status === 'active' || member.status === null
         );
-        console.log(`Collector ${collector.name} has ${activeMembers.length} active members`);
+        console.log(`- Active members: ${activeMembers.length}`);
+        
+        const inactiveMembers = collectorMembers.filter(member => 
+          member.status === 'inactive'
+        );
+        console.log(`- Inactive members: ${inactiveMembers.length}`);
 
         return {
           ...collector,
-          members: collectorMembers
+          members: collectorMembers,
+          activeMemberCount: activeMembers.length,
+          inactiveMemberCount: inactiveMembers.length,
+          totalMemberCount: collectorMembers.length
         };
       });
 
-      // Log total active members for debugging
-      const totalActiveMembers = enhancedCollectorsData.reduce((total, collector) => {
-        const activeMembers = collector.members?.filter(member => 
-          member.status === 'active' || member.status === null
-        ) || [];
-        return total + activeMembers.length;
-      }, 0);
-      
-      console.log(`Fetched total active members: ${totalActiveMembers}`);
+      // Calculate and log all totals
+      const totals = enhancedCollectorsData.reduce((acc, collector) => {
+        return {
+          total: acc.total + collector.totalMemberCount,
+          active: acc.active + collector.activeMemberCount,
+          inactive: acc.inactive + collector.inactiveMemberCount
+        };
+      }, { total: 0, active: 0, inactive: 0 });
+
+      console.log('Final totals:');
+      console.log(`- Total members across all collectors: ${totals.total}`);
+      console.log(`- Total active members: ${totals.active}`);
+      console.log(`- Total inactive members: ${totals.inactive}`);
+      console.log(`- Unassigned members: ${unassignedMembers.length}`);
+      console.log(`- Grand total (including unassigned): ${totals.total + unassignedMembers.length}`);
 
       return enhancedCollectorsData;
     }
