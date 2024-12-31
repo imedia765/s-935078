@@ -22,7 +22,7 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
           return;
         }
         
-        if (session) {
+        if (session?.access_token && session?.refresh_token) {
           console.log("Active session found");
           setIsLoggedIn(true);
           if (window.location.pathname === "/login") {
@@ -49,7 +49,7 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
       
       switch (event) {
         case "SIGNED_IN":
-          if (session) {
+          if (session?.access_token && session?.refresh_token) {
             console.log("Sign in event detected");
             setIsLoggedIn(true);
             toast({
@@ -68,15 +68,30 @@ export const useAuthStateHandler = (setIsLoggedIn: (value: boolean) => void) => 
           
         case "TOKEN_REFRESHED":
           console.log("Token refreshed successfully");
-          if (session) {
+          if (session?.access_token && session?.refresh_token) {
             setIsLoggedIn(true);
+          } else {
+            setIsLoggedIn(false);
+            navigate("/login");
           }
           break;
           
         case "USER_UPDATED":
           console.log("User data updated");
-          if (session) {
+          if (session?.access_token && session?.refresh_token) {
             setIsLoggedIn(true);
+          }
+          break;
+          
+        case "INITIAL_SESSION":
+          console.log("Initial session check");
+          if (session?.access_token && session?.refresh_token) {
+            setIsLoggedIn(true);
+          } else {
+            setIsLoggedIn(false);
+            if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+              navigate("/login");
+            }
           }
           break;
       }

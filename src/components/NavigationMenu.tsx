@@ -22,7 +22,15 @@ export function NavigationMenu() {
           setIsLoggedIn(false);
           return;
         }
-        setIsLoggedIn(!!session);
+        
+        // Only set logged in if we have a valid session
+        if (session?.access_token && session?.refresh_token) {
+          setIsLoggedIn(true);
+          console.log("Valid session found");
+        } else {
+          setIsLoggedIn(false);
+          console.log("No valid session found");
+        }
       } catch (error) {
         console.error("Session check failed:", error);
         setIsLoggedIn(false);
@@ -36,7 +44,7 @@ export function NavigationMenu() {
       
       switch (event) {
         case "SIGNED_IN":
-          if (session) {
+          if (session?.access_token && session?.refresh_token) {
             setIsLoggedIn(true);
             toast({
               title: "Signed in successfully",
@@ -44,18 +52,41 @@ export function NavigationMenu() {
             });
           }
           break;
+          
         case "SIGNED_OUT":
           setIsLoggedIn(false);
           navigate("/login");
           break;
+          
         case "TOKEN_REFRESHED":
-          console.log("Token refreshed successfully");
-          setIsLoggedIn(true);
+          if (session?.access_token && session?.refresh_token) {
+            console.log("Token refreshed successfully");
+            setIsLoggedIn(true);
+          } else {
+            console.log("Token refresh failed - no valid tokens");
+            setIsLoggedIn(false);
+            navigate("/login");
+          }
           break;
+          
         case "USER_UPDATED":
-          console.log("User data updated");
-          setIsLoggedIn(true);
+          if (session?.access_token && session?.refresh_token) {
+            console.log("User data updated");
+            setIsLoggedIn(true);
+          }
           break;
+          
+        case "INITIAL_SESSION":
+          // Handle initial session check
+          if (session?.access_token && session?.refresh_token) {
+            console.log("Initial session valid");
+            setIsLoggedIn(true);
+          } else {
+            console.log("No initial session");
+            setIsLoggedIn(false);
+          }
+          break;
+          
         default:
           console.log("Unhandled auth event:", event);
       }
