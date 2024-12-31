@@ -41,13 +41,21 @@ export default function Collectors() {
           phone,
           address,
           status,
-          collector_id
+          collector_id,
+          collector
         `)
         .order('full_name');
 
       if (membersError) {
         console.error('Error fetching members:', membersError);
         throw membersError;
+      }
+
+      // Log unassigned members for debugging
+      console.log('Fetching unassigned members...');
+      const unassignedMembers = membersData.filter(member => !member.collector_id);
+      if (unassignedMembers.length > 0) {
+        console.log(`Found ${unassignedMembers.length} unassigned members`);
       }
 
       // Map members to their collectors
@@ -60,11 +68,27 @@ export default function Collectors() {
         // Log member count for debugging
         console.log(`Collector ${collector.name} has ${collectorMembers.length} members`);
 
+        // Also log active member count
+        const activeMembers = collectorMembers.filter(member => 
+          member.status === 'active' || member.status === null
+        );
+        console.log(`Collector ${collector.name} has ${activeMembers.length} active members`);
+
         return {
           ...collector,
           members: collectorMembers
         };
       });
+
+      // Log total active members for debugging
+      const totalActiveMembers = enhancedCollectorsData.reduce((total, collector) => {
+        const activeMembers = collector.members?.filter(member => 
+          member.status === 'active' || member.status === null
+        ) || [];
+        return total + activeMembers.length;
+      }, 0);
+      
+      console.log(`Fetched total active members: ${totalActiveMembers}`);
 
       return enhancedCollectorsData;
     }
