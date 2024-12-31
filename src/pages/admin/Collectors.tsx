@@ -53,9 +53,9 @@ export default function Collectors() {
           phone,
           address,
           status,
-          collector_id
-        `)
-        .not('collector_id', 'is', null); // Only get members with assigned collectors
+          collector_id,
+          collector
+        `);
 
       if (membersError) {
         console.error('Error fetching members:', membersError);
@@ -89,12 +89,6 @@ export default function Collectors() {
           member.status === 'inactive'
         );
         console.log(`- Inactive members: ${inactiveMembers.length}`);
-
-        // Double check for MT05 and SH09
-        if (collector.prefix === 'MT' || collector.prefix === 'SH') {
-          console.log(`Detailed check for ${collector.prefix}${collector.number}:`);
-          console.log('Member numbers:', collectorMembers.map(m => m.member_number).join(', '));
-        }
 
         return {
           ...collector,
