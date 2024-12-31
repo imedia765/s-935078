@@ -309,6 +309,7 @@ export type Database = {
           amount: number
           collector_id: string | null
           created_at: string
+          created_by: string | null
           id: string
           member_id: string | null
           notes: string | null
@@ -321,6 +322,7 @@ export type Database = {
           amount: number
           collector_id?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           member_id?: string | null
           notes?: string | null
@@ -333,6 +335,7 @@ export type Database = {
           amount?: number
           collector_id?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           member_id?: string | null
           notes?: string | null
@@ -372,7 +375,7 @@ export type Database = {
           phone: string | null
           postcode: string | null
           profile_completed: boolean | null
-          role: Database["public"]["Enums"]["user_role"] | null
+          role: Database["public"]["Enums"]["user_role"]
           town: string | null
           updated_at: string
           user_id: string | null
@@ -390,7 +393,7 @@ export type Database = {
           phone?: string | null
           postcode?: string | null
           profile_completed?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: Database["public"]["Enums"]["user_role"]
           town?: string | null
           updated_at?: string
           user_id?: string | null
@@ -408,7 +411,7 @@ export type Database = {
           phone?: string | null
           postcode?: string | null
           profile_completed?: boolean | null
-          role?: Database["public"]["Enums"]["user_role"] | null
+          role?: Database["public"]["Enums"]["user_role"]
           town?: string | null
           updated_at?: string
           user_id?: string | null
@@ -540,6 +543,12 @@ export type Database = {
           p_id: string
           p_email: string
           p_user_id: string
+        }
+        Returns: undefined
+      }
+      delete_collector: {
+        Args: {
+          collector_id: string
         }
         Returns: undefined
       }

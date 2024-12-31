@@ -30,41 +30,46 @@ export default function Collectors() {
         throw collectorsError;
       }
 
-      // Then, get all members
+      console.log('Fetched collectors:', collectorsData?.length);
+
+      // Then, get all members with their collector information
       const { data: membersData, error: membersError } = await supabase
         .from('members')
-        .select('*')
-        .order('full_name');
+        .select('id, collector_id, collector')
+        .eq('status', 'active');
 
       if (membersError) {
         console.error('Error fetching members:', membersError);
         throw membersError;
       }
 
-      // Helper function to normalize collector names for comparison
-      const normalizeCollectorName = (name: string) => {
-        if (!name) return '';
-        return name.toLowerCase()
-          .replace(/[\/&,.-]/g, '') // Remove special characters
-          .replace(/\s+/g, '')      // Remove all whitespace
-          .trim();
-      };
+      // Create a map of collector IDs to their members
+      const collectorMembersMap = new Map();
+      membersData?.forEach(member => {
+        if (member.collector_id) {
+          const currentMembers = collectorMembersMap.get(member.collector_id) || [];
+          collectorMembersMap.set(member.collector_id, [...currentMembers, member]);
+        }
+      });
 
-      // Map members to their collectors using normalized name matching
-      const enhancedCollectorsData = collectorsData.map(collector => {
-        const collectorMembers = membersData.filter(member => {
-          if (!member.collector) return false;
-          
-          const normalizedCollectorName = normalizeCollectorName(collector.name);
-          const normalizedMemberCollector = normalizeCollectorName(member.collector);
-          
-          return normalizedCollectorName === normalizedMemberCollector;
-        });
-
+      // Enhance collectors with their members
+      const enhancedCollectorsData = collectorsData?.map(collector => {
+        const collectorMembers = collectorMembersMap.get(collector.id) || [];
+        console.log(`Collector ${collector.name} has ${collectorMembers.length} members`);
+        
         return {
           ...collector,
           members: collectorMembers
         };
+      });
+
+      // Log total active members
+      const totalActiveMembers = membersData?.length || 0;
+      console.log('Fetched total active members:', totalActiveMembers);
+
+      // Log member counts for each collector
+      enhancedCollectorsData?.forEach(collector => {
+        console.log(`Collector ${collector.name} has ${collector.members.length} active members`);
       });
 
       return enhancedCollectorsData;
