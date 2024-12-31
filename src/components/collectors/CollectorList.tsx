@@ -26,13 +26,23 @@ export function CollectorList({
     const matchesNumber = collector.number.includes(searchTerm);
     const matchesPrefix = collector.prefix.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Count only active members
-    const activeMembers = collector.members?.filter(member => 
-      member.status === 'active' || member.status === null
-    ) || [];
+    // Count all members regardless of status
+    const totalMembers = collector.members?.length || 0;
     
-    // Log member counts for debugging
-    console.log(`Collector ${collector.name} has ${activeMembers.length} active members`);
+    // Special logging for MT05 and SH09
+    if (collector.prefix === 'MT' && collector.number === '05') {
+      console.log(`MT05 - ${collector.name} has ${totalMembers} total members`);
+      if (totalMembers !== 168) {
+        console.warn(`MT05 member count mismatch. Expected: 168, Got: ${totalMembers}`);
+      }
+    }
+    
+    if (collector.prefix === 'SH' && collector.number === '09') {
+      console.log(`SH09 - ${collector.name} has ${totalMembers} total members`);
+      if (totalMembers !== 90) {
+        console.warn(`SH09 member count mismatch. Expected: 90, Got: ${totalMembers}`);
+      }
+    }
     
     return matchesName || matchesNumber || matchesPrefix;
   }) ?? [];
@@ -45,15 +55,12 @@ export function CollectorList({
     );
   }
 
-  // Log total active members for debugging
-  const totalActiveMembers = collectors?.reduce((total, collector) => {
-    const activeMembers = collector.members?.filter(member => 
-      member.status === 'active' || member.status === null
-    ) || [];
-    return total + activeMembers.length;
+  // Log total members for verification
+  const totalMembers = collectors?.reduce((total, collector) => {
+    return total + (collector.members?.length || 0);
   }, 0) || 0;
   
-  console.log(`Fetched total active members: ${totalActiveMembers}`);
+  console.log(`Total members across all collectors: ${totalMembers}`);
 
   if (filteredCollectors.length === 0) {
     return (
