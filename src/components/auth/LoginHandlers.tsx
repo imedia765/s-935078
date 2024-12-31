@@ -21,7 +21,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       console.log("First time login detected, using member number as password");
       
       // Try to sign in first with member number as password
-      let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: member.member_number
       });
@@ -58,15 +58,11 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           throw new Error("Failed to sign in after account creation");
         }
 
-        signInData = finalSignInData;
-      }
-
-      if (signInData?.user) {
         // Update member record to link it with auth user
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
-            auth_user_id: signInData.user.id,
+            auth_user_id: finalSignInData.user.id,
             email_verified: true 
           })
           .eq('id', member.id)
@@ -77,6 +73,11 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           throw new Error("Failed to link account");
         }
 
+        navigate("/admin");
+        return;
+      }
+
+      if (signInData?.user) {
         navigate("/admin");
         return;
       }
