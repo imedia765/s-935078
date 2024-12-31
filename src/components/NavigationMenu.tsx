@@ -10,42 +10,47 @@ import { useToast } from "./ui/use-toast";
 export function NavigationMenu() {
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     const checkSession = async () => {
       try {
+        setLoading(true);
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error("Session check error:", error);
           setIsLoggedIn(false);
           return;
         }
+
         setIsLoggedIn(!!session);
       } catch (error) {
         console.error("Session check failed:", error);
         setIsLoggedIn(false);
+      } finally {
+        setLoading(false);
       }
     };
 
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, !!session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session?.user?.email);
       
       switch (event) {
         case "SIGNED_IN":
-          if (session) {
-            setIsLoggedIn(true);
-            toast({
-              title: "Signed in successfully",
-              description: "Welcome back!",
-            });
-          }
+          setIsLoggedIn(true);
+          toast({
+            title: "Signed in successfully",
+            description: "Welcome back!",
+          });
           break;
         case "SIGNED_OUT":
           setIsLoggedIn(false);
+          setLoading(false);
           navigate("/login");
           break;
         case "TOKEN_REFRESHED":
@@ -64,7 +69,7 @@ export function NavigationMenu() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast, navigate]);
+  }, [navigate, toast]);
 
   const handleNavigation = (path: string) => {
     setOpen(false);
@@ -73,11 +78,9 @@ export function NavigationMenu() {
 
   const handleLogout = async () => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Logout error:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       setIsLoggedIn(false);
       toast({
@@ -87,15 +90,32 @@ export function NavigationMenu() {
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
-      // Even if there's an error, we'll still clear the local state
-      setIsLoggedIn(false);
-      navigate("/login");
       toast({
-        title: "Session ended",
-        description: "You have been logged out.",
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container flex h-14 items-center justify-between">
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              PWA Burton
+            </span>
+          </Link>
+          <div className="flex items-center space-x-2">
+            <ThemeToggle />
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -108,6 +128,21 @@ export function NavigationMenu() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-2">
+          <Link to="/terms">
+            <Button variant="ghost" size="sm">
+              Terms
+            </Button>
+          </Link>
+          <Link to="/collector-responsibilities">
+            <Button variant="ghost" size="sm">
+              Collector Info
+            </Button>
+          </Link>
+          <Link to="/medical-examiner-process">
+            <Button variant="ghost" size="sm">
+              Medical Process
+            </Button>
+          </Link>
           {isLoggedIn ? (
             <>
               <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -151,6 +186,27 @@ export function NavigationMenu() {
                 <div className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-4">
                   Menu
                 </div>
+                <Button
+                  variant="outline"
+                  className="justify-start"
+                  onClick={() => handleNavigation("/terms")}
+                >
+                  Terms
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start"
+                  onClick={() => handleNavigation("/collector-responsibilities")}
+                >
+                  Collector Info
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start"
+                  onClick={() => handleNavigation("/medical-examiner-process")}
+                >
+                  Medical Process
+                </Button>
                 {isLoggedIn ? (
                   <>
                     <Button
@@ -193,4 +249,4 @@ export function NavigationMenu() {
       </div>
     </nav>
   );
-};
+}
