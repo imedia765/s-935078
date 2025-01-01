@@ -59,12 +59,12 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
     }
 
-    // Use member number as password unless password_changed is true
-    const loginPassword = member.password_changed ? password : member.member_number.trim();
+    // Always use member number as password for initial login
+    const loginPassword = member.member_number.trim();
     
     console.log("Attempting sign in with:", { 
       email,
-      usingMemberNumberAsPassword: !member.password_changed
+      usingMemberNumber: true
     });
     
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
