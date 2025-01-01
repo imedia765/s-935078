@@ -21,7 +21,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     console.log("Attempting member ID login with:", { memberId, email });
 
-    // Create new account only if no auth user exists
+    // Create new account if no auth user exists
     if (!member.auth_user_id) {
       console.log("No auth user found, creating account");
       
@@ -49,7 +49,6 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           .update({ 
             auth_user_id: signUpData.user.id,
             email_verified: true,
-            first_time_login: false
           })
           .eq('id', member.id)
           .single();
@@ -60,15 +59,12 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
     }
 
-    // For first time login (no auth_user_id), use member number as password
-    // For subsequent logins (has auth_user_id), use the provided password
-    const loginPassword = !member.auth_user_id ? member.member_number.trim() : password;
+    // Use member number as password unless password_changed is true
+    const loginPassword = member.password_changed ? password : member.member_number.trim();
     
     console.log("Attempting sign in with:", { 
-      email, 
-      isFirstTimeLogin: !member.auth_user_id,
-      hasAuthUserId: !!member.auth_user_id,
-      usingMemberNumberAsPassword: !member.auth_user_id
+      email,
+      usingMemberNumberAsPassword: !member.password_changed
     });
     
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -82,22 +78,6 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     }
 
     if (signInData?.user) {
-      // If this was first time login, update the flags
-      if (!member.auth_user_id) {
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ 
-            first_time_login: false,
-            email_verified: true
-          })
-          .eq('id', member.id)
-          .single();
-
-        if (updateError) {
-          console.error('Error updating member:', updateError);
-        }
-      }
-
       navigate("/admin");
       return;
     }
