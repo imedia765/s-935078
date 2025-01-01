@@ -125,6 +125,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
           type="date" 
           value={getFormattedDateForInput()}
           onChange={handleDateChange}
+          placeholder="DD/MM/YYYY"
         />
       </div>
       <div className="space-y-2">
