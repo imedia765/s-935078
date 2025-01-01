@@ -28,24 +28,24 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       // Try to sign in with member number as password
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: member.member_number.trim() // Ensure no whitespace
+        password: member.member_number.trim()
       });
 
       if (signInError) {
-        console.log('Initial sign in failed, attempting signup:', signInError);
+        console.log('Initial sign in failed:', signInError.message);
         
         // Prepare user metadata - ensure all fields are properly formatted
         const metadata = {
           member_id: member.id,
           member_number: member.member_number.trim(),
-          full_name: member.full_name?.trim(),
-          date_of_birth: member.date_of_birth,
-          gender: member.gender?.toLowerCase(),
-          marital_status: member.marital_status?.toLowerCase(),
-          phone: member.phone?.trim(),
-          address: member.address?.trim(),
-          postcode: member.postcode?.trim(),
-          town: member.town?.trim()
+          full_name: member.full_name?.trim() || '',
+          date_of_birth: member.date_of_birth || null,
+          gender: member.gender?.toLowerCase() || null,
+          marital_status: member.marital_status?.toLowerCase() || null,
+          phone: member.phone?.trim() || null,
+          address: member.address?.trim() || null,
+          postcode: member.postcode?.trim() || null,
+          town: member.town?.trim() || null
         };
 
         // Only attempt signup if user doesn't exist
@@ -73,11 +73,15 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           throw new Error("Failed to sign in after account creation");
         }
 
+        if (!finalSignInData.user?.id) {
+          throw new Error("No user ID returned after sign in");
+        }
+
         // Update member record to link it with auth user
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
-            auth_user_id: finalSignInData.user?.id,
+            auth_user_id: finalSignInData.user.id,
             email_verified: true,
             first_time_login: false
           })
