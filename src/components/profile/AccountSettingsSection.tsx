@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Member } from "@/components/members/types";
 import { supabase } from "@/integrations/supabase/client";
 import { PersonalInfoForm } from "./PersonalInfoForm";
+import { parse, format } from "date-fns";
 
 interface AccountSettingsSectionProps {
   memberData?: Member;
@@ -53,6 +54,27 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
       setLoading(true);
       console.log("Updating profile with data:", formData);
 
+      // Format date before sending to Supabase
+      let formattedDate = null;
+      if (formData.date_of_birth) {
+        try {
+          // First try to parse as DD/MM/YYYY
+          const parsedDate = parse(formData.date_of_birth, 'dd/MM/yyyy', new Date());
+          formattedDate = format(parsedDate, 'yyyy-MM-dd');
+        } catch (error) {
+          try {
+            // If that fails, try parsing as YYYY-MM-DD
+            const parsedDate = new Date(formData.date_of_birth);
+            if (!isNaN(parsedDate.getTime())) {
+              formattedDate = format(parsedDate, 'yyyy-MM-dd');
+            }
+          } catch (error) {
+            console.error('Error parsing date:', error);
+            formattedDate = null;
+          }
+        }
+      }
+
       // Update member profile
       const { error: memberError } = await supabase
         .from('members')
@@ -63,7 +85,7 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
           postcode: formData.postcode,
           email: formData.email,
           phone: formData.phone,
-          date_of_birth: formData.date_of_birth || null,
+          date_of_birth: formattedDate,
           marital_status: formData.marital_status,
           gender: formData.gender,
           updated_at: new Date().toISOString(),
