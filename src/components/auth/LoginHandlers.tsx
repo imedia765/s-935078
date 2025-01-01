@@ -64,12 +64,22 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: memberId // Always use member ID as password for initial login
+      password: memberId // Use member ID as password for consistency
     });
 
     if (signInError) {
       console.error('Sign in error:', signInError);
-      throw new Error("Invalid member ID or password");
+      
+      // If sign in fails, try to reset the user's password to their member ID
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`
+      });
+      
+      if (resetError) {
+        console.error('Password reset error:', resetError);
+      }
+      
+      throw new Error("Invalid member ID or password. If this is your first time logging in, please check your email for a password reset link.");
     }
 
     if (signInData?.user) {
