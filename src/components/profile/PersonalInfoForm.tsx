@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Mail, Phone, MapPin, Calendar } from "lucide-react";
-import { format, parse, isValid } from "date-fns";
+import { format, isValid } from "date-fns";
 
 interface PersonalInfoFormProps {
   formData: {
@@ -20,6 +20,8 @@ interface PersonalInfoFormProps {
 }
 
 export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormProps) => {
+  console.log("Received form data:", formData);
+
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = e.target.value;
     console.log("Raw date input:", dateValue);
@@ -30,13 +32,11 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
     }
     
     try {
-      // Convert the input date to a Date object
       const date = new Date(dateValue);
       if (!isValid(date)) {
         console.error('Invalid date:', dateValue);
         return;
       }
-      // Format it as YYYY-MM-DD for storage
       const formattedDate = format(date, 'yyyy-MM-dd');
       console.log("Formatted date for storage:", formattedDate);
       onInputChange('date_of_birth', formattedDate);
@@ -45,7 +45,6 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
     }
   };
 
-  // Format the date for display in the input field
   const getFormattedDateForInput = () => {
     if (!formData.date_of_birth) {
       console.log("No date of birth provided");
@@ -55,7 +54,6 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
     console.log("Original date of birth:", formData.date_of_birth);
     
     try {
-      // Since we're now storing dates in YYYY-MM-DD format, we can use it directly
       const date = new Date(formData.date_of_birth);
       if (!isValid(date)) {
         console.error('Invalid date:', formData.date_of_birth);
@@ -66,7 +64,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
       console.log("Formatted date for input:", formattedDate);
       return formattedDate;
     } catch (error) {
-      console.error('Error parsing date:', error, formData.date_of_birth);
+      console.error('Error parsing date:', error);
       return '';
     }
   };
@@ -79,7 +77,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
           Full Name
         </label>
         <Input 
-          value={formData.full_name} 
+          value={formData.full_name || ''} 
           onChange={(e) => onInputChange('full_name', e.target.value)}
         />
       </div>
@@ -89,21 +87,21 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
           Address
         </label>
         <Textarea 
-          value={formData.address} 
+          value={formData.address || ''} 
           onChange={(e) => onInputChange('address', e.target.value)}
         />
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Town</label>
         <Input 
-          value={formData.town} 
+          value={formData.town || ''} 
           onChange={(e) => onInputChange('town', e.target.value)}
         />
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Post Code</label>
         <Input 
-          value={formData.postcode} 
+          value={formData.postcode || ''} 
           onChange={(e) => onInputChange('postcode', e.target.value)}
         />
       </div>
@@ -113,7 +111,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
           Email
         </label>
         <Input 
-          value={formData.email} 
+          value={formData.email || ''} 
           onChange={(e) => onInputChange('email', e.target.value)}
           type="email" 
         />
@@ -124,7 +122,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
           Mobile No
         </label>
         <Input 
-          value={formData.phone} 
+          value={formData.phone || ''} 
           onChange={(e) => onInputChange('phone', e.target.value)}
           type="tel" 
         />
@@ -143,7 +141,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
       <div className="space-y-2">
         <label className="text-sm font-medium">Marital Status</label>
         <Select 
-          value={formData.marital_status} 
+          value={formData.marital_status || ''} 
           onValueChange={(value) => onInputChange('marital_status', value)}
         >
           <SelectTrigger>
@@ -160,7 +158,7 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
       <div className="space-y-2">
         <label className="text-sm font-medium">Gender</label>
         <Select 
-          value={formData.gender} 
+          value={formData.gender || ''} 
           onValueChange={(value) => onInputChange('gender', value)}
         >
           <SelectTrigger>

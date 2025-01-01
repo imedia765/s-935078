@@ -21,6 +21,8 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
   const spousesRef = useRef<{ saveSpouses: () => Promise<void> }>(null);
   const dependantsRef = useRef<{ saveDependants: () => Promise<void> }>(null);
   
+  console.log("Member data received:", memberData);
+
   const [formData, setFormData] = useState({
     full_name: memberData?.full_name || "",
     address: memberData?.address || "",
@@ -105,6 +107,24 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
       setLoading(false);
     }
   };
+
+  // Update form data when memberData changes
+  React.useEffect(() => {
+    if (memberData) {
+      console.log("Updating form data with member data:", memberData);
+      setFormData({
+        full_name: memberData.full_name || "",
+        address: memberData.address || "",
+        town: memberData.town || "",
+        postcode: memberData.postcode || "",
+        email: memberData.email || "",
+        phone: memberData.phone || "",
+        date_of_birth: memberData.date_of_birth || "",
+        marital_status: memberData.marital_status || "",
+        gender: memberData.gender || "",
+      });
+    }
+  }, [memberData]);
 
   return (
     <Collapsible defaultOpen>
