@@ -46,7 +46,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     // Try to sign in with member ID as password
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: memberId
+      password: member.member_number // Use member_number as initial password
     });
 
     if (!signInError && signInData?.user) {
@@ -78,7 +78,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     // Try to create new user
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
-      password: memberId,
+      password: member.member_number, // Use member_number as initial password
       options: {
         data: {
           member_id: member.id,
