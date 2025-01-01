@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Member } from "@/components/members/types";
 import { supabase } from "@/integrations/supabase/client";
 import { PersonalInfoForm } from "./PersonalInfoForm";
-import { parse, format, isValid } from "date-fns";
+import { isValid } from "date-fns";
 
 interface AccountSettingsSectionProps {
   memberData?: Member;
@@ -55,28 +55,11 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
       setLoading(true);
       console.log("Updating profile with data:", formData);
 
-      // Format date before sending to Supabase
-      let formattedDate = null;
-      if (formData.date_of_birth) {
-        try {
-          // First try to parse as DD/MM/YYYY
-          const parsedDate = parse(formData.date_of_birth, 'dd/MM/yyyy', new Date());
-          if (!isValid(parsedDate)) throw new Error('Invalid date from DD/MM/YYYY format');
-          formattedDate = format(parsedDate, 'yyyy-MM-dd');
-        } catch (error) {
-          try {
-            // If that fails, try parsing as YYYY-MM-DD
-            const parsedDate = new Date(formData.date_of_birth);
-            if (!isValid(parsedDate)) throw new Error('Invalid date from YYYY-MM-DD format');
-            formattedDate = format(parsedDate, 'yyyy-MM-dd');
-          } catch (error) {
-            console.error('Error parsing date:', error);
-            formattedDate = null;
-          }
-        }
-      }
+      // The date should already be in YYYY-MM-DD format from the form
+      const dateToSave = formData.date_of_birth ? new Date(formData.date_of_birth) : null;
+      const formattedDate = dateToSave && isValid(dateToSave) ? formData.date_of_birth : null;
 
-      console.log("Formatted date for Supabase:", formattedDate);
+      console.log("Date to save to Supabase:", formattedDate);
 
       // Update member profile
       const { error: memberError } = await supabase

@@ -36,8 +36,8 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
         console.error('Invalid date:', dateValue);
         return;
       }
-      // Format it as DD/MM/YYYY for storage
-      const formattedDate = format(date, 'dd/MM/yyyy');
+      // Format it as YYYY-MM-DD for storage
+      const formattedDate = format(date, 'yyyy-MM-dd');
       console.log("Formatted date for storage:", formattedDate);
       onInputChange('date_of_birth', formattedDate);
     } catch (error) {
@@ -55,18 +55,13 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
     console.log("Original date of birth:", formData.date_of_birth);
     
     try {
-      let date;
-      // Try parsing as DD/MM/YYYY first
-      try {
-        date = parse(formData.date_of_birth, 'dd/MM/yyyy', new Date());
-        if (!isValid(date)) throw new Error('Invalid date from DD/MM/YYYY format');
-      } catch {
-        // If that fails, try parsing as YYYY-MM-DD
-        date = new Date(formData.date_of_birth);
-        if (!isValid(date)) throw new Error('Invalid date from YYYY-MM-DD format');
+      // Since we're now storing dates in YYYY-MM-DD format, we can use it directly
+      const date = new Date(formData.date_of_birth);
+      if (!isValid(date)) {
+        console.error('Invalid date:', formData.date_of_birth);
+        return '';
       }
       
-      // Format as YYYY-MM-DD for the input field
       const formattedDate = format(date, 'yyyy-MM-dd');
       console.log("Formatted date for input:", formattedDate);
       return formattedDate;
@@ -137,13 +132,12 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
       <div className="space-y-2">
         <label className="text-sm font-medium flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          Date of Birth (DD/MM/YYYY)
+          Date of Birth
         </label>
         <Input 
           type="date" 
           value={getFormattedDateForInput()}
           onChange={handleDateChange}
-          placeholder="DD/MM/YYYY"
         />
       </div>
       <div className="space-y-2">
