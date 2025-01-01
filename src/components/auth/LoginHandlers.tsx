@@ -21,13 +21,16 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     console.log("Attempting member ID login with:", { memberId, email });
 
-    // If no auth user exists yet, create one
-    if (!member.auth_user_id) {
+    // Check if user exists in auth
+    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
+    const existingUser = users?.find(u => u.email === email);
+
+    if (!existingUser) {
       console.log("No auth user found, creating account");
       
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: memberId, // Use member ID as password
+        password: memberId,
         options: {
           data: {
             member_id: member.id,
@@ -64,7 +67,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: memberId // Use member ID as password for consistency
+      password: memberId
     });
 
     if (signInError) {
