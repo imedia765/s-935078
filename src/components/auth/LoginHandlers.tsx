@@ -11,11 +11,16 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     const member = await getMemberByMemberId(cleanMemberId);
     
     if (!member) {
-      console.error("Member lookup failed:", { member_number: cleanMemberId });
+      console.error("Member lookup failed - member not found:", { member_number: cleanMemberId });
       throw new Error("Invalid member ID");
     }
 
     console.log("Found member:", member);
+
+    // Check if member already has an auth account
+    if (member.auth_user_id) {
+      console.log("Member already has auth account, attempting direct login");
+    }
 
     // Use member number for authentication
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -29,27 +34,31 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     }
 
     if (!signInData?.user) {
+      console.error('Sign in failed - no user data returned');
       throw new Error("Login failed");
     }
 
-    // Update member record if needed
-    const { error: updateError } = await supabase
-      .from('members')
-      .update({ 
-        auth_user_id: signInData.user.id,
-        email_verified: true,
-        email: `${cleanMemberId}@temp.pwaburton.org`,
-        profile_updated: true
-      })
-      .eq('member_number', cleanMemberId)
-      .is('auth_user_id', null); // Only update if auth_user_id is null
+    // Only update member record if auth_user_id is null
+    if (!member.auth_user_id) {
+      console.log("Updating member record with auth user ID");
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ 
+          auth_user_id: signInData.user.id,
+          email_verified: true,
+          email: `${cleanMemberId}@temp.pwaburton.org`,
+          profile_updated: true
+        })
+        .eq('member_number', cleanMemberId)
+        .is('auth_user_id', null);
 
-    if (updateError) {
-      console.error('Error updating member record:', updateError);
-      // Continue anyway since the user is authenticated
+      if (updateError) {
+        console.error('Error updating member record:', updateError);
+        // Continue anyway since the user is authenticated
+      }
     }
 
-    console.log("Login successful");
+    console.log("Login successful, redirecting to admin");
     navigate("/admin");
 
   } catch (error) {

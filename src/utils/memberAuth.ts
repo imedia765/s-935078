@@ -5,7 +5,6 @@ export async function getMemberByMemberId(memberId: string) {
   console.log("Looking up member with member_number:", cleanMemberId);
   
   try {
-    // Use exact match instead of ilike for member_number
     const { data, error } = await supabase
       .from('members')
       .select('*')
