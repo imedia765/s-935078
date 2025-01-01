@@ -25,54 +25,31 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     if (member.first_time_login && !member.auth_user_id) {
       console.log("First time login, creating auth user");
       
-      // First try to sign in, in case the user already exists
-      const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
+      // Create auth user with member number as password
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: member.member_number.trim()
+        password: member.member_number.trim(),
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            member_id: member.id,
+            full_name: member.full_name
+          }
+        }
       });
 
-      if (signInError) {
-        console.log("No existing user found, creating new one");
-        // Create auth user with member number as password
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: member.member_number.trim(),
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: {
-              member_id: member.id,
-              full_name: member.full_name
-            }
-          }
-        });
+      if (signUpError) {
+        console.error('Sign up error:', signUpError);
+        throw new Error("Failed to create account");
+      }
 
-        if (signUpError) {
-          console.error('Sign up error:', signUpError);
-          throw new Error("Failed to create account");
-        }
-
-        if (signUpData?.user) {
-          // Update member record with auth user id
-          const { error: updateError } = await supabase
-            .from('members')
-            .update({ 
-              auth_user_id: signUpData.user.id,
-              email_verified: true // Since we're managing verification ourselves
-            })
-            .eq('id', member.id)
-            .single();
-
-          if (updateError) {
-            console.error('Error updating member:', updateError);
-          }
-        }
-      } else if (existingUser?.user) {
-        // User exists but wasn't linked, update the member record
+      if (signUpData?.user) {
+        // Update member record with auth user id
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
-            auth_user_id: existingUser.user.id,
-            email_verified: true
+            auth_user_id: signUpData.user.id,
+            email_verified: true // Since we're managing verification ourselves
           })
           .eq('id', member.id)
           .single();
@@ -83,10 +60,12 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
     }
 
-    // Now attempt to sign in
+    // Now attempt to sign in with appropriate password
+    const loginPassword = member.first_time_login ? member.member_number.trim() : password;
+    
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: member.first_time_login ? member.member_number.trim() : password
+      password: loginPassword
     });
 
     if (signInError) {
