@@ -470,6 +470,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authenticate_member: {
+        Args: {
+          p_member_number: string
+        }
+        Returns: {
+          id: string
+          member_number: string
+          auth_user_id: string
+          full_name: string
+          email: string
+        }[]
+      }
       delete_collector: {
         Args: {
           collector_id: string
@@ -488,6 +500,10 @@ export type Database = {
           name: string
         }
         Returns: string
+      }
+      reset_member_passwords: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       sync_collector_ids: {
         Args: Record<PropertyKey, never>
