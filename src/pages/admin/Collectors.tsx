@@ -30,19 +30,7 @@ export default function Collectors() {
         throw collectorsError;
       }
 
-      // Get total member count first
-      const { count: totalMemberCount, error: countError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true });
-
-      if (countError) {
-        console.error('Error getting total count:', countError);
-        throw countError;
-      }
-
-      console.log('Total members in database:', totalMemberCount);
-
-      // Then, get all members with their collector information
+      // Get all members with their collector information without any limit
       const { data: membersData, error: membersError } = await supabase
         .from('members')
         .select(`
