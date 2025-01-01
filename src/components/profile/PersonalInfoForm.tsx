@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Mail, Phone, MapPin, Calendar } from "lucide-react";
-import { format, parse } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 
 interface PersonalInfoFormProps {
   formData: {
@@ -22,6 +22,8 @@ interface PersonalInfoFormProps {
 export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormProps) => {
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateValue = e.target.value;
+    console.log("Raw date input:", dateValue);
+    
     if (!dateValue) {
       onInputChange('date_of_birth', '');
       return;
@@ -30,8 +32,13 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
     try {
       // Convert the input date to a Date object
       const date = new Date(dateValue);
+      if (!isValid(date)) {
+        console.error('Invalid date:', dateValue);
+        return;
+      }
       // Format it as DD/MM/YYYY for storage
       const formattedDate = format(date, 'dd/MM/yyyy');
+      console.log("Formatted date for storage:", formattedDate);
       onInputChange('date_of_birth', formattedDate);
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -40,21 +47,32 @@ export const PersonalInfoForm = ({ formData, onInputChange }: PersonalInfoFormPr
 
   // Format the date for display in the input field
   const getFormattedDateForInput = () => {
-    if (!formData.date_of_birth) return '';
+    if (!formData.date_of_birth) {
+      console.log("No date of birth provided");
+      return '';
+    }
+    
+    console.log("Original date of birth:", formData.date_of_birth);
+    
     try {
-      // Parse the stored date (DD/MM/YYYY) to a Date object
-      const date = parse(formData.date_of_birth, 'dd/MM/yyyy', new Date());
-      // Format it as YYYY-MM-DD for the input field
-      return format(date, 'yyyy-MM-dd');
-    } catch {
+      let date;
+      // Try parsing as DD/MM/YYYY first
       try {
-        // Fallback: try parsing as is if it's already in a different format
-        const date = new Date(formData.date_of_birth);
-        return format(date, 'yyyy-MM-dd');
-      } catch (error) {
-        console.error('Error parsing date:', error);
-        return '';
+        date = parse(formData.date_of_birth, 'dd/MM/yyyy', new Date());
+        if (!isValid(date)) throw new Error('Invalid date from DD/MM/YYYY format');
+      } catch {
+        // If that fails, try parsing as YYYY-MM-DD
+        date = new Date(formData.date_of_birth);
+        if (!isValid(date)) throw new Error('Invalid date from YYYY-MM-DD format');
       }
+      
+      // Format as YYYY-MM-DD for the input field
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      console.log("Formatted date for input:", formattedDate);
+      return formattedDate;
+    } catch (error) {
+      console.error('Error parsing date:', error, formData.date_of_birth);
+      return '';
     }
   };
 
