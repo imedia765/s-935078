@@ -15,6 +15,10 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     // Use the email stored in the database
     const email = member.email;
     
+    if (!email) {
+      throw new Error("No email associated with this member ID");
+    }
+    
     console.log("Attempting member ID login with:", { memberId, email });
     
     // For first time login, always use member number as password
@@ -30,27 +34,26 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       if (signInError) {
         console.log('Initial sign in failed, attempting signup:', signInError);
         
-        // Prepare user metadata
+        // Prepare user metadata - ensure all fields are properly formatted
         const metadata = {
           member_id: member.id,
           member_number: member.member_number.trim(),
-          full_name: member.full_name,
+          full_name: member.full_name?.trim(),
           date_of_birth: member.date_of_birth,
-          gender: member.gender,
-          marital_status: member.marital_status,
-          phone: member.phone,
-          address: member.address,
-          postcode: member.postcode,
-          town: member.town
+          gender: member.gender?.toLowerCase(),
+          marital_status: member.marital_status?.toLowerCase(),
+          phone: member.phone?.trim(),
+          address: member.address?.trim(),
+          postcode: member.postcode?.trim(),
+          town: member.town?.trim()
         };
 
         // Only attempt signup if user doesn't exist
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
-          password: member.member_number.trim(), // Ensure no whitespace
+          password: member.member_number.trim(),
           options: {
-            data: metadata,
-            emailRedirectTo: window.location.origin
+            data: metadata
           }
         });
 
@@ -62,7 +65,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
         // If signup succeeded, try signing in again
         const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
           email,
-          password: member.member_number.trim() // Ensure no whitespace
+          password: member.member_number.trim()
         });
 
         if (finalSignInError) {
@@ -74,7 +77,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
-            auth_user_id: finalSignInData.user.id,
+            auth_user_id: finalSignInData.user?.id,
             email_verified: true,
             first_time_login: false
           })
@@ -113,7 +116,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       console.log('Attempting regular login with provided password');
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: password.trim() // Ensure no whitespace
+        password: password.trim()
       });
 
       if (signInError) {
