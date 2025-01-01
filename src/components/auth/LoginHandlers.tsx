@@ -22,7 +22,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     console.log("Attempting member ID login with:", { memberId, email });
     
     // For first time login, use member number as password
-    const loginPassword = !member.password_changed ? member.member_number.trim() : password;
+    const loginPassword = member.first_time_login ? member.member_number.trim() : password;
     
     // Attempt to sign in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -37,7 +37,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
     if (signInData?.user) {
       // If this was first time login, update the flags
-      if (!member.password_changed) {
+      if (member.first_time_login) {
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
