@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Cog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NextOfKinSection } from "@/components/registration/NextOfKinSection";
@@ -109,7 +109,7 @@ export const AccountSettingsSection = ({ memberData }: AccountSettingsSectionPro
   };
 
   // Update form data when memberData changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (memberData) {
       console.log("Updating form data with member data:", memberData);
       setFormData({
