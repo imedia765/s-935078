@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getMemberByMemberId } from "@/utils/memberAuth";
+import { User } from "@supabase/supabase-js";
 
 export async function handleMemberIdLogin(memberId: string, password: string, navigate: ReturnType<typeof useNavigate>) {
   try {
@@ -23,7 +24,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
     // Check if user exists in auth
     const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
-    const existingUser = users?.find(u => u.email === email);
+    const existingUser = users?.find((u: User) => u.email === email);
 
     if (!existingUser) {
       console.log("No auth user found, creating account");
