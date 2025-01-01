@@ -33,7 +33,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
         // Prepare user metadata
         const metadata = {
           member_id: member.id,
-          member_number: member.member_number,
+          member_number: member.member_number.trim(),
           full_name: member.full_name,
           date_of_birth: member.date_of_birth,
           gender: member.gender,
@@ -49,7 +49,8 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           email,
           password: member.member_number.trim(), // Ensure no whitespace
           options: {
-            data: metadata
+            data: metadata,
+            emailRedirectTo: window.location.origin
           }
         });
 
@@ -74,7 +75,8 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           .from('members')
           .update({ 
             auth_user_id: finalSignInData.user.id,
-            email_verified: true 
+            email_verified: true,
+            first_time_login: false
           })
           .eq('id', member.id)
           .single();
@@ -89,6 +91,20 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
 
       if (signInData?.user) {
+        // Update first time login flag
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ 
+            first_time_login: false,
+            email_verified: true
+          })
+          .eq('id', member.id)
+          .single();
+
+        if (updateError) {
+          console.error('Error updating member:', updateError);
+        }
+
         navigate("/admin");
         return;
       }
