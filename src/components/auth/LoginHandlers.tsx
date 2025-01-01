@@ -20,14 +20,42 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     }
     
     console.log("Attempting member ID login with:", { memberId, email });
-    
-    // For first time login, use member number as password
-    const loginPassword = member.first_time_login ? member.member_number.trim() : password;
-    
-    // Attempt to sign in
+
+    // For first time login, we need to create the auth user first
+    if (member.first_time_login && !member.auth_user_id) {
+      console.log("First time login, creating auth user");
+      
+      // Create auth user with member number as password
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: member.member_number.trim(),
+      });
+
+      if (signUpError) {
+        console.error('Sign up error:', signUpError);
+        throw new Error("Failed to create account");
+      }
+
+      if (signUpData?.user) {
+        // Update member record with auth user id
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ 
+            auth_user_id: signUpData.user.id,
+          })
+          .eq('id', member.id)
+          .single();
+
+        if (updateError) {
+          console.error('Error updating member:', updateError);
+        }
+      }
+    }
+
+    // Now attempt to sign in
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: loginPassword
+      password: member.first_time_login ? member.member_number.trim() : password
     });
 
     if (signInError) {
@@ -42,8 +70,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           .from('members')
           .update({ 
             first_time_login: false,
-            email_verified: true,
-            auth_user_id: signInData.user.id
+            email_verified: true
           })
           .eq('id', member.id)
           .single();
