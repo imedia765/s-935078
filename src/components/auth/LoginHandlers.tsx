@@ -38,7 +38,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
       if (signUpError) {
         console.error('Sign up error:', signUpError);
-        throw new Error("Failed to create account");
+        throw signUpError;
       }
 
       if (signUpData?.user) {
@@ -54,16 +54,17 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
         if (updateError) {
           console.error('Error updating member:', updateError);
+          throw updateError;
         }
       }
     }
 
     // Sign in using member ID as password
-    console.log("Attempting sign in with:", { email });
+    console.log("Attempting sign in with:", { email, memberId });
     
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: memberId // Always use member ID as password
+      password: memberId // Always use member ID as password for initial login
     });
 
     if (signInError) {
