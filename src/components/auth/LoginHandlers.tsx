@@ -17,14 +17,53 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
     console.log("Found member:", member);
 
-    // Check if member already has an auth account
-    if (member.auth_user_id) {
-      console.log("Member already has auth account, attempting direct login");
+    const email = `${cleanMemberId}@temp.pwaburton.org`;
+
+    // If member doesn't have an auth account yet, create one
+    if (!member.auth_user_id) {
+      console.log("Member has no auth account, creating one");
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: cleanMemberId,
+        options: {
+          data: {
+            member_number: cleanMemberId
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Sign up failed:', signUpError);
+        throw new Error("Failed to create account");
+      }
+
+      if (!signUpData?.user) {
+        console.error('Sign up failed - no user data returned');
+        throw new Error("Account creation failed");
+      }
+
+      // Update member record with auth user id
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ 
+          auth_user_id: signUpData.user.id,
+          email_verified: true,
+          email: email,
+          profile_updated: true
+        })
+        .eq('member_number', cleanMemberId)
+        .is('auth_user_id', null);
+
+      if (updateError) {
+        console.error('Error updating member record:', updateError);
+        throw new Error("Failed to update member record");
+      }
     }
 
-    // Use member number for authentication
+    // Now attempt to sign in
+    console.log("Attempting to sign in with credentials");
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: `${cleanMemberId}@temp.pwaburton.org`,
+      email: email,
       password: cleanMemberId
     });
 
@@ -36,26 +75,6 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     if (!signInData?.user) {
       console.error('Sign in failed - no user data returned');
       throw new Error("Login failed");
-    }
-
-    // Only update member record if auth_user_id is null
-    if (!member.auth_user_id) {
-      console.log("Updating member record with auth user ID");
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({ 
-          auth_user_id: signInData.user.id,
-          email_verified: true,
-          email: `${cleanMemberId}@temp.pwaburton.org`,
-          profile_updated: true
-        })
-        .eq('member_number', cleanMemberId)
-        .is('auth_user_id', null);
-
-      if (updateError) {
-        console.error('Error updating member record:', updateError);
-        // Continue anyway since the user is authenticated
-      }
     }
 
     console.log("Login successful, redirecting to admin");
