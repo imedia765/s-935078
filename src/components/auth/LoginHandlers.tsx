@@ -21,7 +21,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     console.log("Attempting member ID login with:", { memberId, email });
 
-    // Only create new account if first time login AND no auth user exists
+    // Create new account only if no auth user exists
     if (!member.auth_user_id) {
       console.log("No auth user found, creating account");
       
@@ -60,13 +60,13 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
     }
 
-    // If no auth_user_id exists, use member number as password
-    // Otherwise use the provided password
+    // For first time login (no auth_user_id), use member number as password
+    // For subsequent logins (has auth_user_id), use the provided password
     const loginPassword = !member.auth_user_id ? member.member_number.trim() : password;
     
     console.log("Attempting sign in with:", { 
       email, 
-      isFirstTimeLogin: member.first_time_login,
+      isFirstTimeLogin: !member.auth_user_id,
       hasAuthUserId: !!member.auth_user_id,
       usingMemberNumberAsPassword: !member.auth_user_id
     });
@@ -83,7 +83,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
     if (signInData?.user) {
       // If this was first time login, update the flags
-      if (member.first_time_login) {
+      if (!member.auth_user_id) {
         const { error: updateError } = await supabase
           .from('members')
           .update({ 
