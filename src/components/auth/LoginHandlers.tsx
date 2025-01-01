@@ -20,7 +20,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     if (!member.password_changed) {
       console.log("First time login detected, using member number as password");
       
-      // Try to sign in first with member number as password
+      // Try to sign in with member number as password
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: member.member_number
@@ -29,22 +29,32 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       if (signInError) {
         console.log('Initial sign in failed, attempting signup:', signInError);
         
+        // Prepare user metadata
+        const metadata = {
+          member_id: member.id,
+          member_number: member.member_number,
+          full_name: member.full_name,
+          date_of_birth: member.date_of_birth,
+          gender: member.gender,
+          marital_status: member.marital_status,
+          phone: member.phone,
+          address: member.address,
+          postcode: member.postcode,
+          town: member.town
+        };
+
         // Only attempt signup if user doesn't exist
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password: member.member_number,
           options: {
-            data: {
-              member_id: member.id,
-              member_number: member.member_number,
-              full_name: member.full_name
-            }
+            data: metadata
           }
         });
 
         if (signUpError) {
           console.error('Sign up error:', signUpError);
-          throw new Error("Failed to create account");
+          throw new Error(signUpError.message || "Failed to create account");
         }
 
         // If signup succeeded, try signing in again
