@@ -23,9 +23,8 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
 
     // For first time login without auth user, create the account
     if (member.first_time_login && !member.auth_user_id) {
-      console.log("First time login, creating auth user");
+      console.log("First time login without auth user, creating account");
       
-      // Create auth user with member number as password
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: member.member_number.trim(),
@@ -49,7 +48,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           .from('members')
           .update({ 
             auth_user_id: signUpData.user.id,
-            email_verified: true // Since we're managing verification ourselves
+            email_verified: true
           })
           .eq('id', member.id)
           .single();
@@ -60,10 +59,15 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
     }
 
-    // Determine which password to use
+    // For first time login, always use member number as password
+    // For returning users, use the provided password
     const loginPassword = member.first_time_login ? member.member_number.trim() : password;
     
-    console.log("Attempting sign in with:", { email, isFirstTimeLogin: member.first_time_login });
+    console.log("Attempting sign in with:", { 
+      email, 
+      isFirstTimeLogin: member.first_time_login,
+      hasAuthUserId: !!member.auth_user_id 
+    });
     
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
