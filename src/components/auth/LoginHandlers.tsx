@@ -8,6 +8,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     const member = await getMemberByMemberId(memberId);
     
     if (!member) {
+      console.error("Member lookup failed:", { memberId });
       throw new Error("Member ID not found");
     }
     
@@ -23,7 +24,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       // Try to sign in with member number as password
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: member.member_number
+        password: member.member_number.trim() // Ensure no whitespace
       });
 
       if (signInError) {
@@ -46,7 +47,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
         // Only attempt signup if user doesn't exist
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
-          password: member.member_number,
+          password: member.member_number.trim(), // Ensure no whitespace
           options: {
             data: metadata
           }
@@ -60,7 +61,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
         // If signup succeeded, try signing in again
         const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
           email,
-          password: member.member_number
+          password: member.member_number.trim() // Ensure no whitespace
         });
 
         if (finalSignInError) {
@@ -93,9 +94,10 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
     } else {
       // Regular login with provided password
+      console.log('Attempting regular login with provided password');
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password: password.trim() // Ensure no whitespace
       });
 
       if (signInError) {
