@@ -21,15 +21,14 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
     
     console.log("Attempting member ID login with:", { memberId, email });
 
-    // Create new account if no auth user exists
+    // If no auth user exists yet, create one
     if (!member.auth_user_id) {
       console.log("No auth user found, creating account");
       
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: member.member_number.trim(),
+        password: memberId, // Use member ID as password
         options: {
-          emailRedirectTo: window.location.origin,
           data: {
             member_id: member.id,
             full_name: member.full_name
@@ -48,7 +47,7 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
           .from('members')
           .update({ 
             auth_user_id: signUpData.user.id,
-            email_verified: true,
+            email_verified: true
           })
           .eq('id', member.id)
           .single();
@@ -59,17 +58,12 @@ export async function handleMemberIdLogin(memberId: string, password: string, na
       }
     }
 
-    // Always use member number as password for initial login
-    const loginPassword = member.member_number.trim();
-    
-    console.log("Attempting sign in with:", { 
-      email,
-      usingMemberNumber: true
-    });
+    // Sign in using member ID as password
+    console.log("Attempting sign in with:", { email });
     
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: loginPassword
+      password: memberId // Always use member ID as password
     });
 
     if (signInError) {
