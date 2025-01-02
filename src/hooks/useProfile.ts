@@ -19,7 +19,7 @@ export const useProfile = () => {
           .from("members")
           .select()
           .eq('auth_user_id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
           console.error("Profile fetch error:", profileError);
@@ -35,7 +35,7 @@ export const useProfile = () => {
               .from("members")
               .select()
               .eq('member_number', session.user.user_metadata.member_number)
-              .single();
+              .maybeSingle();
 
             if (memberError) {
               console.error("Member fetch error:", memberError);
@@ -43,6 +43,7 @@ export const useProfile = () => {
             }
 
             if (memberData) {
+              console.log("Found profile by member_number, updating auth_user_id");
               // Update auth_user_id if found by member_number
               const { error: updateError } = await supabase
                 .from("members")
@@ -56,6 +57,9 @@ export const useProfile = () => {
               return memberData;
             }
           }
+          
+          console.log("No profile found by either auth_user_id or member_number");
+          return null;
         }
 
         return profileData;
