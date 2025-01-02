@@ -11,7 +11,7 @@ export const useProfile = () => {
           throw new Error("No user found");
         }
 
-        // First try to get the member by auth_user_id
+        // First try to get the member directly by auth_user_id using a single query
         const { data: profileData, error: profileError } = await supabase
           .from("members")
           .select(`
@@ -32,15 +32,15 @@ export const useProfile = () => {
             updated_at
           `)
           .eq('auth_user_id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
           console.error("Profile fetch error:", profileError);
           throw profileError;
         }
 
+        // If no profile found and we have a member_number in metadata, try that
         if (!profileData && session.user.user_metadata?.member_number) {
-          // If not found by auth_user_id, try by member_number
           const { data: memberData, error: memberError } = await supabase
             .from("members")
             .select(`
@@ -61,7 +61,7 @@ export const useProfile = () => {
               updated_at
             `)
             .eq('member_number', session.user.user_metadata.member_number)
-            .single();
+            .maybeSingle();
 
           if (memberError) {
             console.error("Member fetch error:", memberError);
