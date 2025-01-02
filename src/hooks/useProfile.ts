@@ -17,12 +17,13 @@ export const useProfile = () => {
         
         // First try to get member by member_number from metadata
         if (session.user.user_metadata?.member_number) {
-          console.log("Trying to fetch profile by member_number:", session.user.user_metadata.member_number);
+          const memberNumber = session.user.user_metadata.member_number.toUpperCase();
+          console.log("Trying to fetch profile by member_number:", memberNumber);
           
           const { data: memberData, error: memberError } = await supabase
             .from("members")
-            .select()
-            .eq('member_number', session.user.user_metadata.member_number)
+            .select("*")
+            .ilike('member_number', memberNumber)
             .maybeSingle();
 
           if (memberError) {
@@ -35,6 +36,7 @@ export const useProfile = () => {
             
             // Update auth_user_id if not set
             if (!memberData.auth_user_id) {
+              console.log("Updating auth_user_id for member:", memberData.id);
               const { error: updateError } = await supabase
                 .from("members")
                 .update({ auth_user_id: session.user.id })
@@ -42,10 +44,14 @@ export const useProfile = () => {
 
               if (updateError) {
                 console.error("Failed to update auth_user_id:", updateError);
+              } else {
+                console.log("Successfully updated auth_user_id");
               }
             }
 
             return memberData;
+          } else {
+            console.log("No member found with member_number:", memberNumber);
           }
         }
 
@@ -54,7 +60,7 @@ export const useProfile = () => {
         
         const { data: profileData, error: profileError } = await supabase
           .from("members")
-          .select()
+          .select("*")
           .eq('auth_user_id', session.user.id)
           .maybeSingle();
 
@@ -64,11 +70,11 @@ export const useProfile = () => {
         }
 
         if (!profileData) {
-          console.log("No profile found");
+          console.log("No profile found by auth_user_id");
           return null;
         }
 
-        console.log("Found profile:", profileData);
+        console.log("Found profile by auth_user_id:", profileData);
         return profileData;
       } catch (err) {
         console.error("Error in profile query:", err);
