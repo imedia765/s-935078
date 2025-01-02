@@ -11,7 +11,7 @@ export const useProfile = () => {
           throw new Error("No user found");
         }
 
-        // First try to get the member directly by auth_user_id using a single query
+        // First try to get the member by checking the current user's access
         const { data: profileData, error: profileError } = await supabase
           .from("members")
           .select(`
@@ -31,7 +31,6 @@ export const useProfile = () => {
             created_at,
             updated_at
           `)
-          .eq('auth_user_id', session.user.id)
           .maybeSingle();
 
         if (profileError) {
