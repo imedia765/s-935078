@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/integrations/supabase/types/profile";
+import { useToast } from "@/components/ui/use-toast";
 
 export const useProfile = () => {
+  const { toast } = useToast();
+
   return useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
@@ -10,6 +13,11 @@ export const useProfile = () => {
       
       if (sessionError) {
         console.error("Session error:", sessionError);
+        toast({
+          title: "Session Error",
+          description: "Failed to get session. Please try logging in again.",
+          variant: "destructive",
+        });
         throw new Error("Failed to get session");
       }
 
@@ -20,21 +28,32 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // First get the profile
+      // First try to get the profile directly
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*")
+        .select(`
+          *,
+          members_roles (
+            role
+          )
+        `)
         .eq("auth_user_id", session.user.id)
         .maybeSingle();
 
       if (profileError) {
         console.error("Profile fetch error:", profileError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch profile data",
+          variant: "destructive",
+        });
         throw profileError;
       }
 
       if (!profileData) {
         console.log("No profile found, checking members table");
-        // If no profile found, try to get data from members table
+        
+        // If no profile, try to get from members and create profile
         const { data: memberData, error: memberError } = await supabase
           .from("members")
           .select("*")
@@ -43,13 +62,18 @@ export const useProfile = () => {
 
         if (memberError) {
           console.error("Member fetch error:", memberError);
+          toast({
+            title: "Error",
+            description: "Failed to fetch member data",
+            variant: "destructive",
+          });
           throw memberError;
         }
 
         console.log("Found member data:", memberData);
 
         if (memberData) {
-          // Create a profile from member data
+          // Create a profile from member data using RPC
           const { data: newProfile, error: insertError } = await supabase
             .rpc('safely_upsert_profile', {
               p_auth_user_id: session.user.id,
@@ -60,6 +84,11 @@ export const useProfile = () => {
 
           if (insertError) {
             console.error("Profile creation error:", insertError);
+            toast({
+              title: "Error",
+              description: "Failed to create profile",
+              variant: "destructive",
+            });
             throw insertError;
           }
 
@@ -67,26 +96,19 @@ export const useProfile = () => {
           return newProfile[0] as Profile;
         }
 
-        // If no member data found either, return null
-        console.log("No member data found, returning null");
+        toast({
+          title: "No Profile Found",
+          description: "No profile or member data found for your account.",
+          variant: "destructive",
+        });
         return null;
       }
 
-      // Now get the role in a separate query
-      const { data: roleData } = await supabase
-        .from("members_roles")
-        .select("role")
-        .eq("profile_id", profileData.id)
-        .maybeSingle();
-
-      // Combine profile and role data
-      const profileWithRole = {
+      console.log("Found profile with role:", profileData);
+      return {
         ...profileData,
-        members_roles: roleData
-      };
-
-      console.log("Found profile with role:", profileWithRole);
-      return profileWithRole as Profile;
+        role: profileData.members_roles?.[0]?.role
+      } as Profile;
     },
     retry: 1,
     staleTime: 30000, // Cache for 30 seconds
