@@ -17,13 +17,13 @@ export const useProfile = () => {
         
         // First try to get member by member_number from metadata
         if (session.user.user_metadata?.member_number) {
-          const memberNumber = session.user.user_metadata.member_number.toUpperCase();
+          const memberNumber = session.user.user_metadata.member_number;
           console.log("Trying to fetch profile by member_number:", memberNumber);
           
           const { data: memberData, error: memberError } = await supabase
             .from("members")
             .select("*")
-            .ilike('member_number', memberNumber)
+            .eq('member_number', memberNumber)
             .maybeSingle();
 
           if (memberError) {
