@@ -328,32 +328,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      safely_upsert_profile: {
-        Args: {
-          p_auth_user_id: string
-          p_member_number: string
-          p_full_name: string
-          p_email: string
-        }
-        Returns: {
-          address: string | null
-          auth_user_id: string
-          created_at: string
-          date_of_birth: string | null
-          email: string | null
-          full_name: string
-          gender: string | null
-          id: string
-          marital_status: string | null
-          member_number: string
-          membership_type: string | null
-          phone: string | null
-          postcode: string | null
-          status: string | null
-          town: string | null
-          updated_at: string
-        }[]
-      }
     }
     Enums: {
       user_role: "member" | "collector" | "admin"
