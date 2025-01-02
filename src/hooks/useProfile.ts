@@ -28,11 +28,12 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // First fetch the profile
+      // First fetch the profile using a simpler query
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("auth_user_id", session.user.id)
+        .limit(1)
         .maybeSingle();
 
       if (profileError) {
@@ -53,6 +54,7 @@ export const useProfile = () => {
           .from("members")
           .select("*")
           .eq("auth_user_id", session.user.id)
+          .limit(1)
           .maybeSingle();
 
         if (memberError) {
@@ -99,11 +101,12 @@ export const useProfile = () => {
         return null;
       }
 
-      // Then fetch the role separately
+      // Then fetch the role separately with a simpler query
       const { data: roleData, error: roleError } = await supabase
         .from("members_roles")
         .select("role")
         .eq("profile_id", profileData.id)
+        .limit(1)
         .maybeSingle();
 
       if (roleError) {
