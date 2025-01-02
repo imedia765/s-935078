@@ -36,8 +36,11 @@ export const LoginForm = () => {
       // Use member number as email (temporary solution)
       const email = `${memberNumber}@temp.com`;
 
-      // Try to sign in first
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // Clear any existing sessions first
+      await supabase.auth.signOut();
+
+      // Try to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: memberNumber
       });
@@ -46,7 +49,7 @@ export const LoginForm = () => {
         console.log("Sign in failed, attempting to create account...");
         
         // If sign in fails, create the account
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password: memberNumber,
           options: {
@@ -66,7 +69,7 @@ export const LoginForm = () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Try signing in again after account creation
-        const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+        const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
           email,
           password: memberNumber
         });
@@ -75,6 +78,14 @@ export const LoginForm = () => {
           console.error("Final sign in error:", finalSignInError);
           throw new Error('Failed to sign in after account creation');
         }
+
+        // Store the session
+        if (finalSignInData.session) {
+          localStorage.setItem('supabase.auth.token', finalSignInData.session.refresh_token || '');
+        }
+      } else if (signInData.session) {
+        // Store the session for successful direct sign in
+        localStorage.setItem('supabase.auth.token', signInData.session.refresh_token || '');
       }
 
       // Update the member's auth_user_id
