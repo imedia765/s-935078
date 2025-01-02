@@ -28,15 +28,10 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // First try to get the profile directly
+      // First fetch the profile
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select(`
-          *,
-          members_roles (
-            role
-          )
-        `)
+        .select("*")
         .eq("auth_user_id", session.user.id)
         .maybeSingle();
 
@@ -92,7 +87,7 @@ export const useProfile = () => {
             throw insertError;
           }
 
-          console.log("Created and returning new profile:", newProfile);
+          console.log("Created new profile:", newProfile);
           return newProfile[0] as Profile;
         }
 
@@ -104,10 +99,23 @@ export const useProfile = () => {
         return null;
       }
 
-      console.log("Found profile with role:", profileData);
+      // Then fetch the role separately
+      const { data: roleData, error: roleError } = await supabase
+        .from("members_roles")
+        .select("role")
+        .eq("profile_id", profileData.id)
+        .maybeSingle();
+
+      if (roleError) {
+        console.error("Role fetch error:", roleError);
+        // Don't throw error for role fetch, just continue without role
+      }
+
+      console.log("Found profile with role:", { ...profileData, role: roleData?.role });
+      
       return {
         ...profileData,
-        role: profileData.members_roles?.[0]?.role
+        role: roleData?.role
       } as Profile;
     },
     retry: 1,
