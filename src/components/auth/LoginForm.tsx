@@ -40,7 +40,7 @@ export const LoginForm = () => {
       // Clear any existing sessions first
       await supabase.auth.signOut();
 
-      // Try to sign in with member number as both email and password
+      // Try to sign in with member number as email
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: `${memberNumber}@member.com`,
         password: memberNumber
@@ -68,9 +68,6 @@ export const LoginForm = () => {
 
         console.log("Account created successfully");
 
-        // Wait for a moment to allow the database to update
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
         // Try signing in again after account creation
         const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
           email: `${memberNumber}@member.com`,
@@ -83,29 +80,8 @@ export const LoginForm = () => {
         }
 
         console.log("Final sign in successful");
-
-        // Store the session
-        if (finalSignInData.session) {
-          localStorage.setItem('supabase.auth.token', finalSignInData.session.refresh_token || '');
-        }
-      } else if (signInData.session) {
+      } else {
         console.log("Direct sign in successful");
-        // Store the session for successful direct sign in
-        localStorage.setItem('supabase.auth.token', signInData.session.refresh_token || '');
-      }
-
-      // Update the member's auth_user_id
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData?.user) {
-        console.log("Updating auth_user_id for member:", memberNumber);
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ auth_user_id: authData.user.id })
-          .eq('member_number', memberNumber);
-
-        if (updateError) {
-          console.error("Error updating auth_user_id:", updateError);
-        }
       }
 
       toast({

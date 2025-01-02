@@ -8,10 +8,13 @@ export const useProfile = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
+          console.log("No authenticated session found");
           throw new Error("No user found");
         }
 
-        // First try to get the member by checking the current user's access
+        console.log("Fetching profile for user:", session.user.id);
+        
+        // First try to get the member by auth_user_id
         const { data: profileData, error: profileError } = await supabase
           .from("members")
           .select(`
@@ -31,6 +34,7 @@ export const useProfile = () => {
             created_at,
             updated_at
           `)
+          .eq('auth_user_id', session.user.id)
           .maybeSingle();
 
         if (profileError) {
@@ -40,6 +44,8 @@ export const useProfile = () => {
 
         // If no profile found and we have a member_number in metadata, try that
         if (!profileData && session.user.user_metadata?.member_number) {
+          console.log("Trying to fetch profile by member number:", session.user.user_metadata.member_number);
+          
           const { data: memberData, error: memberError } = await supabase
             .from("members")
             .select(`
