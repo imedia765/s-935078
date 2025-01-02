@@ -179,6 +179,14 @@ export type Database = {
               role: Database["public"]["Enums"]["user_role"]
             }[]
           }
+      current_user_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      current_user_is_collector: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       get_user_role: {
         Args: {
           user_auth_id: string
