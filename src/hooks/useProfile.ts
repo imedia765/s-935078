@@ -12,9 +12,46 @@ export const useProfile = () => {
           throw new Error("No user found");
         }
 
-        console.log("Fetching profile for user:", session.user.id);
+        console.log("Session user:", session.user);
+        console.log("User metadata:", session.user.user_metadata);
         
-        // Get member by auth_user_id
+        // First try to get member by member_number from metadata
+        if (session.user.user_metadata?.member_number) {
+          console.log("Trying to fetch profile by member_number:", session.user.user_metadata.member_number);
+          
+          const { data: memberData, error: memberError } = await supabase
+            .from("members")
+            .select()
+            .eq('member_number', session.user.user_metadata.member_number)
+            .maybeSingle();
+
+          if (memberError) {
+            console.error("Member fetch error:", memberError);
+            throw memberError;
+          }
+
+          if (memberData) {
+            console.log("Found profile by member_number:", memberData);
+            
+            // Update auth_user_id if not set
+            if (!memberData.auth_user_id) {
+              const { error: updateError } = await supabase
+                .from("members")
+                .update({ auth_user_id: session.user.id })
+                .eq('id', memberData.id);
+
+              if (updateError) {
+                console.error("Failed to update auth_user_id:", updateError);
+              }
+            }
+
+            return memberData;
+          }
+        }
+
+        // If no member_number in metadata or no profile found, try auth_user_id
+        console.log("Trying to fetch profile by auth_user_id:", session.user.id);
+        
         const { data: profileData, error: profileError } = await supabase
           .from("members")
           .select()
@@ -27,41 +64,11 @@ export const useProfile = () => {
         }
 
         if (!profileData) {
-          console.log("No profile found for auth_user_id, trying member_number");
-          
-          // If no profile found and we have a member_number in metadata, try that
-          if (session.user.user_metadata?.member_number) {
-            const { data: memberData, error: memberError } = await supabase
-              .from("members")
-              .select()
-              .eq('member_number', session.user.user_metadata.member_number)
-              .maybeSingle();
-
-            if (memberError) {
-              console.error("Member fetch error:", memberError);
-              throw memberError;
-            }
-
-            if (memberData) {
-              console.log("Found profile by member_number, updating auth_user_id");
-              // Update auth_user_id if found by member_number
-              const { error: updateError } = await supabase
-                .from("members")
-                .update({ auth_user_id: session.user.id })
-                .eq('id', memberData.id);
-
-              if (updateError) {
-                console.error("Failed to update auth_user_id:", updateError);
-              }
-
-              return memberData;
-            }
-          }
-          
-          console.log("No profile found by either auth_user_id or member_number");
+          console.log("No profile found");
           return null;
         }
 
+        console.log("Found profile:", profileData);
         return profileData;
       } catch (err) {
         console.error("Error in profile query:", err);
