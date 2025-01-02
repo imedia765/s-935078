@@ -28,7 +28,24 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // First try to get the profile directly with explicit column selection
+      // Try to create profile from user metadata first
+      if (session.user.user_metadata) {
+        const { data: newProfile, error: createError } = await supabase
+          .rpc('safely_upsert_profile', {
+            p_auth_user_id: session.user.id,
+            p_member_number: session.user.user_metadata.member_number || '',
+            p_full_name: session.user.user_metadata.full_name || '',
+            p_email: session.user.user_metadata.email || session.user.email || ''
+          });
+
+        if (createError) {
+          console.error("Profile creation error:", createError);
+        } else {
+          console.log("Profile created/updated from metadata:", newProfile);
+        }
+      }
+
+      // Now fetch the complete profile
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select(`
@@ -99,8 +116,6 @@ export const useProfile = () => {
           });
           throw memberError;
         }
-
-        console.log("Found member data:", memberData);
 
         if (memberData) {
           // Create profile from member data
