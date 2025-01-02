@@ -28,12 +28,31 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // First fetch the profile using a simpler query
+      // First try to get the profile directly
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("*")
+        .select(`
+          id,
+          auth_user_id,
+          member_number,
+          full_name,
+          date_of_birth,
+          gender,
+          marital_status,
+          email,
+          phone,
+          address,
+          postcode,
+          town,
+          status,
+          membership_type,
+          created_at,
+          updated_at,
+          members_roles (
+            role
+          )
+        `)
         .eq("auth_user_id", session.user.id)
-        .limit(1)
         .maybeSingle();
 
       if (profileError) {
@@ -49,12 +68,18 @@ export const useProfile = () => {
       if (!profileData) {
         console.log("No profile found, checking members table");
         
-        // If no profile, try to get from members and create profile
+        // If no profile exists, check members table
         const { data: memberData, error: memberError } = await supabase
           .from("members")
-          .select("*")
+          .select(`
+            id,
+            auth_user_id,
+            member_number,
+            full_name,
+            email,
+            role
+          `)
           .eq("auth_user_id", session.user.id)
-          .limit(1)
           .maybeSingle();
 
         if (memberError) {
@@ -70,7 +95,7 @@ export const useProfile = () => {
         console.log("Found member data:", memberData);
 
         if (memberData) {
-          // Create a profile from member data using RPC
+          // Create profile from member data
           const { data: newProfile, error: insertError } = await supabase
             .rpc('safely_upsert_profile', {
               p_auth_user_id: session.user.id,
@@ -90,7 +115,14 @@ export const useProfile = () => {
           }
 
           console.log("Created new profile:", newProfile);
-          return newProfile[0] as Profile;
+          
+          // Return the newly created profile
+          if (newProfile && newProfile[0]) {
+            return {
+              ...newProfile[0],
+              role: memberData.role
+            } as Profile;
+          }
         }
 
         toast({
@@ -101,24 +133,10 @@ export const useProfile = () => {
         return null;
       }
 
-      // Then fetch the role separately with a simpler query
-      const { data: roleData, error: roleError } = await supabase
-        .from("members_roles")
-        .select("role")
-        .eq("profile_id", profileData.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (roleError) {
-        console.error("Role fetch error:", roleError);
-        // Don't throw error for role fetch, just continue without role
-      }
-
-      console.log("Found profile with role:", { ...profileData, role: roleData?.role });
-      
+      // Return profile with role
       return {
         ...profileData,
-        role: roleData?.role
+        role: profileData.members_roles?.[0]?.role
       } as Profile;
     },
     retry: 1,

@@ -321,6 +321,12 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       link_member_with_auth: {
         Args: {
           p_member_number: string
