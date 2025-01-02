@@ -147,6 +147,161 @@ export type Database = {
         }
         Relationships: []
       }
+      members_collectors: {
+        Row: {
+          active: boolean | null
+          collector_profile_id: string
+          created_at: string
+          email: string | null
+          id: string
+          member_profile_id: string
+          name: string | null
+          number: string | null
+          phone: string | null
+          prefix: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          collector_profile_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          member_profile_id: string
+          name?: string | null
+          number?: string | null
+          phone?: string | null
+          prefix?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          collector_profile_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          member_profile_id?: string
+          name?: string | null
+          number?: string | null
+          phone?: string | null
+          prefix?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_collectors_collector_profile_id_fkey"
+            columns: ["collector_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_collectors_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      members_roles: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_roles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          auth_user_id: string
+          collector_number: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          is_active: boolean | null
+          marital_status: string | null
+          member_number: string
+          membership_type: string | null
+          phone: string | null
+          postcode: string | null
+          prefix: string | null
+          status: string | null
+          town: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          auth_user_id: string
+          collector_number?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          marital_status?: string | null
+          member_number: string
+          membership_type?: string | null
+          phone?: string | null
+          postcode?: string | null
+          prefix?: string | null
+          status?: string | null
+          town?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          auth_user_id?: string
+          collector_number?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          marital_status?: string | null
+          member_number?: string
+          membership_type?: string | null
+          phone?: string | null
+          postcode?: string | null
+          prefix?: string | null
+          status?: string | null
+          town?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -160,10 +315,9 @@ export type Database = {
             Returns: {
               id: string
               member_number: string
-              auth_user_id: string
               full_name: string
               email: string
-              role: string
+              role: Database["public"]["Enums"]["user_role"]
             }[]
           }
         | {
@@ -192,6 +346,48 @@ export type Database = {
           user_auth_id: string
         }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
+      link_member_with_auth: {
+        Args: {
+          p_member_number: string
+          p_auth_user_id: string
+        }
+        Returns: undefined
+      }
+      safely_upsert_profile: {
+        Args: {
+          p_auth_user_id: string
+          p_member_number: string
+          p_full_name: string
+          p_email: string
+        }
+        Returns: {
+          address: string | null
+          auth_user_id: string
+          collector_number: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          is_active: boolean | null
+          marital_status: string | null
+          member_number: string
+          membership_type: string | null
+          phone: string | null
+          postcode: string | null
+          prefix: string | null
+          status: string | null
+          town: string | null
+          updated_at: string
+        }[]
       }
     }
     Enums: {
