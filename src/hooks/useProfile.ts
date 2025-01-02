@@ -28,7 +28,7 @@ export const useProfile = () => {
 
       console.log("Fetching profile for user:", session.user.id);
 
-      // First try to get the profile directly
+      // First try to get the profile directly with explicit column selection
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select(`
@@ -47,10 +47,7 @@ export const useProfile = () => {
           status,
           membership_type,
           created_at,
-          updated_at,
-          members_roles (
-            role
-          )
+          updated_at
         `)
         .eq("auth_user_id", session.user.id)
         .maybeSingle();
@@ -63,6 +60,17 @@ export const useProfile = () => {
           variant: "destructive",
         });
         throw profileError;
+      }
+
+      // Separately fetch the role to avoid recursion
+      const { data: roleData, error: roleError } = await supabase
+        .from("members_roles")
+        .select("role")
+        .eq("profile_id", profileData?.id ?? '')
+        .maybeSingle();
+
+      if (roleError) {
+        console.error("Role fetch error:", roleError);
       }
 
       if (!profileData) {
@@ -116,7 +124,7 @@ export const useProfile = () => {
 
           console.log("Created new profile:", newProfile);
           
-          // Return the newly created profile
+          // Return the newly created profile with role
           if (newProfile && newProfile[0]) {
             return {
               ...newProfile[0],
@@ -136,7 +144,7 @@ export const useProfile = () => {
       // Return profile with role
       return {
         ...profileData,
-        role: profileData.members_roles?.[0]?.role
+        role: roleData?.role
       } as Profile;
     },
     retry: 1,
