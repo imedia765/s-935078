@@ -19,6 +19,9 @@ export const LoginForm = () => {
     console.log("Starting login process with member number:", memberNumber);
 
     try {
+      // First clear any existing sessions
+      await supabase.auth.signOut();
+      
       // First verify member credentials using RPC
       const { data: memberData, error: rpcError } = await supabase.rpc('authenticate_member', {
         p_member_number: memberNumber,
@@ -37,37 +40,37 @@ export const LoginForm = () => {
 
       console.log("Member authenticated:", memberData);
 
-      // First try to sign up the user if they don't exist
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: memberNumber + '@pwa.org', // Using member number as email
-        password: memberNumber,
-        options: {
-          data: {
-            member_number: memberNumber,
-            full_name: memberData[0].full_name,
-            email: memberData[0].email,
-          }
-        }
-      });
-
-      // If sign up fails because user exists, proceed with sign in
-      if (signUpError && signUpError.message !== "User already registered") {
-        console.error("Sign up error:", signUpError);
-        throw new Error('Failed to create account');
-      }
-
-      // Now sign in with the credentials
+      // Sign in with credentials
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: memberNumber + '@pwa.org', // Using member number as email
-        password: memberNumber,
+        email: `${memberNumber}@pwa.org`,
+        password: memberNumber, // Using member number as initial password
       });
 
       if (signInError) {
         console.error("Sign in error:", signInError);
-        throw new Error('Failed to sign in');
-      }
+        
+        // If sign in fails, try to create the account
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: `${memberNumber}@pwa.org`,
+          password: memberNumber,
+          options: {
+            data: {
+              member_number: memberNumber,
+              full_name: memberData[0].full_name,
+              email: memberData[0].email,
+            }
+          }
+        });
 
-      console.log("Sign in successful:", signInData);
+        if (signUpError) {
+          console.error("Sign up error:", signUpError);
+          throw new Error('Failed to create account');
+        }
+
+        console.log("New account created:", signUpData);
+      } else {
+        console.log("Sign in successful:", signInData);
+      }
 
       toast({
         title: "Success",
