@@ -40,10 +40,14 @@ export const LoginForm = () => {
       // Clear any existing sessions first
       await supabase.auth.signOut();
 
-      // Try to sign in with member number as email
+      // Format email consistently
+      const authEmail = `${memberNumber.toLowerCase()}@member.com`;
+      const authPassword = `auth_${memberNumber.toLowerCase()}`;
+
+      // Try to sign in
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: `${memberNumber}@member.com`,
-        password: memberNumber
+        email: authEmail,
+        password: authPassword
       });
 
       if (signInError) {
@@ -51,12 +55,13 @@ export const LoginForm = () => {
         
         // If sign in fails, create the account
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: `${memberNumber}@member.com`,
-          password: memberNumber,
+          email: authEmail,
+          password: authPassword,
           options: {
             data: {
               member_number: memberNumber,
               role: memberData[0].role,
+              email_verified: true
             }
           }
         });
@@ -69,20 +74,22 @@ export const LoginForm = () => {
         console.log("Account created successfully");
 
         // Update the member record with the new auth_user_id
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ auth_user_id: signUpData.user?.id })
-          .eq('member_number', memberNumber);
+        if (signUpData.user) {
+          const { error: updateError } = await supabase
+            .from('members')
+            .update({ auth_user_id: signUpData.user.id })
+            .eq('member_number', memberNumber);
 
-        if (updateError) {
-          console.error("Failed to update auth_user_id:", updateError);
-          // Continue anyway as the member can still log in
+          if (updateError) {
+            console.error("Failed to update auth_user_id:", updateError);
+            // Continue anyway as the member can still log in
+          }
         }
 
         // Try signing in again after account creation
-        const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
-          email: `${memberNumber}@member.com`,
-          password: memberNumber
+        const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: authPassword
         });
 
         if (finalSignInError) {
@@ -94,15 +101,17 @@ export const LoginForm = () => {
       } else {
         console.log("Direct sign in successful");
         // Update the member record with the auth_user_id if not already set
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ auth_user_id: signInData.user?.id })
-          .eq('member_number', memberNumber)
-          .is('auth_user_id', null);
+        if (signInData.user) {
+          const { error: updateError } = await supabase
+            .from('members')
+            .update({ auth_user_id: signInData.user.id })
+            .eq('member_number', memberNumber)
+            .is('auth_user_id', null);
 
-        if (updateError) {
-          console.error("Failed to update auth_user_id:", updateError);
-          // Continue anyway as the member can still log in
+          if (updateError) {
+            console.error("Failed to update auth_user_id:", updateError);
+            // Continue anyway as the member can still log in
+          }
         }
       }
 
