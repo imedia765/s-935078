@@ -20,6 +20,7 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
   const [currentRole, setCurrentRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCollectorForm, setShowCollectorForm] = useState(false);
+  const [isCollector, setIsCollector] = useState(false);
 
   useEffect(() => {
     const fetchCurrentRole = async () => {
@@ -47,6 +48,7 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
         console.log('Current role data:', data);
         if (data) {
           setCurrentRole(data.role as AppRole);
+          setIsCollector(data.role === 'collector');
           console.log('Role set to:', data.role);
         } else {
           console.log('No role found for user, defaulting to member');
@@ -122,6 +124,10 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
     }
   };
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="mt-4 pt-4 border-t border-white/10">
       {userRole === 'admin' && member.auth_user_id ? (
@@ -135,7 +141,7 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
               onRoleChange={handleRoleChange}
             />
           </div>
-          {showCollectorForm && (
+          {(showCollectorForm || isCollector) && (
             <div className="mt-4">
               <AssignCollectorForm 
                 memberId={member.id} 
