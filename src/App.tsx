@@ -34,8 +34,8 @@ function App() {
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
         queryClient.invalidateQueries();
-        // Clear any persisted auth data
-        await supabase.auth.clearSession();
+        // Sign out and clear session data
+        await supabase.auth.signOut();
       } else if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed for user:', session?.user?.id);
       }
