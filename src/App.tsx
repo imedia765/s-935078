@@ -11,11 +11,33 @@ function App() {
 
   // Set up auth state change listener at the root level
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        console.log('Auth state changed:', event);
-        // Invalidate all queries when auth state changes
+    // First check for existing session
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Error checking session:', error);
+      } else if (session) {
+        console.log('Existing session found:', session.user.id);
         queryClient.invalidateQueries();
+      }
+    };
+
+    checkSession();
+
+    // Then set up the auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (event === 'SIGNED_IN') {
+        console.log('User signed in:', session?.user?.id);
+        queryClient.invalidateQueries();
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
+        queryClient.invalidateQueries();
+        // Clear any persisted auth data
+        await supabase.auth.clearSession();
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed for user:', session?.user?.id);
       }
     });
 
