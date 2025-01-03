@@ -203,7 +203,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_full_backup: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      restore_from_backup: {
+        Args: {
+          backup_data: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "collector" | "member"
