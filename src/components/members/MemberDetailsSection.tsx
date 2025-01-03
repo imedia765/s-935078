@@ -4,11 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import AssignCollectorForm from "../collectors/AssignCollectorForm";
 
 type AppRole = 'admin' | 'collector' | 'member';
 
 interface MemberDetailsSectionProps {
   member: {
+    id: string;
     membership_type?: string;
     collector?: string;
     auth_user_id?: string;
@@ -22,6 +24,7 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
   const [error, setError] = useState<string | null>(null);
   const [currentRole, setCurrentRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCollectorForm, setShowCollectorForm] = useState(false);
 
   useEffect(() => {
     const fetchCurrentRole = async () => {
@@ -107,6 +110,12 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
 
       console.log('Role successfully updated to:', newRole);
       setCurrentRole(newRole);
+      
+      // Show collector form if role is changed to collector
+      if (newRole === 'collector') {
+        setShowCollectorForm(true);
+      }
+
       toast({
         title: "Success",
         description: `Role successfully updated to ${newRole}`,
@@ -191,6 +200,15 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
           )}
         </div>
       </div>
+
+      {showCollectorForm && (
+        <div className="mt-4">
+          <AssignCollectorForm 
+            memberId={member.id} 
+            onSuccess={() => setShowCollectorForm(false)}
+          />
+        </div>
+      )}
     </div>
   );
 };

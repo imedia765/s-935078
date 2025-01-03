@@ -245,6 +245,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_collector_role: {
+        Args: {
+          member_id: string
+          collector_name: string
+          collector_prefix: string
+          collector_number: string
+        }
+        Returns: string
+      }
       generate_full_backup: {
         Args: Record<PropertyKey, never>
         Returns: Json
