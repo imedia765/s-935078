@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import AssignCollectorForm from "../collectors/AssignCollectorForm";
+import { Member } from "@/types/member";
 import MembershipInfo from "./MembershipInfo";
 import RoleSelector from "./RoleSelector";
-import { Member } from "@/types/member";
-
-type AppRole = 'admin' | 'collector' | 'member';
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
+import AssignCollectorForm from "../collectors/AssignCollectorForm";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MemberDetailsSectionProps {
   member: Member;
@@ -14,144 +15,92 @@ interface MemberDetailsSectionProps {
 }
 
 const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) => {
-  const { toast } = useToast();
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentRole, setCurrentRole] = useState<AppRole | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showCollectorForm, setShowCollectorForm] = useState(false);
-  const [isCollector, setIsCollector] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const fetchCurrentRole = async () => {
-      if (!member.auth_user_id) {
-        console.log('No auth_user_id provided for member:', member);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        console.log('Fetching role for user:', member.auth_user_id);
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', member.auth_user_id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error fetching role:', error);
-          setError(`Failed to fetch role: ${error.message}`);
-          setIsLoading(false);
-          return;
-        }
-
-        console.log('Current role data:', data);
-        if (data) {
-          setCurrentRole(data.role as AppRole);
-          setIsCollector(data.role === 'collector');
-          console.log('Role set to:', data.role);
-        } else {
-          console.log('No role found for user, defaulting to member');
-          setCurrentRole('member');
-        }
-      } catch (error) {
-        console.error('Error in fetchCurrentRole:', error);
-        setError('An unexpected error occurred while fetching the role');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCurrentRole();
-  }, [member.auth_user_id]);
-
-  const handleRoleChange = async (newRole: AppRole) => {
+  const handleRoleChange = async (newRole: string) => {
     if (!member.auth_user_id) {
-      console.error('No user ID provided');
-      setError("User ID is required to update role");
+      toast({
+        title: "Error",
+        description: "User ID is required to update role",
+        variant: "destructive",
+      });
       return;
     }
 
-    setIsUpdating(true);
-    setError(null);
-
     try {
-      console.log('Updating role for user:', member.auth_user_id, 'to:', newRole);
-      
-      const { error: deleteError } = await supabase
+      const { error } = await supabase
         .from('user_roles')
-        .delete()
-        .eq('user_id', member.auth_user_id);
-
-      if (deleteError) {
-        console.error('Error deleting existing role:', deleteError);
-        throw deleteError;
-      }
-
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({
+        .upsert({
           user_id: member.auth_user_id,
           role: newRole
+        }, {
+          onConflict: 'user_id'
         });
 
-      if (insertError) {
-        console.error('Error inserting new role:', insertError);
-        throw insertError;
-      }
-
-      console.log('Role successfully updated to:', newRole);
-      setCurrentRole(newRole);
-      
-      if (newRole === 'collector') {
-        setShowCollectorForm(true);
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Role successfully updated to ${newRole}`,
+        description: `Role updated to ${newRole}`,
       });
-    } catch (error) {
-      console.error('Error updating role:', error);
-      setError(error instanceof Error ? error.message : "Failed to update role");
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update role. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setIsUpdating(false);
     }
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="mt-4 pt-4 border-t border-white/10">
       {userRole === 'admin' && member.auth_user_id ? (
         <>
-          <MembershipInfo member={member} currentRole={currentRole} />
-          <div className="mt-4">
-            <RoleSelector
-              currentRole={currentRole}
-              isUpdating={isUpdating}
-              error={error}
-              onRoleChange={handleRoleChange}
-            />
-          </div>
-          {(showCollectorForm || isCollector) && (
-            <div className="mt-4">
-              <AssignCollectorForm 
-                memberId={member.id} 
-                onSuccess={() => setShowCollectorForm(false)}
-              />
+          <MembershipInfo member={member} currentRole={member.role} />
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-dashboard-muted mb-2">Role Management</h3>
+                <RoleSelector
+                  currentRole={member.role || 'member'}
+                  onRoleChange={handleRoleChange}
+                />
+              </div>
+              {!member.collector && (
+                <div>
+                  <Button
+                    onClick={() => setShowCollectorForm(true)}
+                    className="flex items-center gap-2"
+                    variant="outline"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Assign as Collector
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+            
+            {showCollectorForm && (
+              <div className="mt-4">
+                <AssignCollectorForm 
+                  memberId={member.id} 
+                  onSuccess={() => {
+                    setShowCollectorForm(false);
+                    queryClient.invalidateQueries({ queryKey: ['members'] });
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </>
       ) : (
-        <MembershipInfo member={member} currentRole={currentRole} />
+        <MembershipInfo member={member} currentRole={member.role} />
       )}
     </div>
   );
