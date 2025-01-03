@@ -22,23 +22,26 @@ export const useRoleAccess = () => {
 
       console.log('Session user in central role check:', session.user.id);
 
-      // First check members_roles table through RPC
-      const { data: role, error: rpcError } = await supabase.rpc('get_user_role', {
-        user_auth_id: session.user.id
-      });
+      // Check user_roles table directly
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
 
-      if (rpcError) {
-        console.error('Error fetching role in central hook:', rpcError);
+      if (roleError) {
+        console.error('Error fetching role in central hook:', roleError);
         toast({
           title: "Error fetching role",
-          description: rpcError.message,
+          description: roleError.message,
           variant: "destructive",
         });
-        throw rpcError;
+        throw roleError;
       }
 
-      console.log('Fetched role from central hook:', role);
-      return role as UserRole;
+      // If no role is found, default to 'member'
+      console.log('Fetched role from central hook:', roleData?.role);
+      return (roleData?.role as UserRole) || 'member';
     },
     staleTime: ROLE_STALE_TIME,
     retry: 2,

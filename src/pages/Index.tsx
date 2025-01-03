@@ -5,6 +5,7 @@ import DashboardView from '@/components/DashboardView';
 import MembersList from '@/components/MembersList';
 import CollectorsList from '@/components/CollectorsList';
 import SidePanel from '@/components/SidePanel';
+import Bismillah from '@/components/Bismillah';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useToast } from "@/hooks/use-toast";
 
@@ -77,6 +78,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-dashboard-dark">
+      <Bismillah />
       <SidePanel onTabChange={setActiveTab} userRole={userRole} />
       <div className="pl-64">
         <div className="p-8">

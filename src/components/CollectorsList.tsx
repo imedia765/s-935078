@@ -11,6 +11,7 @@ import {
 import TotalCount from "@/components/TotalCount";
 import CollectorMembers from "@/components/CollectorMembers";
 import PrintButtons from "@/components/PrintButtons";
+import { PostgrestError } from '@supabase/supabase-js';
 
 type MemberCollector = Database['public']['Tables']['members_collectors']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
@@ -51,10 +52,23 @@ const CollectorsList = () => {
       
       if (collectorsError) {
         console.error('Error fetching collectors:', collectorsError);
+        console.error('Error details:', {
+          message: collectorsError.message,
+          details: collectorsError.details,
+          hint: collectorsError.hint
+        });
         throw collectorsError;
       }
 
-      const collectorsWithCounts = await Promise.all(collectorsData?.map(async (collector) => {
+      console.log('Collectors data received:', collectorsData);
+
+      if (!collectorsData || collectorsData.length === 0) {
+        console.log('No collectors found in the database');
+        return [];
+      }
+
+      const collectorsWithCounts = await Promise.all(collectorsData.map(async (collector) => {
+        console.log('Calculating member count for collector:', collector.name);
         const { count } = await supabase
           .from('members')
           .select('*', { count: 'exact', head: true })
@@ -64,8 +78,9 @@ const CollectorsList = () => {
           ...collector,
           memberCount: count || 0
         };
-      }) || []);
+      }));
 
+      console.log('Final collectors with counts:', collectorsWithCounts);
       return collectorsWithCounts;
     },
   });
@@ -74,8 +89,21 @@ const CollectorsList = () => {
   const totalMembers = collectors?.reduce((total, collector) => total + (collector.memberCount || 0), 0) || 0;
 
   if (collectorsLoading) return <div className="text-center py-4">Loading collectors...</div>;
-  if (collectorsError) return <div className="text-center py-4 text-red-500">Error loading collectors: {collectorsError.message}</div>;
-  if (!collectors?.length) return <div className="text-center py-4">No collectors found</div>;
+  if (collectorsError) {
+    console.error('Collectors error:', collectorsError);
+    const postgrestError = collectorsError as PostgrestError;
+    return (
+      <div className="text-center py-4 text-red-500">
+        Error loading collectors: {postgrestError.message}
+        {postgrestError.details && (
+          <div className="text-sm mt-2">
+            Details: {postgrestError.details}
+          </div>
+        )}
+      </div>
+    );
+  }
+  if (!collectors?.length) return <div className="text-center py-4">No collectors found in the database. Please add collectors first.</div>;
 
   return (
     <div className="space-y-4">
