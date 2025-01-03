@@ -54,11 +54,25 @@ const DashboardView = ({ onLogout }: DashboardViewProps) => {
     },
   });
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      onLogout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div>
       {isError && <p>Error loading member profile.</p>}
       {memberProfile && <MemberProfileCard memberProfile={memberProfile} />}
-      <Button onClick={onLogout}>Logout</Button>
+      <Button onClick={handleLogout}>Logout</Button>
     </div>
   );
 };
