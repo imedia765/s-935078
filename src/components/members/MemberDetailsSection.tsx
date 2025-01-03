@@ -9,6 +9,8 @@ import { UserPlus } from "lucide-react";
 import AssignCollectorForm from "../collectors/AssignCollectorForm";
 import { useQueryClient } from "@tanstack/react-query";
 
+type AppRole = 'admin' | 'collector' | 'member';
+
 interface MemberDetailsSectionProps {
   member: Member;
   userRole: string | null;
@@ -29,12 +31,22 @@ const MemberDetailsSection = ({ member, userRole }: MemberDetailsSectionProps) =
       return;
     }
 
+    // Validate that the new role is a valid AppRole
+    if (!['admin', 'collector', 'member'].includes(newRole)) {
+      toast({
+        title: "Error",
+        description: "Invalid role selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('user_roles')
         .upsert({
           user_id: member.auth_user_id,
-          role: newRole
+          role: newRole as AppRole
         }, {
           onConflict: 'user_id'
         });
