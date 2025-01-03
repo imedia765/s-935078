@@ -6,7 +6,6 @@ const SettingsView = () => {
       <h1 className="text-3xl font-bold mb-8">Settings</h1>
       <div className="space-y-8">
         <BackupRestore />
-        {/* Add other settings sections here */}
       </div>
     </div>
   );

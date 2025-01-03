@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export type UserRole = 'member' | 'collector' | 'admin' | null;
+export type UserRole = 'admin' | 'collector' | 'member' | null;
 
 const ROLE_STALE_TIME = 1000 * 60 * 5; // 5 minutes
 
@@ -22,17 +22,25 @@ export const useRoleAccess = () => {
 
       console.log('Session user in central role check:', session.user.id);
 
-      // Check user_roles table directly
+      // First try to get role from user metadata
+      const metadataRole = session.user.user_metadata?.role;
+      if (metadataRole) {
+        console.log('Found role in user metadata:', metadataRole);
+        return metadataRole as UserRole;
+      }
+
+      // If not in metadata, check user_roles table
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', session.user.id)
+        .limit(1)
         .maybeSingle();
 
       if (roleError) {
         console.error('Error fetching role in central hook:', roleError);
         toast({
-          title: "Error fetching role",
+          title: "Error",
           description: roleError.message,
           variant: "destructive",
         });
@@ -40,8 +48,9 @@ export const useRoleAccess = () => {
       }
 
       // If no role is found, default to 'member'
-      console.log('Fetched role from central hook:', roleData?.role);
-      return (roleData?.role as UserRole) || 'member';
+      const role = roleData?.role || 'member';
+      console.log('Fetched role from central hook:', role);
+      return role as UserRole;
     },
     staleTime: ROLE_STALE_TIME,
     retry: 2,

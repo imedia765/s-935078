@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import BackupStats from './BackupStats';
+import BackupHistory from './BackupHistory';
 
 const BackupRestore = () => {
   const { toast } = useToast();
@@ -23,6 +24,29 @@ const BackupRestore = () => {
     roles: 0
   });
 
+  const recordOperation = async (
+    type: 'backup' | 'restore',
+    stats: any,
+    status: 'completed' | 'failed' = 'completed',
+    error?: string,
+    fileName?: string
+  ) => {
+    try {
+      await supabase.from('backup_history').insert({
+        operation_type: type,
+        members_count: stats.members?.length || 0,
+        collectors_count: stats.members_collectors?.length || 0,
+        roles_count: stats.user_roles?.length || 0,
+        policies_count: stats.policies?.length || 0,
+        status,
+        error_message: error,
+        backup_file_name: fileName
+      });
+    } catch (error) {
+      console.error('Failed to record operation:', error);
+    }
+  };
+
   const generateBackup = async () => {
     try {
       setIsGenerating(true);
@@ -33,22 +57,27 @@ const BackupRestore = () => {
       setBackupData(data);
 
       // Create and download the backup file
+      const fileName = `backup-${new Date().toISOString()}.json`;
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup-${new Date().toISOString()}.json`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
+      // Record the backup operation
+      await recordOperation('backup', data, 'completed', undefined, fileName);
+
       toast({
         title: "Backup Generated",
         description: "Your backup file has been downloaded successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Backup generation error:', error);
+      await recordOperation('backup', backupData || {}, 'failed', error.message);
       toast({
         title: "Error",
         description: "Failed to generate backup. Please try again.",
@@ -90,20 +119,25 @@ const BackupRestore = () => {
           if (error) throw error;
 
           // Update restored items count
-          setRestoredItems({
+          const restoredCounts = {
             members: backupData.members?.length || 0,
             collectors: backupData.members_collectors?.length || 0,
             roles: backupData.user_roles?.length || 0
-          });
+          };
           
+          setRestoredItems(restoredCounts);
           setRestoreProgress(100);
+
+          // Record the restore operation
+          await recordOperation('restore', backupData, 'completed', undefined, file.name);
 
           toast({
             title: "Restore Completed",
             description: "System has been restored from backup successfully.",
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Restore error:', error);
+          await recordOperation('restore', backupData, 'failed', error.message, file.name);
           toast({
             title: "Error",
             description: "Failed to restore from backup. Please ensure the backup file is valid.",
@@ -115,8 +149,9 @@ const BackupRestore = () => {
       };
 
       reader.readAsText(file);
-    } catch (error) {
+    } catch (error: any) {
       console.error('File reading error:', error);
+      await recordOperation('restore', {}, 'failed', error.message);
       toast({
         title: "Error",
         description: "Failed to read backup file. Please try again.",
@@ -185,6 +220,8 @@ const BackupRestore = () => {
           restoredItems={restoredItems}
         />
       )}
+
+      <BackupHistory />
     </div>
   );
 };

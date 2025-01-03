@@ -14,7 +14,7 @@ interface TotalCountProps {
   icon?: React.ReactNode;
 }
 
-const TotalCount = ({ items, count, label, icon }: TotalCountProps) => {
+export const TotalCount = ({ items, count, label, icon }: TotalCountProps) => {
   // If legacy props are provided, convert them to items format
   const displayItems = items || (count !== undefined ? [{ count, label: label || '', icon }] : []);
 

@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, Settings, Users, UserCheck } from "lucide-react";
 import { UserRole } from "@/hooks/useRoleAccess";
+import { useEffect } from "react";
 
 interface SidePanelProps {
   onTabChange: (value: string) => void;
@@ -9,6 +10,7 @@ interface SidePanelProps {
 
 const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
   const getTabs = () => {
+    console.log('Getting tabs for role:', userRole);
     const tabs = [
       {
         value: 'dashboard',
@@ -18,7 +20,7 @@ const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
       },
       {
         value: 'users',
-        label: 'Users',
+        label: 'Members',
         icon: Users,
         roles: ['collector', 'admin']
       },
@@ -42,6 +44,11 @@ const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
       return tab.roles.includes(userRole);
     });
   };
+
+  // Log role changes
+  useEffect(() => {
+    console.log('SidePanel userRole changed:', userRole);
+  }, [userRole]);
 
   return (
     <div className="h-screen fixed left-0 top-0 w-64 glass-card border-r border-white/10">

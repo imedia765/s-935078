@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import MemberDetailsSection from './members/MemberDetailsSection';
+import { useToast } from "@/components/ui/use-toast";
 
 type Member = Database['public']['Tables']['members']['Row'];
 
@@ -14,10 +15,12 @@ interface MembersListProps {
 }
 
 const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
+  const { toast } = useToast();
+
   const { data: members, isLoading, error } = useQuery({
     queryKey: ['members', searchTerm, userRole],
     queryFn: async () => {
-      console.log('Fetching members...');
+      console.log('Fetching members with role:', userRole);
       let query = supabase
         .from('members')
         .select('*');
@@ -26,10 +29,35 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
+      // If user is a collector, get their collector name first
       if (userRole === 'collector') {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          query = query.eq('collector_id', user.id);
+          console.log('Getting collector name for user:', user.id);
+          const { data: collectorData, error: collectorError } = await supabase
+            .from('members_collectors')
+            .select('name')
+            .eq('member_profile_id', user.id)
+            .eq('active', true)
+            .maybeSingle(); // Changed from single() to maybeSingle()
+
+          if (collectorError) {
+            console.error('Error fetching collector data:', collectorError);
+            toast({
+              title: "Error",
+              description: "Failed to fetch collector information",
+              variant: "destructive",
+            });
+            return [];
+          }
+
+          if (collectorData?.name) {
+            console.log('Filtering members for collector:', collectorData.name);
+            query = query.eq('collector', collectorData.name);
+          } else {
+            console.log('No collector data found for user');
+            return [];
+          }
         }
       }
       
@@ -38,9 +66,15 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
       
       if (error) {
         console.error('Error fetching members:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch members",
+          variant: "destructive",
+        });
         throw error;
       }
       
+      console.log('Fetched members count:', data?.length);
       return data as Member[];
     },
   });
