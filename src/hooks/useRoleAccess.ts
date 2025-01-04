@@ -22,7 +22,7 @@ export const useRoleAccess = () => {
 
       console.log('Session user in central role check:', session.user.id);
 
-      // First check if user is an admin
+      // First check if user is an admin in user_roles
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -45,7 +45,7 @@ export const useRoleAccess = () => {
         return 'admin' as UserRole;
       }
 
-      // Then check if user is a collector in members_collectors
+      // Check if user is a collector in members_collectors
       const { data: collectorData, error: collectorError } = await supabase
         .from('members_collectors')
         .select('name')
@@ -55,9 +55,14 @@ export const useRoleAccess = () => {
 
       if (collectorError && collectorError.code !== 'PGRST116') {
         console.error('Error checking collector status:', collectorError);
+        toast({
+          title: "Error checking collector status",
+          description: collectorError.message,
+          variant: "destructive",
+        });
       }
 
-      // If user is a collector, return collector role
+      // If user is an active collector, return collector role
       if (collectorData?.name) {
         console.log('User is a collector:', collectorData.name);
         return 'collector' as UserRole;
@@ -72,6 +77,11 @@ export const useRoleAccess = () => {
 
       if (memberError && memberError.code !== 'PGRST116') {
         console.error('Error checking member status:', memberError);
+        toast({
+          title: "Error checking member status",
+          description: memberError.message,
+          variant: "destructive",
+        });
       }
 
       if (memberData?.id) {
