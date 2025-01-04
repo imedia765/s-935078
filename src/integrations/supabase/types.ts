@@ -264,6 +264,10 @@ export type Database = {
         }
         Returns: string
       }
+      update_collector_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "collector" | "member"

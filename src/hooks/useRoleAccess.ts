@@ -22,23 +22,15 @@ export const useRoleAccess = () => {
 
       console.log('Session user in central role check:', session.user.id);
 
-      // First try to get role from user metadata
-      const metadataRole = session.user.user_metadata?.role;
-      if (metadataRole) {
-        console.log('Found role in user metadata:', metadataRole);
-        return metadataRole as UserRole;
-      }
-
-      // If not in metadata, check user_roles table
+      // First check user_roles table
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', session.user.id)
-        .limit(1)
         .maybeSingle();
 
       if (roleError) {
-        console.error('Error fetching role in central hook:', roleError);
+        console.error('Error fetching role from user_roles:', roleError);
         toast({
           title: "Error",
           description: roleError.message,
@@ -47,10 +39,31 @@ export const useRoleAccess = () => {
         throw roleError;
       }
 
-      // If no role is found, default to 'member'
-      const role = roleData?.role || 'member';
-      console.log('Fetched role from central hook:', role);
-      return role as UserRole;
+      if (roleData?.role) {
+        console.log('Found role in user_roles:', roleData.role);
+        return roleData.role as UserRole;
+      }
+
+      // If no role in user_roles, check if user is a collector in members table
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .select('collector')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+
+      if (memberError) {
+        console.error('Error checking member collector status:', memberError);
+        return 'member' as UserRole;
+      }
+
+      if (memberData?.collector) {
+        console.log('User is a collector:', memberData.collector);
+        return 'collector' as UserRole;
+      }
+
+      // Default to member role
+      console.log('Defaulting to member role');
+      return 'member' as UserRole;
     },
     staleTime: ROLE_STALE_TIME,
     retry: 2,
