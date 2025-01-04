@@ -17,10 +17,12 @@ function AuthWrapper() {
 
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // First check if we have a valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('Error checking session:', error);
+        if (sessionError) {
+          console.error('Error checking session:', sessionError);
+          await supabase.auth.signOut();
           navigate('/login');
           return;
         }
@@ -31,11 +33,19 @@ function AuthWrapper() {
           return;
         }
 
-        // If we have a session, verify it's still valid
+        // Verify the session is still valid
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError || !user) {
-          console.error('Session invalid:', userError);
+        if (userError) {
+          console.error('Error verifying user:', userError);
+          // Clear the invalid session
+          await supabase.auth.signOut();
+          navigate('/login');
+          return;
+        }
+
+        if (!user) {
+          console.log('No user found, clearing session');
           await supabase.auth.signOut();
           navigate('/login');
           return;
@@ -45,32 +55,53 @@ function AuthWrapper() {
         queryClient.invalidateQueries();
       } catch (error) {
         console.error('Session check failed:', error);
+        // Clear any invalid session state
+        await supabase.auth.signOut();
         navigate('/login');
       }
     };
 
+    // Initial session check
     checkSession();
 
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isSubscribed) return;
       
       console.log('Auth state changed:', event, session?.user?.id);
       
-      if (event === 'SIGNED_IN') {
-        console.log('User signed in:', session?.user?.id);
-        queryClient.invalidateQueries();
-        navigate('/');
-      } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
-        queryClient.invalidateQueries();
-        navigate('/login');
-        toast({
-          title: "Signed out",
-          description: "You have been signed out successfully.",
-        });
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed');
-        queryClient.invalidateQueries();
+      switch (event) {
+        case 'SIGNED_IN':
+          console.log('User signed in:', session?.user?.id);
+          queryClient.invalidateQueries();
+          navigate('/');
+          break;
+          
+        case 'SIGNED_OUT':
+          console.log('User signed out');
+          queryClient.clear(); // Clear all queries on sign out
+          navigate('/login');
+          toast({
+            title: "Signed out",
+            description: "You have been signed out successfully.",
+          });
+          break;
+          
+        case 'TOKEN_REFRESHED':
+          console.log('Token refreshed');
+          queryClient.invalidateQueries();
+          break;
+          
+        case 'USER_UPDATED':
+          console.log('User updated');
+          queryClient.invalidateQueries();
+          break;
+          
+        default:
+          if (!session) {
+            console.log('No session in auth change, redirecting to login');
+            navigate('/login');
+          }
       }
     });
 
