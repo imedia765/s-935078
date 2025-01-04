@@ -18,7 +18,7 @@ const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
       },
       {
         value: 'users',
-        label: 'Users',
+        label: 'Members',
         icon: Users,
         roles: ['collector', 'admin']
       },
