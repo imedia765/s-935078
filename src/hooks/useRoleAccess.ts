@@ -22,7 +22,7 @@ export const useRoleAccess = () => {
 
       console.log('Session user in central role check:', session.user.id);
 
-      // Check user_roles table directly
+      // First try to get role from user_roles table
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -30,7 +30,7 @@ export const useRoleAccess = () => {
         .maybeSingle();
 
       if (roleError) {
-        console.error('Error fetching role in central hook:', roleError);
+        console.error('Error fetching role from user_roles:', roleError);
         toast({
           title: "Error fetching role",
           description: roleError.message,
@@ -39,9 +39,45 @@ export const useRoleAccess = () => {
         throw roleError;
       }
 
-      // If no role is found, default to 'member'
-      console.log('Fetched role from central hook:', roleData?.role);
-      return (roleData?.role as UserRole) || 'member';
+      if (roleData?.role) {
+        console.log('Found role in user_roles table:', roleData.role);
+        return roleData.role as UserRole;
+      }
+
+      // If no role in user_roles table, check if user is a collector
+      const { data: collectorData, error: collectorError } = await supabase
+        .from('members_collectors')
+        .select('name')
+        .eq('member_profile_id', session.user.id)
+        .maybeSingle();
+
+      if (collectorError) {
+        console.error('Error checking collector status:', collectorError);
+      }
+
+      if (collectorData?.name) {
+        console.log('User is a collector based on members_collectors table');
+        return 'collector' as UserRole;
+      }
+
+      // If still no role found, check if user exists in members table
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .select('id')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+
+      if (memberError) {
+        console.error('Error checking member status:', memberError);
+      }
+
+      if (memberData?.id) {
+        console.log('User is a regular member');
+        return 'member' as UserRole;
+      }
+
+      console.log('No role found, defaulting to member');
+      return 'member' as UserRole;
     },
     staleTime: ROLE_STALE_TIME,
     retry: 2,

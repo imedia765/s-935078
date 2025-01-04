@@ -1,77 +1,95 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import SidePanel from "@/components/SidePanel";
-import DashboardView from "@/components/DashboardView";
-import CollectorsList from "@/components/CollectorsList";
-import SettingsView from "@/components/settings/SettingsView";
-import { useRoleAccess } from "@/hooks/useRoleAccess";
+import DashboardView from '@/components/DashboardView';
+import MembersList from '@/components/MembersList';
+import CollectorsList from '@/components/CollectorsList';
+import SidePanel from '@/components/SidePanel';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useToast } from "@/hooks/use-toast";
-import MembersList from "@/components/MembersList";
-import { Input } from "@/components/ui/input";
-import { useState as useSearchState } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [searchTerm, setSearchTerm] = useState("");
-  const { userRole } = useRoleAccess();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userRole, roleLoading, canAccessTab } = useRoleAccess();
+  const queryClient = useQueryClient();
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account",
-      });
-      
-      navigate("/login");
-    } catch (error: any) {
-      toast({
-        title: "Error logging out",
-        description: error.message,
-        variant: "destructive",
-      });
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/login');
     }
   };
 
+  const handleLogout = async () => {
+    await queryClient.invalidateQueries();
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!roleLoading && !canAccessTab(activeTab)) {
+      setActiveTab('dashboard');
+      toast({
+        title: "Access Restricted",
+        description: "You don't have permission to access this section.",
+        variant: "destructive",
+      });
+    }
+  }, [activeTab, roleLoading, userRole]);
+
   const renderContent = () => {
+    if (!canAccessTab(activeTab)) {
+      return <DashboardView onLogout={handleLogout} />;
+    }
+
     switch (activeTab) {
-      case "dashboard":
+      case 'dashboard':
         return <DashboardView onLogout={handleLogout} />;
-      case "users":
+      case 'users':
         return (
-          <div className="p-6">
-            <div className="mb-6">
-              <Input
-                type="text"
-                placeholder="Search members..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-md"
-              />
-            </div>
+          <>
+            <header className="mb-8">
+              <h1 className="text-3xl font-medium mb-2 text-white">Members</h1>
+              <p className="text-dashboard-muted">View and manage member information</p>
+            </header>
             <MembersList searchTerm={searchTerm} userRole={userRole} />
-          </div>
+          </>
         );
-      case "collectors":
-        return <CollectorsList />;
-      case "settings":
-        return <SettingsView />;
+      case 'collectors':
+        return (
+          <>
+            <header className="mb-8">
+              <h1 className="text-3xl font-medium mb-2 text-white">Collectors</h1>
+              <p className="text-dashboard-muted">View and manage collector information</p>
+            </header>
+            <CollectorsList />
+          </>
+        );
       default:
-        return <DashboardView onLogout={handleLogout} />;
+        return null;
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+    <div className="min-h-screen bg-dashboard-dark">
+      <div className="w-full bg-dashboard-card/50 py-4 text-center border-b border-white/10">
+        <p className="text-xl text-white font-arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <p className="text-sm text-dashboard-text mt-1">In the name of Allah, the Most Gracious, the Most Merciful</p>
+      </div>
       <SidePanel onTabChange={setActiveTab} userRole={userRole} />
-      <main className="flex-1 ml-64">
-        {renderContent()}
-      </main>
+      <div className="pl-64">
+        <div className="p-8">
+          {renderContent()}
+        </div>
+      </div>
     </div>
   );
 };

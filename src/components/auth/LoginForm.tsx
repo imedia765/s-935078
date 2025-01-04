@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from '@tanstack/react-query';
 
 const LoginForm = () => {
   const [memberNumber, setMemberNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +40,25 @@ const LoginForm = () => {
       const member = members[0];
       console.log('Member found:', member);
 
+      // Check if member is a collector using a separate query
+      let isCollector = false;
+      const { data: collectorData } = await supabase
+        .from('members_collectors')
+        .select('name')
+        .eq('member_profile_id', member.id)
+        .maybeSingle();
+
+      if (collectorData) {
+        console.log('Member is a collector:', collectorData.name);
+        isCollector = true;
+      }
+
       const email = `${memberNumber.toLowerCase()}@temp.com`;
       const password = memberNumber;
 
-      // Try to sign in first
-      console.log('Attempting to sign in');
+      console.log('Attempting sign in with:', { email });
+      
+      // Try to sign in
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -50,7 +66,8 @@ const LoginForm = () => {
 
       // If sign in fails due to invalid credentials, try to sign up
       if (signInError && signInError.message === 'Invalid login credentials') {
-        console.log('Sign in failed, attempting to create account');
+        console.log('Attempting signup for new user');
+        
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -61,52 +78,69 @@ const LoginForm = () => {
           }
         });
 
-        if (signUpError && signUpError.message !== 'User already registered') {
-          console.error('Sign up error:', signUpError);
+        if (signUpError) {
+          console.error('Signup error:', signUpError);
           throw signUpError;
         }
 
-        // Try signing in again after signup attempt
-        console.log('Attempting final sign in');
-        const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (finalSignInError) {
-          console.error('Final sign in error:', finalSignInError);
-          throw finalSignInError;
-        }
-
-        if (finalSignInData.user) {
-          // Update member with auth_user_id if not already set
+        if (signUpData.user) {
+          // Update member with auth_user_id
           const { error: updateError } = await supabase
             .from('members')
-            .update({ auth_user_id: finalSignInData.user.id })
-            .eq('id', member.id)
-            .is('auth_user_id', null);
+            .update({ auth_user_id: signUpData.user.id })
+            .eq('id', member.id);
 
           if (updateError) {
             console.error('Error updating member with auth_user_id:', updateError);
-            // Don't throw here as the login was successful
+            throw updateError;
+          }
+
+          // If member is a collector, assign collector role
+          if (isCollector) {
+            console.log('Assigning collector role for member');
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert({
+                user_id: signUpData.user.id,
+                role: 'collector'
+              });
+
+            if (roleError) {
+              console.error('Error assigning collector role:', roleError);
+              throw roleError;
+            }
+          }
+
+          console.log('Signup successful, attempting final sign in');
+          
+          // Final sign in attempt after successful signup
+          const { data: finalSignInData, error: finalSignInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (finalSignInError) {
+            console.error('Final sign in error:', finalSignInError);
+            throw finalSignInError;
+          }
+
+          // Verify session is established
+          if (!finalSignInData?.session) {
+            throw new Error('Failed to establish session');
           }
         }
       } else if (signInError) {
-        console.error('Sign in error:', signInError);
         throw signInError;
-      } else if (signInData.user) {
-        // Update member with auth_user_id if not already set
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ auth_user_id: signInData.user.id })
-          .eq('id', member.id)
-          .is('auth_user_id', null);
-
-        if (updateError) {
-          console.error('Error updating member with auth_user_id:', updateError);
-          // Don't throw here as the login was successful
-        }
       }
+
+      // Verify session after sign in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Failed to establish session');
+      }
+
+      // Invalidate all queries to refresh data
+      await queryClient.invalidateQueries();
 
       toast({
         title: "Login successful",
@@ -116,6 +150,9 @@ const LoginForm = () => {
       navigate('/');
     } catch (error: any) {
       console.error('Login error:', error);
+      // Clear any existing session
+      await supabase.auth.signOut();
+      
       toast({
         title: "Login failed",
         description: error.message,
