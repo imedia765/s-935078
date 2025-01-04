@@ -29,7 +29,7 @@ export const useRoleAccess = () => {
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      if (roleError) {
+      if (roleError && roleError.code !== 'PGRST116') {
         console.error('Error checking user_roles:', roleError);
         toast({
           title: "Error fetching role",
@@ -39,22 +39,25 @@ export const useRoleAccess = () => {
         throw roleError;
       }
 
+      // If user is an admin, return admin role immediately
       if (roleData?.role === 'admin') {
         console.log('User is an admin');
         return 'admin' as UserRole;
       }
 
-      // Then check if user is a collector
+      // Then check if user is a collector in members_collectors
       const { data: collectorData, error: collectorError } = await supabase
         .from('members_collectors')
         .select('name')
         .eq('member_profile_id', session.user.id)
+        .eq('active', true)
         .maybeSingle();
 
       if (collectorError && collectorError.code !== 'PGRST116') {
         console.error('Error checking collector status:', collectorError);
       }
 
+      // If user is a collector, return collector role
       if (collectorData?.name) {
         console.log('User is a collector:', collectorData.name);
         return 'collector' as UserRole;
