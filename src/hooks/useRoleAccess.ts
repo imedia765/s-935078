@@ -49,9 +49,9 @@ export const useRoleAccess = () => {
         .from('members_collectors')
         .select('name')
         .eq('member_profile_id', session.user.id)
-        .maybeSingle();
+        .single();
 
-      if (collectorError) {
+      if (collectorError && collectorError.code !== 'PGRST116') {
         console.error('Error checking collector status:', collectorError);
       }
 
@@ -65,9 +65,9 @@ export const useRoleAccess = () => {
         .from('members')
         .select('id')
         .eq('auth_user_id', session.user.id)
-        .maybeSingle();
+        .single();
 
-      if (memberError) {
+      if (memberError && memberError.code !== 'PGRST116') {
         console.error('Error checking member status:', memberError);
       }
 
