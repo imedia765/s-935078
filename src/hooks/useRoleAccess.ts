@@ -22,7 +22,7 @@ export const useRoleAccess = () => {
 
       console.log('Session user in central role check:', session.user.id);
 
-      // First try to get role from user_roles table
+      // First check if user is an admin
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -39,12 +39,12 @@ export const useRoleAccess = () => {
         throw roleError;
       }
 
-      if (roleData?.role) {
-        console.log('Role from user_roles:', roleData.role);
-        return roleData.role as UserRole;
+      if (roleData?.role === 'admin') {
+        console.log('User is an admin');
+        return 'admin' as UserRole;
       }
 
-      // If no role in user_roles table, check if user is a collector
+      // Then check if user is a collector
       const { data: collectorData, error: collectorError } = await supabase
         .from('members_collectors')
         .select('name')
@@ -56,11 +56,11 @@ export const useRoleAccess = () => {
       }
 
       if (collectorData?.name) {
-        console.log('Collector status result:', collectorData);
+        console.log('User is a collector:', collectorData.name);
         return 'collector' as UserRole;
       }
 
-      // If still no role found, check if user exists in members table
+      // Finally check if user is a regular member
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('id')
@@ -76,7 +76,7 @@ export const useRoleAccess = () => {
         return 'member' as UserRole;
       }
 
-      console.log('No role found, defaulting to member');
+      console.log('No specific role found, defaulting to member');
       return 'member' as UserRole;
     },
     staleTime: ROLE_STALE_TIME,
