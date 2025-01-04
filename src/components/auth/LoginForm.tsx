@@ -29,9 +29,21 @@ const LoginForm = () => {
           const authUser = await createAuthAccount(memberNumber);
           if (authUser) {
             console.log('Auth account created:', authUser.id);
+            
+            // Link member to auth immediately after creation
+            await linkMemberToAuth(member.id, authUser.id);
+            
+            toast({
+              title: "Account created",
+              description: "Your account has been created successfully.",
+            });
           }
-        } catch (error) {
-          console.log('Auth account might already exist, proceeding to sign in');
+        } catch (error: any) {
+          if (error.message.includes('already registered')) {
+            console.log('Auth account might already exist, proceeding to sign in');
+          } else {
+            throw error;
+          }
         }
       }
 
@@ -52,9 +64,20 @@ const LoginForm = () => {
       navigate('/');
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = "An unexpected error occurred";
+      if (error.message.includes('Member not found')) {
+        errorMessage = "Member number not found. Please check your member number.";
+      } else if (error.message.includes('Invalid login credentials')) {
+        errorMessage = "Invalid credentials. Please try again.";
+      } else if (error.message.includes('already registered')) {
+        errorMessage = "This member number is already registered. Please try logging in.";
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message || "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
