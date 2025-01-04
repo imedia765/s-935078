@@ -30,7 +30,7 @@ export const useRoleAccess = () => {
         .maybeSingle();
 
       if (roleError) {
-        console.error('Error fetching role from user_roles:', roleError);
+        console.error('Error checking user_roles:', roleError);
         toast({
           title: "Error fetching role",
           description: roleError.message,
@@ -40,7 +40,7 @@ export const useRoleAccess = () => {
       }
 
       if (roleData?.role) {
-        console.log('Found role in user_roles table:', roleData.role);
+        console.log('Role from user_roles:', roleData.role);
         return roleData.role as UserRole;
       }
 
@@ -49,14 +49,14 @@ export const useRoleAccess = () => {
         .from('members_collectors')
         .select('name')
         .eq('member_profile_id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (collectorError && collectorError.code !== 'PGRST116') {
         console.error('Error checking collector status:', collectorError);
       }
 
       if (collectorData?.name) {
-        console.log('User is a collector based on members_collectors table');
+        console.log('Collector status result:', collectorData);
         return 'collector' as UserRole;
       }
 
@@ -65,7 +65,7 @@ export const useRoleAccess = () => {
         .from('members')
         .select('id')
         .eq('auth_user_id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (memberError && memberError.code !== 'PGRST116') {
         console.error('Error checking member status:', memberError);
