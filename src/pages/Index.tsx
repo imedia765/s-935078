@@ -29,9 +29,25 @@ const Index = () => {
   };
 
   const handleLogout = async () => {
-    await queryClient.invalidateQueries();
-    await supabase.auth.signOut();
-    navigate('/login');
+    try {
+      await queryClient.invalidateQueries();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account",
+      });
+      
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Logout failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
