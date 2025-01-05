@@ -9,7 +9,7 @@ import SidePanel from '@/components/SidePanel';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
-import { Menu } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
@@ -86,9 +86,19 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-dashboard-dark">
-      <div className="w-full bg-dashboard-card/50 py-4 text-center border-b border-white/10">
-        <p className="text-xl text-white font-arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-        <p className="text-sm text-dashboard-text mt-1">In the name of Allah, the Most Gracious, the Most Merciful</p>
+      <div className="w-full bg-dashboard-card/50 py-4 flex justify-between items-center px-6 border-b border-white/10">
+        <div className="text-center flex-1">
+          <p className="text-xl text-white font-arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+          <p className="text-sm text-dashboard-accent1 mt-1">In the name of Allah, the Most Gracious, the Most Merciful</p>
+        </div>
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="text-dashboard-accent1 hover:text-white hover:bg-dashboard-card flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
       </div>
       
       {/* Mobile Menu Button */}
