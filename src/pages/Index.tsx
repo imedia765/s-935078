@@ -88,12 +88,12 @@ const Index = () => {
 
   const renderContent = () => {
     if (!canAccessTab(activeTab)) {
-      return <DashboardView onLogout={handleLogout} />;
+      return <DashboardView />;
     }
 
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardView onLogout={handleLogout} />;
+        return <DashboardView />;
       case 'users':
         return (
           <>
