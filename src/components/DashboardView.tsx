@@ -2,6 +2,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import MemberProfileCard from './MemberProfileCard';
+import MonthlyChart from './MonthlyChart';
+import MetricCard from './MetricCard';
+import TotalCount from './TotalCount';
+import { Users } from 'lucide-react';
 
 const DashboardView = () => {
   const { toast } = useToast();
@@ -67,6 +71,44 @@ const DashboardView = () => {
       
       <div className="grid gap-6">
         <MemberProfileCard memberProfile={memberProfile} />
+        
+        {/* Financial Overview Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <MetricCard 
+            title="Yearly Payment Status" 
+            value={memberProfile?.yearly_payment_status === 'completed' ? 100 : 0}
+            color={memberProfile?.yearly_payment_status === 'completed' ? '#4CAF50' : '#FFA726'} 
+          />
+          <MetricCard 
+            title="Emergency Collection" 
+            value={memberProfile?.emergency_collection_status === 'completed' ? 100 : 0}
+            color={memberProfile?.emergency_collection_status === 'completed' ? '#4CAF50' : '#FFA726'} 
+          />
+          <MetricCard 
+            title="Overall Status" 
+            value={75} 
+            color="#8989DE" 
+          />
+        </div>
+
+        {/* Payment Summary */}
+        <TotalCount 
+          items={[
+            {
+              count: memberProfile?.yearly_payment_amount || 0,
+              label: "Yearly Payment",
+              icon: <Users className="h-4 w-4 text-dashboard-accent1" />
+            },
+            {
+              count: memberProfile?.emergency_collection_amount || 0,
+              label: "Emergency Collection",
+              icon: <Users className="h-4 w-4 text-dashboard-accent2" />
+            }
+          ]}
+        />
+
+        {/* Monthly Chart */}
+        <MonthlyChart />
       </div>
     </>
   );
