@@ -22,8 +22,29 @@ const Index = () => {
   const queryClient = useQueryClient();
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    try {
+      console.log('Checking authentication status...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Auth check error:', error);
+        throw error;
+      }
+
+      if (!session) {
+        console.log('No active session found, redirecting to login...');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Active session found for user:', session.user.id);
+    } catch (error: any) {
+      console.error('Authentication check failed:', error);
+      toast({
+        title: "Authentication Error",
+        description: error.message,
+        variant: "destructive",
+      });
       navigate('/login');
     }
   };
@@ -101,7 +122,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dashboard-dark">
+    <div className="min-h-screen bg-dashboard-dark flex flex-col">
       <div className="w-full bg-dashboard-card/50 py-4 flex justify-between items-center px-6 border-b border-white/10">
         <div className="text-center flex-1">
           <p className="text-xl text-white font-arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
@@ -117,44 +138,44 @@ const Index = () => {
         </Button>
       </div>
       
-      {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="bg-dashboard-card/50 border-white/10"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
-      </div>
+      <div className="flex flex-1 relative">
+        {/* Mobile Menu Button */}
+        <div className="lg:hidden fixed top-4 left-4 z-50">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="bg-dashboard-card/50 border-white/10"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        </div>
 
-      {/* Backdrop for mobile */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+        {/* Backdrop for mobile */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
 
-      {/* Sidebar */}
-      <div className={`
-        fixed lg:static inset-y-0 left-0 z-40
-        transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 transition-transform duration-200 ease-in-out
-      `}>
-        <SidePanel 
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            setIsSidebarOpen(false);
-          }} 
-          userRole={userRole} 
-        />
-      </div>
+        {/* Sidebar */}
+        <div className={`
+          fixed lg:relative inset-y-0 left-0 z-40 h-[calc(100vh-4rem)]
+          transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0 transition-transform duration-200 ease-in-out
+        `}>
+          <SidePanel 
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              setIsSidebarOpen(false);
+            }} 
+            userRole={userRole} 
+          />
+        </div>
 
-      {/* Main Content */}
-      <div className="lg:pl-64 transition-all duration-200">
-        <div className="p-8">
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto p-8">
           {renderContent()}
         </div>
       </div>
