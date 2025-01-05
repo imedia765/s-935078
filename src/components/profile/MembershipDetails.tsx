@@ -3,49 +3,26 @@ import RoleBadge from "./RoleBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, CheckCircle2 } from "lucide-react";
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Shield } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
 
 interface MembershipDetailsProps {
   memberProfile: Member;
   userRole: string | null;
 }
 
+// Define the allowed role types to match the database enum
 type AppRole = 'admin' | 'collector' | 'member';
 
 const MembershipDetails = ({ memberProfile, userRole }: MembershipDetailsProps) => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  // First check if user is a collector
-  const { data: collectorStatus } = useQuery({
-    queryKey: ['collectorStatus', memberProfile.id],
-    queryFn: async () => {
-      console.log('Checking collector status for member:', memberProfile.id);
-      const { data, error } = await supabase
-        .from('members_collectors')
-        .select('name')
-        .eq('member_profile_id', memberProfile.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error checking collector status:', error);
-        return null;
-      }
-
-      console.log('Collector status result:', data);
-      return data ? 'collector' : null;
-    },
-    enabled: !!memberProfile.id
-  });
-
-  // Then check user_roles table
-  const { data: roleFromTable } = useQuery({
-    queryKey: ['userRole', memberProfile.auth_user_id],
+  // Fetch the actual role from user_roles table
+  const { data: actualRole } = useQuery({
+    queryKey: ['actualUserRole', memberProfile.auth_user_id],
     queryFn: async () => {
       if (!memberProfile.auth_user_id) return null;
       
-      console.log('Checking user_roles for:', memberProfile.auth_user_id);
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
@@ -53,22 +30,17 @@ const MembershipDetails = ({ memberProfile, userRole }: MembershipDetailsProps) 
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching role from user_roles:', error);
+        console.error('Error fetching actual role:', error);
         return null;
       }
 
-      console.log('Role from user_roles:', data?.role);
-      return data?.role;
+      return data?.role || null;
     },
-    enabled: !!memberProfile.auth_user_id,
-    retry: false // Don't retry on 406 errors
+    enabled: !!memberProfile.auth_user_id
   });
 
-  // Determine final role
-  const displayRole = roleFromTable || collectorStatus || 'member';
-  console.log('Final determined role:', displayRole);
-  
-  const isAdmin = displayRole === 'admin';
+  // Use the actual role from the database if available, otherwise fall back to the passed userRole
+  const displayRole = actualRole || userRole;
 
   const handleRoleChange = async (newRole: AppRole) => {
     if (!memberProfile.auth_user_id) {
@@ -89,7 +61,7 @@ const MembershipDetails = ({ memberProfile, userRole }: MembershipDetailsProps) 
 
       if (deleteError) throw deleteError;
 
-      // Then insert new role
+      // Then insert new role with proper typing
       const { error: insertError } = await supabase
         .from('user_roles')
         .insert({
@@ -98,10 +70,6 @@ const MembershipDetails = ({ memberProfile, userRole }: MembershipDetailsProps) 
         });
 
       if (insertError) throw insertError;
-
-      // Invalidate all relevant queries
-      await queryClient.invalidateQueries({ queryKey: ['userRole'] });
-      await queryClient.invalidateQueries({ queryKey: ['collectorStatus'] });
 
       toast({
         title: "Success",
@@ -121,28 +89,17 @@ const MembershipDetails = ({ memberProfile, userRole }: MembershipDetailsProps) 
     <div className="space-y-2">
       <p className="text-dashboard-muted text-sm">Membership Details</p>
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-dashboard-text flex items-center gap-2">
-            Status:{' '}
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-              memberProfile?.status === 'active' 
-                ? 'bg-dashboard-accent3/20 text-dashboard-accent3' 
-                : 'bg-dashboard-muted/20 text-dashboard-muted'
-            }`}>
-              {memberProfile?.status || 'Pending'}
-              {memberProfile?.status === 'active' && (
-                <CheckCircle2 className="w-4 h-4 ml-1 text-dashboard-accent3" />
-              )}
-            </span>
-          </div>
-          {isAdmin && (
-            <span className="bg-dashboard-accent1/20 text-dashboard-accent1 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              Admin
-            </span>
-          )}
-        </div>
-        <div className="text-dashboard-text flex items-center gap-2">
+        <p className="text-dashboard-text flex items-center gap-2">
+          Status:{' '}
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+            memberProfile?.status === 'active' 
+              ? 'bg-dashboard-accent3/20 text-dashboard-accent3' 
+              : 'bg-dashboard-muted/20 text-dashboard-muted'
+          }`}>
+            {memberProfile?.status || 'Pending'}
+          </span>
+        </p>
+        <p className="text-dashboard-text flex items-center gap-2">
           <span className="text-dashboard-accent2">Type:</span>
           <span className="flex items-center gap-2">
             {memberProfile?.membership_type || 'Standard'}
@@ -178,7 +135,7 @@ const MembershipDetails = ({ memberProfile, userRole }: MembershipDetailsProps) 
               <RoleBadge role={displayRole} />
             )}
           </span>
-        </div>
+        </p>
       </div>
     </div>
   );

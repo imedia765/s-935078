@@ -13,19 +13,9 @@ const DashboardView = ({ onLogout }: DashboardViewProps) => {
   const queryClient = useQueryClient();
 
   const handleLogout = async () => {
-    try {
-      // Invalidate all queries before logout
-      await queryClient.invalidateQueries();
-      await supabase.auth.signOut();
-      onLogout();
-    } catch (error) {
-      console.error('Error during logout:', error);
-      toast({
-        title: "Error",
-        description: "Failed to log out",
-        variant: "destructive",
-      });
-    }
+    // Invalidate all queries before logout
+    await queryClient.invalidateQueries();
+    onLogout();
   };
 
   const { data: memberProfile, isError } = useQuery({

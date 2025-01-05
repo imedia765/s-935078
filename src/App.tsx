@@ -1,25 +1,30 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { Session } from '@supabase/supabase-js';
-import Index from './pages/Index';
-import Login from './pages/Login';
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Index from "@/pages/Index";
+import Login from "@/pages/Login";
+import { Session } from "@supabase/supabase-js";
 import { Toaster } from "@/components/ui/toaster";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
-function AuthWrapper() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+function App() {
   const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) {
-        console.log('No session found, redirecting to login');
-        navigate('/login');
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('Initial session check:', session?.user?.id);
+      if (error) {
+        console.error('Session check error:', error);
+        handleAuthError(error);
       }
+      setSession(session);
+      setLoading(false);
     });
 
     // Listen for auth changes
@@ -27,41 +32,99 @@ function AuthWrapper() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log('Auth state changed:', _event, session?.user?.id);
+      
+      if (_event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
+
+      if (_event === 'SIGNED_OUT') {
+        console.log('User signed out, clearing session and queries');
+        await handleSignOut();
+      }
+
       setSession(session);
       
       if (!session) {
-        // Clear all queries when logging out
+        // Clear all queries when the user logs out
         await queryClient.resetQueries();
-        navigate('/login');
-      } else {
-        // Refresh queries when logging in
-        await queryClient.invalidateQueries();
-        navigate('/');
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate, queryClient]);
+    return () => {
+      console.log('Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
+  }, [queryClient]);
 
-  return null;
-}
+  const handleAuthError = async (error: any) => {
+    console.error('Auth error:', error);
+    
+    if (error.message?.includes('refresh_token_not_found') || 
+        error.message?.includes('Invalid Refresh Token')) {
+      console.log('Invalid refresh token, signing out...');
+      await handleSignOut();
+      
+      toast({
+        title: "Session expired",
+        description: "Please sign in again",
+        variant: "destructive",
+      });
+    }
+  };
 
-function App() {
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      await queryClient.resetQueries();
+      console.log('Sign out complete, queries reset');
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <Router>
-      <AuthWrapper />
+    <BrowserRouter>
       <Routes>
-        <Route 
-          path="/login" 
-          element={<Login />} 
+        <Route
+          path="/"
+          element={
+            loading ? (
+              <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : session ? (
+              <Index />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
         />
-        <Route 
-          path="/" 
-          element={<Index />} 
+        <Route
+          path="/login"
+          element={
+            loading ? (
+              <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : session ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Login />
+            )
+          }
         />
       </Routes>
       <Toaster />
-    </Router>
+    </BrowserRouter>
   );
 }
 

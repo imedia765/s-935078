@@ -40,19 +40,6 @@ const LoginForm = () => {
       const member = members[0];
       console.log('Member found:', member);
 
-      // Check if member is a collector using a separate query
-      let isCollector = false;
-      const { data: collectorData } = await supabase
-        .from('members_collectors')
-        .select('name')
-        .eq('member_profile_id', member.id)
-        .maybeSingle();
-
-      if (collectorData) {
-        console.log('Member is a collector:', collectorData.name);
-        isCollector = true;
-      }
-
       const email = `${memberNumber.toLowerCase()}@temp.com`;
       const password = memberNumber;
 
@@ -93,22 +80,6 @@ const LoginForm = () => {
           if (updateError) {
             console.error('Error updating member with auth_user_id:', updateError);
             throw updateError;
-          }
-
-          // If member is a collector, assign collector role
-          if (isCollector) {
-            console.log('Assigning collector role for member');
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert({
-                user_id: signUpData.user.id,
-                role: 'collector'
-              });
-
-            if (roleError) {
-              console.error('Error assigning collector role:', roleError);
-              throw roleError;
-            }
           }
 
           console.log('Signup successful, attempting final sign in');

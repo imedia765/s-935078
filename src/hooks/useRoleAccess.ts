@@ -21,67 +21,58 @@ export const useRoleAccess = () => {
       }
 
       console.log('Session user in central role check:', session.user.id);
+      console.log('User metadata:', session.user.user_metadata);
 
-      // First check if user is an admin in user_roles
+      // First try to get role from user_roles table
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+        .eq('user_id', session.user.id);
 
-      if (roleError && roleError.code !== 'PGRST116') {
-        console.error('Error checking user_roles:', roleError);
-        toast({
-          title: "Error fetching role",
-          description: roleError.message,
-          variant: "destructive",
-        });
-        throw roleError;
+      if (roleError) {
+        console.error('Error fetching role from user_roles:', roleError);
       }
 
-      // If user is an admin, return admin role immediately
-      if (roleData?.role === 'admin') {
-        console.log('User is an admin');
-        return 'admin' as UserRole;
+      if (roleData?.length > 0) {
+        console.log('Found roles in user_roles table:', roleData);
+        // If user has admin role, return that
+        if (roleData.some(r => r.role === 'admin')) {
+          return 'admin' as UserRole;
+        }
+        // If user has collector role, return that
+        if (roleData.some(r => r.role === 'collector')) {
+          return 'collector' as UserRole;
+        }
+        // Otherwise return member role
+        if (roleData.some(r => r.role === 'member')) {
+          return 'member' as UserRole;
+        }
       }
 
-      // Check if user is a collector in members_collectors
+      // If no role in user_roles table, check if user is a collector
       const { data: collectorData, error: collectorError } = await supabase
         .from('members_collectors')
         .select('name')
-        .eq('member_profile_id', session.user.id)
-        .eq('active', true)
-        .maybeSingle();
+        .eq('member_number', session.user.user_metadata.member_number);
 
-      if (collectorError && collectorError.code !== 'PGRST116') {
+      if (collectorError) {
         console.error('Error checking collector status:', collectorError);
-        toast({
-          title: "Error checking collector status",
-          description: collectorError.message,
-          variant: "destructive",
-        });
       }
 
-      // If user is an active collector, return collector role
-      if (collectorData?.name) {
-        console.log('User is a collector:', collectorData.name);
+      if (collectorData?.length > 0) {
+        console.log('User is a collector based on members_collectors table');
         return 'collector' as UserRole;
       }
 
-      // Finally check if user is a regular member
+      // If still no role found, check if user exists in members table
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('id')
         .eq('auth_user_id', session.user.id)
         .maybeSingle();
 
-      if (memberError && memberError.code !== 'PGRST116') {
+      if (memberError) {
         console.error('Error checking member status:', memberError);
-        toast({
-          title: "Error checking member status",
-          description: memberError.message,
-          variant: "destructive",
-        });
       }
 
       if (memberData?.id) {
@@ -89,7 +80,7 @@ export const useRoleAccess = () => {
         return 'member' as UserRole;
       }
 
-      console.log('No specific role found, defaulting to member');
+      console.log('No role found, defaulting to member');
       return 'member' as UserRole;
     },
     staleTime: ROLE_STALE_TIME,
