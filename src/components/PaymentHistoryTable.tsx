@@ -36,11 +36,16 @@ const PaymentHistoryTable = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data: roleData } = await supabase
+      const { data: roleData, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
 
       return roleData?.role;
     },
@@ -69,7 +74,7 @@ const PaymentHistoryTable = () => {
           .from('members_collectors')
           .select('id')
           .eq('member_number', session.user.user_metadata.member_number)
-          .single();
+          .maybeSingle();
 
         if (collectorData) {
           const { data: paymentsData, error: paymentsError } = await supabase
