@@ -52,43 +52,6 @@ const PaymentHistoryTable = () => {
         throw new Error('No user logged in');
       }
 
-      if (userRole === 'collector') {
-        console.log('Fetching collector payments...');
-        const { data: collectorData } = await supabase
-          .from('members_collectors')
-          .select('id')
-          .eq('member_number', session.user.user_metadata.member_number)
-          .maybeSingle();
-
-        if (collectorData) {
-          console.log('Found collector:', collectorData);
-          const { data: paymentsData, error: paymentsError } = await supabase
-            .from('payment_requests')
-            .select(`
-              *,
-              members!payment_requests_member_id_fkey(full_name)
-            `)
-            .eq('collector_id', collectorData.id)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
-
-          if (paymentsError) {
-            console.error('Error fetching payments:', paymentsError);
-            throw paymentsError;
-          }
-
-          console.log('Collector payments:', paymentsData);
-          return paymentsData?.map(payment => ({
-            id: payment.id,
-            date: payment.created_at,
-            type: payment.payment_type,
-            amount: payment.amount,
-            status: payment.status,
-            member_name: payment.members?.full_name
-          })) || [];
-        }
-      }
-      
       const memberNumber = session.user.user_metadata.member_number;
       
       if (!memberNumber) {
@@ -101,6 +64,61 @@ const PaymentHistoryTable = () => {
         throw new Error('Member number not found');
       }
 
+      if (userRole === 'collector') {
+        console.log('Fetching collector payments for member number:', memberNumber);
+        
+        // First get the collector ID using member number
+        const { data: collectorData, error: collectorError } = await supabase
+          .from('members_collectors')
+          .select('id')
+          .eq('member_number', memberNumber)
+          .maybeSingle();
+
+        if (collectorError) {
+          console.error('Error fetching collector:', collectorError);
+          throw collectorError;
+        }
+
+        if (!collectorData) {
+          console.error('No collector found for member number:', memberNumber);
+          return [];
+        }
+
+        console.log('Found collector:', collectorData);
+
+        // Then get all pending payments for this collector
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from('payment_requests')
+          .select(`
+            *,
+            members!payment_requests_member_id_fkey (
+              full_name,
+              member_number
+            )
+          `)
+          .eq('collector_id', collectorData.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (paymentsError) {
+          console.error('Error fetching payments:', paymentsError);
+          throw paymentsError;
+        }
+
+        console.log('Collector payments:', paymentsData);
+        
+        return paymentsData?.map(payment => ({
+          id: payment.id,
+          date: payment.created_at,
+          type: payment.payment_type,
+          amount: payment.amount,
+          status: payment.status,
+          member_name: payment.members?.full_name,
+          member_number: payment.members?.member_number
+        })) || [];
+      }
+      
+      // For regular members, fetch their own payments
       console.log('Fetching member payments for:', memberNumber);
       const { data, error: paymentsError } = await supabase
         .from('payment_requests')

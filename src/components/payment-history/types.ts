@@ -5,5 +5,6 @@ export interface Payment {
   amount: number;
   status: string;
   member_name?: string;
+  member_number?: string;
   collector_name?: string;
 }
