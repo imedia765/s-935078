@@ -108,45 +108,47 @@ const PaymentCard = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Annual Payment Section */}
         <div className="p-6 glass-card rounded-lg border border-white/10 hover:border-white/20 transition-colors">
-          <h3 className="text-lg font-medium text-white mb-4">Annual Payment</h3>
+          <h3 className="text-xl font-semibold text-white mb-4">Annual Payment</h3>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-2xl font-bold text-white">£40</p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !annualPaymentDueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <span className={yearlyPaymentInfo.color}>
-                      {yearlyPaymentInfo.message}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={annualPaymentDueDate ? new Date(annualPaymentDueDate) : undefined}
-                    disabled
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <p className="text-3xl font-bold text-dashboard-accent1">£40</p>
+              <div className="mt-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-medium",
+                        !annualPaymentDueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <span className={`${yearlyPaymentInfo.color} font-semibold`}>
+                        {yearlyPaymentInfo.message}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={annualPaymentDueDate ? new Date(annualPaymentDueDate) : undefined}
+                      disabled
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
               {yearlyPaymentInfo.warning && (
-                <p className="text-sm text-rose-500 font-medium mt-2">
+                <p className="text-sm text-rose-500 font-semibold mt-2">
                   ⚠️ {yearlyPaymentInfo.warning}
                 </p>
               )}
               {lastAnnualPaymentDate && (
-                <div className="mt-2">
-                  <p className="text-xs text-dashboard-muted">
+                <div className="mt-3">
+                  <p className="text-sm text-dashboard-text font-medium">
                     Last payment: {formatDate(lastAnnualPaymentDate)}
                   </p>
                   {lastAnnualPaymentAmount && (
-                    <p className="text-xs text-emerald-400">
+                    <p className="text-sm text-emerald-400 font-semibold">
                       Amount: £{lastAnnualPaymentAmount}
                     </p>
                   )}
@@ -154,7 +156,7 @@ const PaymentCard = ({
               )}
             </div>
             <div className="flex items-center space-x-3">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium shadow-lg backdrop-blur-sm ${getStatusColor(annualPaymentStatus)}`}>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold shadow-lg backdrop-blur-sm ${getStatusColor(annualPaymentStatus)}`}>
                 {annualPaymentStatus}
               </span>
               <div className="w-12 h-12" style={{ color: getStatusColor(annualPaymentStatus).split(' ')[1].replace('text-', '') }}>
@@ -166,42 +168,44 @@ const PaymentCard = ({
 
         {/* Emergency Collection Section */}
         <div className="p-6 glass-card rounded-lg border border-white/10 hover:border-white/20 transition-colors">
-          <h3 className="text-lg font-medium text-white mb-4">Emergency Collection</h3>
+          <h3 className="text-xl font-semibold text-white mb-4">Emergency Collection</h3>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-3xl font-bold text-dashboard-accent2">
                 £{emergencyCollectionAmount}
               </p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !emergencyCollectionDueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <span className="text-dashboard-warning">
-                      Due: {formatDate(emergencyCollectionDueDate)}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={emergencyCollectionDueDate ? new Date(emergencyCollectionDueDate) : undefined}
-                    disabled
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="mt-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-medium",
+                        !emergencyCollectionDueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <span className="text-dashboard-warning font-semibold">
+                        Due: {formatDate(emergencyCollectionDueDate)}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={emergencyCollectionDueDate ? new Date(emergencyCollectionDueDate) : undefined}
+                      disabled
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
               {lastEmergencyPaymentDate && (
-                <div className="mt-2">
-                  <p className="text-xs text-dashboard-muted">
+                <div className="mt-3">
+                  <p className="text-sm text-dashboard-text font-medium">
                     Last payment: {formatDate(lastEmergencyPaymentDate)}
                   </p>
                   {lastEmergencyPaymentAmount && (
-                    <p className="text-xs text-emerald-400">
+                    <p className="text-sm text-emerald-400 font-semibold">
                       Amount: £{lastEmergencyPaymentAmount}
                     </p>
                   )}
@@ -209,7 +213,7 @@ const PaymentCard = ({
               )}
             </div>
             <div className="flex items-center space-x-3">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium shadow-lg backdrop-blur-sm ${getStatusColor(emergencyCollectionStatus)}`}>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold shadow-lg backdrop-blur-sm ${getStatusColor(emergencyCollectionStatus)}`}>
                 {emergencyCollectionStatus}
               </span>
               <div className="w-12 h-12" style={{ color: getStatusColor(emergencyCollectionStatus).split(' ')[1].replace('text-', '') }}>
@@ -217,7 +221,7 @@ const PaymentCard = ({
               </div>
             </div>
           </div>
-          <div className="text-sm text-dashboard-text">
+          <div className="text-sm text-dashboard-text font-medium">
             {emergencyCollectionStatus === 'completed' 
               ? 'Payment completed' 
               : (
