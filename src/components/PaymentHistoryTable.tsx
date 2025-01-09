@@ -13,7 +13,10 @@ const PaymentHistoryTable = () => {
     queryKey: ['user-role'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) {
+        console.log('No user found in role check');
+        return null;
+      }
 
       const { data: roleData, error } = await supabase
         .from('user_roles')
@@ -26,6 +29,7 @@ const PaymentHistoryTable = () => {
         return null;
       }
 
+      console.log('User role data:', roleData);
       return roleData?.role;
     },
   });
@@ -34,6 +38,7 @@ const PaymentHistoryTable = () => {
     queryKey: ['payment-history', userRole],
     queryFn: async () => {
       console.log('Starting payment history fetch...');
+      console.log('User role:', userRole);
       
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -48,6 +53,7 @@ const PaymentHistoryTable = () => {
       }
 
       if (userRole === 'collector') {
+        console.log('Fetching collector payments...');
         const { data: collectorData } = await supabase
           .from('members_collectors')
           .select('id')
@@ -55,6 +61,7 @@ const PaymentHistoryTable = () => {
           .maybeSingle();
 
         if (collectorData) {
+          console.log('Found collector:', collectorData);
           const { data: paymentsData, error: paymentsError } = await supabase
             .from('payment_requests')
             .select(`
@@ -65,8 +72,12 @@ const PaymentHistoryTable = () => {
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
 
-          if (paymentsError) throw paymentsError;
+          if (paymentsError) {
+            console.error('Error fetching payments:', paymentsError);
+            throw paymentsError;
+          }
 
+          console.log('Collector payments:', paymentsData);
           return paymentsData?.map(payment => ({
             id: payment.id,
             date: payment.created_at,
@@ -90,6 +101,7 @@ const PaymentHistoryTable = () => {
         throw new Error('Member number not found');
       }
 
+      console.log('Fetching member payments for:', memberNumber);
       const { data, error: paymentsError } = await supabase
         .from('payment_requests')
         .select('*')
@@ -101,6 +113,7 @@ const PaymentHistoryTable = () => {
         throw paymentsError;
       }
 
+      console.log('Member payments:', data);
       return data.map(payment => ({
         id: payment.id,
         date: payment.created_at,
