@@ -1,31 +1,10 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { format } from "date-fns";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, Loader2, Users } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-
-interface Payment {
-  id: string;
-  date: string;
-  type: string;
-  amount: number;
-  status: string;
-  member_name?: string;
-  collector_name?: string;
-}
-
-interface GroupedPayments {
-  [key: string]: Payment[];
-}
+import { Payment } from "./payment-history/types";
+import { CollectorPaymentsList } from "./payment-history/CollectorPaymentsList";
+import { MemberPaymentsList } from "./payment-history/MemberPaymentsList";
 
 const PaymentHistoryTable = () => {
   const { toast } = useToast();
@@ -69,7 +48,6 @@ const PaymentHistoryTable = () => {
       }
 
       if (userRole === 'collector') {
-        // For collectors, fetch all pending payments for their assigned members
         const { data: collectorData } = await supabase
           .from('members_collectors')
           .select('id')
@@ -100,7 +78,6 @@ const PaymentHistoryTable = () => {
         }
       }
       
-      // For regular members, show their own payment history
       const memberNumber = session.user.user_metadata.member_number;
       
       if (!memberNumber) {
@@ -171,15 +148,6 @@ const PaymentHistoryTable = () => {
     );
   }
 
-  const groupedPayments = payments.reduce((acc: GroupedPayments, payment) => {
-    const memberName = payment.member_name || 'Unknown Member';
-    if (!acc[memberName]) {
-      acc[memberName] = [];
-    }
-    acc[memberName].push(payment);
-    return acc;
-  }, {});
-
   return (
     <div className="glass-card p-4">
       <h3 className="text-xl font-semibold mb-4 text-dashboard-highlight">
@@ -187,92 +155,9 @@ const PaymentHistoryTable = () => {
       </h3>
       
       {userRole === 'collector' ? (
-        <Accordion type="single" collapsible className="space-y-4">
-          {Object.entries(groupedPayments).map(([memberName, memberPayments]) => (
-            <AccordionItem
-              key={memberName}
-              value={memberName}
-              className="border border-dashboard-highlight/20 rounded-lg overflow-hidden"
-            >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-dashboard-accent1 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-dashboard-highlight">{memberName}</p>
-                    <span className="text-sm text-dashboard-warning">
-                      {memberPayments.length} pending payment{memberPayments.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="rounded-md border border-dashboard-highlight/20">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-dashboard-highlight">Date</TableHead>
-                        <TableHead className="text-dashboard-highlight">Type</TableHead>
-                        <TableHead className="text-dashboard-highlight">Amount</TableHead>
-                        <TableHead className="text-dashboard-highlight">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {memberPayments.map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="text-dashboard-text">{format(new Date(payment.date), 'PPP')}</TableCell>
-                          <TableCell className="text-dashboard-text">{payment.type}</TableCell>
-                          <TableCell className="text-dashboard-accent3">
-                            <span className="text-dashboard-accent3">£</span>{payment.amount}
-                          </TableCell>
-                          <TableCell>
-                            <span className="px-2 py-1 rounded-full bg-dashboard-warning/20 text-dashboard-warning">
-                              {payment.status}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        <CollectorPaymentsList payments={payments} />
       ) : (
-        <div className="rounded-md border border-dashboard-highlight/20">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-dashboard-highlight">Date</TableHead>
-                <TableHead className="text-dashboard-highlight">Type</TableHead>
-                <TableHead className="text-dashboard-highlight">Amount</TableHead>
-                <TableHead className="text-dashboard-highlight">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell className="text-dashboard-text">{format(new Date(payment.date), 'PPP')}</TableCell>
-                  <TableCell className="text-dashboard-text">{payment.type}</TableCell>
-                  <TableCell className="text-dashboard-accent3">
-                    <span className="text-dashboard-accent3">£</span>{payment.amount}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full ${
-                      payment.status === 'pending' 
-                        ? 'bg-dashboard-warning/20 text-dashboard-warning'
-                        : 'bg-dashboard-accent3/20 text-dashboard-accent3'
-                    }`}>
-                      {payment.status}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <MemberPaymentsList payments={payments} />
       )}
     </div>
   );
