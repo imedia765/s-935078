@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const MASTER_REPO = 'https://github.com/imedia765/s-935078.git';
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -44,23 +46,11 @@ serve(async (req) => {
     console.log('User authenticated:', user.id)
 
     // Parse request body
-    const { operation, customUrl, masterUrl } = await req.json()
-    console.log('Processing git sync operation:', { operation, customUrl, masterUrl })
+    const { operation, customUrl } = await req.json()
+    console.log('Processing git sync operation:', { operation, customUrl, masterUrl: MASTER_REPO })
 
-    if (!operation) {
-      throw new Error('Operation type is required')
-    }
-
-    // For push operations, we need customUrl
-    if (operation === 'push' && (!customUrl || customUrl.trim() === '')) {
-      console.error('No custom repository URL provided')
-      throw new Error('Custom repository URL is required for push operations')
-    }
-
-    // For pull operations, we need masterUrl
-    if (operation === 'pull' && (!masterUrl || masterUrl.trim() === '')) {
-      console.error('No master repository URL provided')
-      throw new Error('Master repository URL is required for pull operations')
+    if (!operation || !customUrl) {
+      throw new Error('Operation type and custom repository URL are required')
     }
 
     // Verify GitHub token exists
@@ -70,9 +60,9 @@ serve(async (req) => {
       throw new Error('GitHub token not configured')
     }
 
-    // Verify repository access based on operation type
-    const repoUrl = operation === 'push' ? customUrl : masterUrl;
-    const repoPath = repoUrl.replace('https://github.com/', '').replace('.git', '')
+    // Verify repository access
+    const repoToCheck = operation === 'push' ? MASTER_REPO : customUrl;
+    const repoPath = repoToCheck.replace('https://github.com/', '').replace('.git', '')
     console.log('Checking repository access:', repoPath)
     
     const repoCheckResponse = await fetch(
@@ -101,7 +91,7 @@ serve(async (req) => {
         operation_type: operation,
         status: 'completed',
         created_by: user.id,
-        message: `Successfully verified access to ${operation === 'push' ? customUrl : masterUrl}`
+        message: `Successfully verified access to ${repoToCheck}`
       })
       .select()
       .single()
@@ -119,7 +109,8 @@ serve(async (req) => {
         message: `Successfully processed ${operation} operation`,
         details: {
           operation,
-          repository: operation === 'push' ? customUrl : masterUrl,
+          customUrl,
+          masterUrl: MASTER_REPO,
           logEntry
         }
       }),

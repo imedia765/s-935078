@@ -11,6 +11,8 @@ interface GitSyncLog {
   error_details?: string;
 }
 
+const MASTER_REPO = 'https://github.com/imedia765/s-935078.git';
+
 export const useGitSync = () => {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,7 +73,6 @@ export const useGitSync = () => {
       const { data, error } = await supabase.functions.invoke('git-sync', {
         body: {
           operation: 'pull',
-          masterUrl: 'https://github.com/imedia765/s-935078.git', // Master repo URL
           customUrl: targetUrl
         }
       });
@@ -128,8 +129,7 @@ export const useGitSync = () => {
       const { data, error } = await supabase.functions.invoke('git-sync', {
         body: {
           operation: 'push',
-          customUrl: targetUrl,
-          masterUrl: 'https://github.com/imedia765/s-935078.git' // Master repo URL
+          customUrl: targetUrl
         }
       });
 
