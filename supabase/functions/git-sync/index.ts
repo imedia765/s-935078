@@ -8,58 +8,84 @@ const corsHeaders = {
 
 const MASTER_REPO = 'https://github.com/imedia765/s-935078.git';
 
-async function execCommand(cmd: string[]): Promise<string> {
-  const process = Deno.run({
-    cmd,
-    stdout: "piped",
-    stderr: "piped",
-  });
-  
-  const { code } = await process.status();
-  const stdout = new TextDecoder().decode(await process.output());
-  const stderr = new TextDecoder().decode(await process.stderrOutput());
-  
-  process.close();
-  
-  if (code !== 0) {
-    throw new Error(`Command failed: ${stderr}`);
-  }
-  
-  return stdout;
-}
-
 async function performGitSync(operation: string, customUrl: string, githubToken: string): Promise<void> {
-  const workDir = await Deno.makeTempDir();
-  console.log('Working directory:', workDir);
+  const [, customOwner, customRepo] = customUrl.match(/github\.com\/([^\/]+)\/([^\.]+)/) || [];
+  const [, masterOwner, masterRepo] = MASTER_REPO.match(/github\.com\/([^\/]+)\/([^\.]+)/) || [];
 
-  try {
-    if (operation === 'pull') {
-      // Pull from master to custom
-      console.log('Cloning master repository...');
-      await execCommand(['git', 'clone', MASTER_REPO.replace('https://', `https://${githubToken}@`), workDir]);
-      
-      console.log('Adding custom remote...');
-      await execCommand(['git', '-C', workDir, 'remote', 'add', 'custom', customUrl.replace('https://', `https://${githubToken}@`)]);
-      
-      console.log('Pushing to custom repository...');
-      await execCommand(['git', '-C', workDir, 'push', 'custom', 'main:main', '--force']);
-    } else if (operation === 'push') {
-      // Push from custom to master
-      console.log('Cloning custom repository...');
-      await execCommand(['git', 'clone', customUrl.replace('https://', `https://${githubToken}@`), workDir]);
-      
-      console.log('Adding master remote...');
-      await execCommand(['git', '-C', workDir, 'remote', 'add', 'master', MASTER_REPO.replace('https://', `https://${githubToken}@`)]);
-      
-      console.log('Pushing to master repository...');
-      await execCommand(['git', '-C', workDir, 'push', 'master', 'main:main', '--force']);
+  if (!customOwner || !customRepo || !masterOwner || !masterRepo) {
+    throw new Error('Invalid repository URLs');
+  }
+
+  // GitHub API base URL
+  const apiUrl = 'https://api.github.com';
+
+  // Headers for GitHub API requests
+  const headers = {
+    'Authorization': `token ${githubToken}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
+
+  if (operation === 'pull') {
+    // Get master branch reference
+    const masterResponse = await fetch(
+      `${apiUrl}/repos/${masterOwner}/${masterRepo}/git/refs/heads/main`,
+      { headers }
+    );
+    
+    if (!masterResponse.ok) {
+      throw new Error(`Failed to get master branch: ${await masterResponse.text()}`);
     }
-  } finally {
-    // Cleanup
-    try {
-      await Deno.remove(workDir, { recursive: true });
-    } catch (error) {
-      console.error('Error cleaning up:', error);
+
+    const masterData = await masterResponse.json();
+    const masterSha = masterData.object.sha;
+
+    // Update custom repository reference
+    const updateResponse = await fetch(
+      `${apiUrl}/repos/${customOwner}/${customRepo}/git/refs/heads/main`,
+      {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          sha: masterSha,
+          force: true
+        })
+      }
+    );
+
+    if (!updateResponse.ok) {
+      throw new Error(`Failed to update custom repository: ${await updateResponse.text()}`);
+    }
+
+  } else if (operation === 'push') {
+    // Get custom branch reference
+    const customResponse = await fetch(
+      `${apiUrl}/repos/${customOwner}/${customRepo}/git/refs/heads/main`,
+      { headers }
+    );
+
+    if (!customResponse.ok) {
+      throw new Error(`Failed to get custom branch: ${await customResponse.text()}`);
+    }
+
+    const customData = await customResponse.json();
+    const customSha = customData.object.sha;
+
+    // Update master repository reference
+    const updateResponse = await fetch(
+      `${apiUrl}/repos/${masterOwner}/${masterRepo}/git/refs/heads/main`,
+      {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          sha: customSha,
+          force: true
+        })
+      }
+    );
+
+    if (!updateResponse.ok) {
+      throw new Error(`Failed to update master repository: ${await updateResponse.text()}`);
     }
   }
 }
@@ -110,10 +136,10 @@ serve(async (req) => {
     }
 
     // Verify GitHub token exists
-    const githubToken = Deno.env.get('GITHUB_PAT')
+    const githubToken = Deno.env.get('GITHUB_PAT');
     if (!githubToken) {
-      console.error('GitHub PAT not configured')
-      throw new Error('GitHub token not configured')
+      console.error('GitHub PAT not configured');
+      throw new Error('GitHub token not configured');
     }
 
     // Verify repository access
@@ -144,7 +170,6 @@ serve(async (req) => {
     await performGitSync(operation, customUrl, githubToken);
     console.log('Git sync completed successfully');
 
-    // Create log entry
     const { data: logEntry, error: logError } = await supabase
       .from('git_sync_logs')
       .insert({
@@ -183,9 +208,8 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in git-sync:', error)
+    console.error('Error in git-sync:', error);
 
-    // Create error log entry
     try {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
