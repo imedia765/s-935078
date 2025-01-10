@@ -8,6 +8,62 @@ const corsHeaders = {
 
 const MASTER_REPO = 'https://github.com/imedia765/s-935078.git';
 
+async function execCommand(cmd: string[]): Promise<string> {
+  const process = Deno.run({
+    cmd,
+    stdout: "piped",
+    stderr: "piped",
+  });
+  
+  const { code } = await process.status();
+  const stdout = new TextDecoder().decode(await process.output());
+  const stderr = new TextDecoder().decode(await process.stderrOutput());
+  
+  process.close();
+  
+  if (code !== 0) {
+    throw new Error(`Command failed: ${stderr}`);
+  }
+  
+  return stdout;
+}
+
+async function performGitSync(operation: string, customUrl: string, githubToken: string): Promise<void> {
+  const workDir = await Deno.makeTempDir();
+  console.log('Working directory:', workDir);
+
+  try {
+    if (operation === 'pull') {
+      // Pull from master to custom
+      console.log('Cloning master repository...');
+      await execCommand(['git', 'clone', MASTER_REPO.replace('https://', `https://${githubToken}@`), workDir]);
+      
+      console.log('Adding custom remote...');
+      await execCommand(['git', '-C', workDir, 'remote', 'add', 'custom', customUrl.replace('https://', `https://${githubToken}@`)]);
+      
+      console.log('Pushing to custom repository...');
+      await execCommand(['git', '-C', workDir, 'push', 'custom', 'main:main', '--force']);
+    } else if (operation === 'push') {
+      // Push from custom to master
+      console.log('Cloning custom repository...');
+      await execCommand(['git', 'clone', customUrl.replace('https://', `https://${githubToken}@`), workDir]);
+      
+      console.log('Adding master remote...');
+      await execCommand(['git', '-C', workDir, 'remote', 'add', 'master', MASTER_REPO.replace('https://', `https://${githubToken}@`)]);
+      
+      console.log('Pushing to master repository...');
+      await execCommand(['git', '-C', workDir, 'push', 'master', 'main:main', '--force']);
+    }
+  } finally {
+    // Cleanup
+    try {
+      await Deno.remove(workDir, { recursive: true });
+    } catch (error) {
+      console.error('Error cleaning up:', error);
+    }
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -84,6 +140,10 @@ serve(async (req) => {
 
     console.log('Repository access verified successfully')
 
+    // Perform the actual git operations
+    await performGitSync(operation, customUrl, githubToken);
+    console.log('Git sync completed successfully');
+
     // Create log entry
     const { data: logEntry, error: logError } = await supabase
       .from('git_sync_logs')
@@ -91,7 +151,7 @@ serve(async (req) => {
         operation_type: operation,
         status: 'completed',
         created_by: user.id,
-        message: `Successfully verified access to ${repoToCheck}`
+        message: `Successfully synced ${operation === 'push' ? 'to' : 'from'} master repository`
       })
       .select()
       .single()
@@ -104,7 +164,7 @@ serve(async (req) => {
     console.log('Operation log created:', logEntry)
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         message: `Successfully processed ${operation} operation`,
         details: {
