@@ -44,16 +44,23 @@ serve(async (req) => {
     console.log('User authenticated:', user.id)
 
     // Parse request body
-    const { operation, customUrl } = await req.json()
-    console.log('Processing git sync operation:', { operation, customUrl })
+    const { operation, customUrl, masterUrl } = await req.json()
+    console.log('Processing git sync operation:', { operation, customUrl, masterUrl })
 
     if (!operation) {
       throw new Error('Operation type is required')
     }
 
-    if (!customUrl || customUrl.trim() === '') {
-      console.error('No repository URL provided')
-      throw new Error('Repository URL is required')
+    // For push operations, we need customUrl
+    if (operation === 'push' && (!customUrl || customUrl.trim() === '')) {
+      console.error('No custom repository URL provided')
+      throw new Error('Custom repository URL is required for push operations')
+    }
+
+    // For pull operations, we need masterUrl
+    if (operation === 'pull' && (!masterUrl || masterUrl.trim() === '')) {
+      console.error('No master repository URL provided')
+      throw new Error('Master repository URL is required for pull operations')
     }
 
     // Verify GitHub token exists
@@ -63,8 +70,9 @@ serve(async (req) => {
       throw new Error('GitHub token not configured')
     }
 
-    // Verify repository access
-    const repoPath = customUrl.replace('https://github.com/', '').replace('.git', '')
+    // Verify repository access based on operation type
+    const repoUrl = operation === 'push' ? customUrl : masterUrl;
+    const repoPath = repoUrl.replace('https://github.com/', '').replace('.git', '')
     console.log('Checking repository access:', repoPath)
     
     const repoCheckResponse = await fetch(
@@ -91,7 +99,7 @@ serve(async (req) => {
         operation_type: operation,
         status: 'completed',
         created_by: user.id,
-        message: `Successfully verified access to ${customUrl}`
+        message: `Successfully verified access to ${operation === 'push' ? customUrl : masterUrl}`
       })
       .select()
       .single()
@@ -104,7 +112,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: `Successfully processed ${operation} operation`
+        message: `Successfully processed ${operation} operation`,
+        details: {
+          operation,
+          repository: operation === 'push' ? customUrl : masterUrl
+        }
       }),
       { 
         headers: { 
