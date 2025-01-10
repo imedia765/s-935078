@@ -7,11 +7,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { GitOperationProgress } from './git/GitOperationProgress';
-import { GitOperationLogs } from './git/GitOperationLogs';
-import { QuickPushButton } from './git/QuickPushButton';
-import { AddRepositoryDialog } from './git/AddRepositoryDialog';
-import { useGitOperations } from './git/useGitOperations';
+import { GitOperationProgress } from '@/components/system/git/GitOperationProgress';
+import { GitOperationLogs } from '@/components/system/git/GitOperationLogs';
+import { QuickPushButton } from '@/components/system/git/QuickPushButton';
+import { AddRepositoryDialog } from '@/components/system/git/AddRepositoryDialog';
+import { useGitOperations } from '@/components/system/git/useGitOperations';
+import { Input } from "@/components/ui/input";
 
 const GitOperationsCard = () => {
   const { toast } = useToast();
@@ -37,11 +38,15 @@ const GitOperationsCard = () => {
     const token = formData.get('github_token') as string;
 
     try {
+      console.log('Updating GitHub token...');
       const { error } = await supabase.functions.invoke('update-github-token', {
         body: { token }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Token update error:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -117,7 +122,7 @@ const GitOperationsCard = () => {
           <AlertCircle className="h-4 w-4 text-dashboard-accent1" />
           <AlertTitle className="text-dashboard-accent1">Important</AlertTitle>
           <AlertDescription className="text-dashboard-muted">
-            Using stored GitHub token from Supabase secrets. Make sure it's configured in the Edge Functions settings.
+            Make sure your GitHub token has the correct repository permissions and is properly configured.
           </AlertDescription>
         </Alert>
 
@@ -134,7 +139,7 @@ const GitOperationsCard = () => {
             >
               {repositories.map((repo) => (
                 <option key={repo.id} value={repo.id}>
-                  {repo.repo_url} ({repo.branch})
+                  {repo.source_url} ({repo.branch})
                 </option>
               ))}
             </select>
