@@ -115,7 +115,7 @@ export const useGitSync = () => {
       setProgress(10);
       setCurrentOperation('Initializing push operation...');
 
-      console.log('Starting push to custom repo:', targetUrl);
+      console.log('Starting push to master from:', targetUrl);
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -128,7 +128,8 @@ export const useGitSync = () => {
       const { data, error } = await supabase.functions.invoke('git-sync', {
         body: {
           operation: 'push',
-          customUrl: targetUrl
+          customUrl: targetUrl,
+          masterUrl: 'https://github.com/imedia765/s-935078.git' // Master repo URL
         }
       });
 
@@ -142,17 +143,17 @@ export const useGitSync = () => {
       
       toast({
         title: "Success",
-        description: "Successfully pushed to custom repository",
+        description: "Successfully pushed to master repository",
       });
 
       await fetchLogs();
     } catch (error: any) {
       console.error('Push error:', error);
-      setError(error.message || "Failed to push to custom repository");
+      setError(error.message || "Failed to push to master repository");
       
       toast({
         title: "Push Failed",
-        description: error.message || "Failed to push to custom repository",
+        description: error.message || "Failed to push to master repository",
         variant: "destructive",
       });
     } finally {

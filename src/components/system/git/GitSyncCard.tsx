@@ -28,12 +28,12 @@ const GitSyncCard = () => {
       if (!customRepoUrl?.trim()) {
         toast({
           title: "Missing Repository URL",
-          description: "Please enter a valid repository URL",
+          description: "Please enter a valid custom repository URL",
           variant: "destructive",
         });
         return;
       }
-      console.log('Initiating pull from master with URL:', customRepoUrl);
+      console.log('Initiating pull from master to:', customRepoUrl);
       await pullFromMaster(customRepoUrl);
     } catch (error) {
       console.error('Pull from master error:', error);
@@ -45,23 +45,23 @@ const GitSyncCard = () => {
     }
   };
 
-  const handlePushToCustom = async () => {
+  const handlePushToMaster = async () => {
     try {
       if (!customRepoUrl?.trim()) {
         toast({
           title: "Missing Repository URL",
-          description: "Please enter a valid repository URL",
+          description: "Please enter a valid custom repository URL",
           variant: "destructive",
         });
         return;
       }
-      console.log('Initiating push to custom repo with URL:', customRepoUrl);
+      console.log('Initiating push from custom to master:', customRepoUrl);
       await pushToCustom(customRepoUrl);
     } catch (error) {
-      console.error('Push to custom error:', error);
+      console.error('Push to master error:', error);
       toast({
         title: "Operation Failed",
-        description: error instanceof Error ? error.message : "Failed to push to custom repository",
+        description: error instanceof Error ? error.message : "Failed to push to master",
         variant: "destructive",
       });
     }
@@ -123,11 +123,11 @@ const GitSyncCard = () => {
               Pull from Master
             </Button>
             <Button
-              onClick={handlePushToCustom}
+              onClick={handlePushToMaster}
               disabled={isProcessing || !customRepoUrl.trim()}
               className="flex-1 bg-dashboard-accent2 hover:bg-dashboard-accent2/80"
             >
-              Push to Custom
+              Push to Master
             </Button>
           </div>
         </div>
