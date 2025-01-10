@@ -9,73 +9,140 @@ const corsHeaders = {
 const MASTER_REPO = 'https://github.com/imedia765/s-935078.git';
 
 async function getGitHubReference(owner: string, repo: string, ref: string, githubToken: string) {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${ref}`,
-    {
-      headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json',
+  console.log(`Getting reference for ${owner}/${repo}#${ref}`);
+  
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${ref}`,
+      {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Supabase-Edge-Function'
+        }
       }
+    );
+
+    if (response.status === 404) {
+      console.log(`Reference ${ref} not found in ${owner}/${repo}`);
+      return null;
     }
-  );
-  
-  if (response.status === 404) {
-    return null;
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to get reference: ${errorText}`);
+      throw new Error(`Failed to get reference: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`Successfully got reference:`, data);
+    return data;
+  } catch (error) {
+    console.error('Error getting reference:', error);
+    throw error;
   }
-  
-  if (!response.ok) {
-    throw new Error(`Failed to get reference: ${await response.text()}`);
-  }
-  
-  return await response.json();
 }
 
 async function createGitHubReference(owner: string, repo: string, ref: string, sha: string, githubToken: string) {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/refs`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ref: `refs/heads/${ref}`,
-        sha: sha
-      })
+  console.log(`Creating reference for ${owner}/${repo}#${ref} with SHA ${sha}`);
+  
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/refs`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'Supabase-Edge-Function'
+        },
+        body: JSON.stringify({
+          ref: `refs/heads/${ref}`,
+          sha: sha
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to create reference: ${errorText}`);
+      throw new Error(`Failed to create reference: ${errorText}`);
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`Failed to create reference: ${await response.text()}`);
+    const data = await response.json();
+    console.log(`Successfully created reference:`, data);
+    return data;
+  } catch (error) {
+    console.error('Error creating reference:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
-async function updateGitHubReference(owner: string, repo: string, ref: string, sha: string, githubToken: string, force = true) {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${ref}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        sha: sha,
-        force: force
-      })
+async function updateGitHubReference(owner: string, repo: string, ref: string, sha: string, githubToken: string) {
+  console.log(`Updating reference for ${owner}/${repo}#${ref} with SHA ${sha}`);
+  
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${ref}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'Supabase-Edge-Function'
+        },
+        body: JSON.stringify({
+          sha: sha,
+          force: true
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to update reference: ${errorText}`);
+      throw new Error(`Failed to update reference: ${errorText}`);
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`Failed to update reference: ${await response.text()}`);
+    const data = await response.json();
+    console.log(`Successfully updated reference:`, data);
+    return data;
+  } catch (error) {
+    console.error('Error updating reference:', error);
+    throw error;
   }
+}
 
-  return await response.json();
+async function getDefaultBranch(owner: string, repo: string, githubToken: string) {
+  console.log(`Getting default branch for ${owner}/${repo}`);
+  
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}`,
+      {
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Supabase-Edge-Function'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Failed to get repo info: ${errorText}`);
+      throw new Error(`Failed to get repo info: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`Default branch is: ${data.default_branch}`);
+    return data.default_branch;
+  } catch (error) {
+    console.error('Error getting default branch:', error);
+    throw error;
+  }
 }
 
 async function performGitSync(operation: string, customUrl: string, githubToken: string): Promise<void> {
@@ -88,34 +155,43 @@ async function performGitSync(operation: string, customUrl: string, githubToken:
 
   console.log(`Performing ${operation} between ${customUrl} and ${MASTER_REPO}`);
 
+  // Get default branches
+  const masterDefaultBranch = await getDefaultBranch(masterOwner, masterRepo, githubToken);
+  const customDefaultBranch = await getDefaultBranch(customOwner, customRepo, githubToken);
+
   if (operation === 'pull') {
     // Get master branch reference
-    const masterRef = await getGitHubReference(masterOwner, masterRepo, 'main', githubToken);
+    const masterRef = await getGitHubReference(masterOwner, masterRepo, masterDefaultBranch, githubToken);
     if (!masterRef) {
       throw new Error('Master branch reference not found');
     }
 
-    // Update or create custom branch reference
-    const customRef = await getGitHubReference(customOwner, customRepo, 'main', githubToken);
+    // Check if custom branch exists
+    const customRef = await getGitHubReference(customOwner, customRepo, customDefaultBranch, githubToken);
+    
     if (customRef) {
-      await updateGitHubReference(customOwner, customRepo, 'main', masterRef.object.sha, githubToken);
+      // Update existing reference
+      await updateGitHubReference(customOwner, customRepo, customDefaultBranch, masterRef.object.sha, githubToken);
     } else {
-      await createGitHubReference(customOwner, customRepo, 'main', masterRef.object.sha, githubToken);
+      // Create new reference
+      await createGitHubReference(customOwner, customRepo, customDefaultBranch, masterRef.object.sha, githubToken);
     }
-
   } else if (operation === 'push') {
     // Get custom branch reference
-    const customRef = await getGitHubReference(customOwner, customRepo, 'main', githubToken);
+    const customRef = await getGitHubReference(customOwner, customRepo, customDefaultBranch, githubToken);
     if (!customRef) {
       throw new Error('Custom branch reference not found');
     }
 
-    // Update or create master branch reference
-    const masterRef = await getGitHubReference(masterOwner, masterRepo, 'main', githubToken);
+    // Check if master branch exists
+    const masterRef = await getGitHubReference(masterOwner, masterRepo, masterDefaultBranch, githubToken);
+    
     if (masterRef) {
-      await updateGitHubReference(masterOwner, masterRepo, 'main', customRef.object.sha, githubToken);
+      // Update existing reference
+      await updateGitHubReference(masterOwner, masterRepo, masterDefaultBranch, customRef.object.sha, githubToken);
     } else {
-      await createGitHubReference(masterOwner, masterRepo, 'main', customRef.object.sha, githubToken);
+      // Create new reference
+      await createGitHubReference(masterOwner, masterRepo, masterDefaultBranch, customRef.object.sha, githubToken);
     }
   }
 }
@@ -172,30 +248,6 @@ serve(async (req) => {
       throw new Error('GitHub token not configured');
     }
 
-    // Verify repository access
-    const repoToCheck = operation === 'push' ? MASTER_REPO : customUrl;
-    const repoPath = repoToCheck.replace('https://github.com/', '').replace('.git', '')
-    console.log('Checking repository access:', repoPath)
-    
-    const repoCheckResponse = await fetch(
-      `https://api.github.com/repos/${repoPath}`,
-      {
-        headers: {
-          'Authorization': `token ${githubToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Supabase-Edge-Function'
-        }
-      }
-    )
-
-    if (!repoCheckResponse.ok) {
-      const errorData = await repoCheckResponse.text()
-      console.error('Repository check failed:', errorData)
-      throw new Error(`Repository access failed: ${errorData}`)
-    }
-
-    console.log('Repository access verified successfully')
-
     // Create a log entry for the verification
     const { data: logEntry, error: logError } = await supabase
       .from('git_sync_logs')
@@ -203,7 +255,7 @@ serve(async (req) => {
         operation_type: operation,
         status: 'completed',
         created_by: user.id,
-        message: `Successfully verified access to ${repoToCheck}`
+        message: `Successfully verified access to ${customUrl}`
       })
       .select()
       .single()
