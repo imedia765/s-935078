@@ -71,6 +71,7 @@ export const useGitSync = () => {
       const { data, error } = await supabase.functions.invoke('git-sync', {
         body: {
           operation: 'pull',
+          masterUrl: 'https://github.com/imedia765/s-935078.git', // Master repo URL
           customUrl: targetUrl
         }
       });

@@ -92,6 +92,8 @@ serve(async (req) => {
       throw new Error(`Repository access failed: ${errorData}`)
     }
 
+    console.log('Repository access verified successfully')
+
     // Create log entry
     const { data: logEntry, error: logError } = await supabase
       .from('git_sync_logs')
@@ -109,13 +111,16 @@ serve(async (req) => {
       throw new Error('Failed to create operation log')
     }
 
+    console.log('Operation log created:', logEntry)
+
     return new Response(
       JSON.stringify({ 
         success: true,
         message: `Successfully processed ${operation} operation`,
         details: {
           operation,
-          repository: operation === 'push' ? customUrl : masterUrl
+          repository: operation === 'push' ? customUrl : masterUrl,
+          logEntry
         }
       }),
       { 
@@ -128,6 +133,25 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in git-sync:', error)
+
+    // Create error log entry
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey)
+        await supabase
+          .from('git_sync_logs')
+          .insert({
+            operation_type: 'error',
+            status: 'failed',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            error_details: error instanceof Error ? error.stack : undefined
+          })
+      }
+    } catch (logError) {
+      console.error('Failed to create error log:', logError)
+    }
 
     return new Response(
       JSON.stringify({
