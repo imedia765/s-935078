@@ -1,41 +1,58 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const MASTER_REPO = 'https://github.com/imedia765/s-935078.git';
+function validateGitHubUrl(url: string): { owner: string; repo: string } | null {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname !== 'github.com') {
+      throw new Error('Invalid GitHub URL');
+    }
+    
+    const match = url.match(/github\.com\/([^\/]+)\/([^\.]+)(?:\.git)?$/);
+    if (!match) {
+      throw new Error('Invalid repository URL format');
+    }
+    
+    return {
+      owner: match[1],
+      repo: match[2]
+    };
+  } catch (error) {
+    console.error('URL validation error:', error);
+    return null;
+  }
+}
 
-async function getGitHubReference(owner: string, repo: string, ref: string, githubToken: string) {
+async function getGitHubReference(owner: string, repo: string, ref: string, token: string) {
   console.log(`Getting reference for ${owner}/${repo}#${ref}`);
   
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${ref}`,
+      `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${ref}`,
       {
         headers: {
-          'Authorization': `token ${githubToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Supabase-Edge-Function'
-        }
+          'Accept': 'application/vnd.github+json',
+          'Authorization': `Bearer ${token}`,
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
       }
     );
 
-    if (response.status === 404) {
-      console.log(`Reference ${ref} not found in ${owner}/${repo}`);
-      return null;
-    }
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Failed to get reference: ${errorText}`);
-      throw new Error(`Failed to get reference: ${errorText}`);
+      if (response.status === 404) {
+        console.log(`Reference ${ref} not found in ${owner}/${repo}`);
+        return null;
+      }
+      throw new Error(`Failed to get reference: ${await response.text()}`);
     }
 
     const data = await response.json();
-    console.log(`Successfully got reference:`, data);
+    console.log('Successfully got reference:', JSON.stringify(data, null, 2));
     return data;
   } catch (error) {
     console.error('Error getting reference:', error);
@@ -43,35 +60,54 @@ async function getGitHubReference(owner: string, repo: string, ref: string, gith
   }
 }
 
-async function createGitHubReference(owner: string, repo: string, ref: string, sha: string, githubToken: string) {
-  console.log(`Creating reference for ${owner}/${repo}#${ref} with SHA ${sha}`);
+async function createGitHubReference(owner: string, repo: string, ref: string, sha: string, token: string) {
+  console.log(`Creating reference refs/heads/${ref} in ${owner}/${repo} pointing to ${sha}`);
   
   try {
+    // First check if there are any commits in the repository
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/refs`,
+      `https://api.github.com/repos/${owner}/${repo}/commits`,
       {
-        method: 'POST',
         headers: {
-          'Authorization': `token ${githubToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-          'User-Agent': 'Supabase-Edge-Function'
+          'Accept': 'application/vnd.github+json',
+          'Authorization': `Bearer ${token}`,
+          'X-GitHub-Api-Version': '2022-11-28',
         },
-        body: JSON.stringify({
-          ref: `refs/heads/${ref}`,
-          sha: sha
-        })
       }
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Failed to create reference: ${errorText}`);
-      throw new Error(`Failed to create reference: ${errorText}`);
+      throw new Error(`Failed to check commits: ${await response.text()}`);
     }
 
-    const data = await response.json();
-    console.log(`Successfully created reference:`, data);
+    const commits = await response.json();
+    if (!commits || commits.length === 0) {
+      throw new Error('Cannot create reference in empty repository');
+    }
+
+    const createResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/refs`,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/vnd.github+json',
+          'Authorization': `Bearer ${token}`,
+          'X-GitHub-Api-Version': '2022-11-28',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ref: `refs/heads/${ref}`,
+          sha: sha,
+        }),
+      }
+    );
+
+    if (!createResponse.ok) {
+      throw new Error(`Failed to create reference: ${await createResponse.text()}`);
+    }
+
+    const data = await createResponse.json();
+    console.log('Successfully created reference:', JSON.stringify(data, null, 2));
     return data;
   } catch (error) {
     console.error('Error creating reference:', error);
@@ -79,35 +115,42 @@ async function createGitHubReference(owner: string, repo: string, ref: string, s
   }
 }
 
-async function updateGitHubReference(owner: string, repo: string, ref: string, sha: string, githubToken: string) {
+async function updateGitHubReference(owner: string, repo: string, ref: string, sha: string, token: string) {
   console.log(`Updating reference for ${owner}/${repo}#${ref} with SHA ${sha}`);
   
   try {
+    const existingRef = await getGitHubReference(owner, repo, ref, token);
+    
+    if (!existingRef) {
+      console.log(`Reference doesn't exist, creating new one`);
+      return await createGitHubReference(owner, repo, ref, sha, token);
+    }
+
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${ref}`,
       {
         method: 'PATCH',
         headers: {
-          'Authorization': `token ${githubToken}`,
-          'Accept': 'application/vnd.github.v3+json',
+          'Accept': 'application/vnd.github+json',
+          'Authorization': `Bearer ${token}`,
+          'X-GitHub-Api-Version': '2022-11-28',
           'Content-Type': 'application/json',
-          'User-Agent': 'Supabase-Edge-Function'
         },
         body: JSON.stringify({
           sha: sha,
-          force: true
-        })
+          force: true,
+        }),
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to update reference: ${errorText}`);
+      console.error('Error updating reference:', errorText);
       throw new Error(`Failed to update reference: ${errorText}`);
     }
 
     const data = await response.json();
-    console.log(`Successfully updated reference:`, data);
+    console.log('Successfully updated reference:', JSON.stringify(data, null, 2));
     return data;
   } catch (error) {
     console.error('Error updating reference:', error);
@@ -115,219 +158,94 @@ async function updateGitHubReference(owner: string, repo: string, ref: string, s
   }
 }
 
-async function getDefaultBranch(owner: string, repo: string, githubToken: string) {
-  console.log(`Getting default branch for ${owner}/${repo}`);
+async function performGitSync(operation: string, customUrl: string, masterUrl: string, githubToken: string) {
+  // Validate URLs
+  const customRepo = validateGitHubUrl(customUrl);
+  const masterRepo = validateGitHubUrl(masterUrl);
   
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}`,
-      {
-        headers: {
-          'Authorization': `token ${githubToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Supabase-Edge-Function'
-        }
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Failed to get repo info: ${errorText}`);
-      throw new Error(`Failed to get repo info: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log(`Default branch is: ${data.default_branch}`);
-    return data.default_branch;
-  } catch (error) {
-    console.error('Error getting default branch:', error);
-    throw error;
-  }
-}
-
-async function performGitSync(operation: string, customUrl: string, githubToken: string): Promise<void> {
-  const [, customOwner, customRepo] = customUrl.match(/github\.com\/([^\/]+)\/([^\.]+)/) || [];
-  const [, masterOwner, masterRepo] = MASTER_REPO.match(/github\.com\/([^\/]+)\/([^\.]+)/) || [];
-
-  if (!customOwner || !customRepo || !masterOwner || !masterRepo) {
-    throw new Error('Invalid repository URLs');
+  if (!customRepo || !masterRepo) {
+    throw new Error('Invalid repository URLs provided');
   }
 
-  console.log(`Performing ${operation} between ${customUrl} and ${MASTER_REPO}`);
-
-  // Get default branches
-  const masterDefaultBranch = await getDefaultBranch(masterOwner, masterRepo, githubToken);
-  const customDefaultBranch = await getDefaultBranch(customOwner, customRepo, githubToken);
-
-  if (operation === 'pull') {
-    // Get master branch reference
-    const masterRef = await getGitHubReference(masterOwner, masterRepo, masterDefaultBranch, githubToken);
-    if (!masterRef) {
-      throw new Error('Master branch reference not found');
-    }
-
-    // Check if custom branch exists
-    const customRef = await getGitHubReference(customOwner, customRepo, customDefaultBranch, githubToken);
-    
-    if (customRef) {
-      // Update existing reference
-      await updateGitHubReference(customOwner, customRepo, customDefaultBranch, masterRef.object.sha, githubToken);
-    } else {
-      // Create new reference
-      await createGitHubReference(customOwner, customRepo, customDefaultBranch, masterRef.object.sha, githubToken);
-    }
-  } else if (operation === 'push') {
-    // Get custom branch reference
-    const customRef = await getGitHubReference(customOwner, customRepo, customDefaultBranch, githubToken);
-    if (!customRef) {
-      throw new Error('Custom branch reference not found');
-    }
-
-    // Check if master branch exists
-    const masterRef = await getGitHubReference(masterOwner, masterRepo, masterDefaultBranch, githubToken);
-    
-    if (masterRef) {
-      // Update existing reference
-      await updateGitHubReference(masterOwner, masterRepo, masterDefaultBranch, customRef.object.sha, githubToken);
-    } else {
-      // Create new reference
-      await createGitHubReference(masterOwner, masterRepo, masterDefaultBranch, customRef.object.sha, githubToken);
-    }
+  // Get master branch reference
+  const masterRef = await getGitHubReference(masterRepo.owner, masterRepo.repo, 'main', githubToken);
+  if (!masterRef) {
+    throw new Error('Master branch reference not found');
   }
+
+  // Update or create custom branch reference
+  await updateGitHubReference(customRepo.owner, customRepo.repo, 'main', masterRef.object.sha, githubToken);
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Starting git sync operation...');
-    
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing required environment variables')
-      throw new Error('Server configuration error')
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization')
+    const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      console.error('No authorization header')
-      throw new Error('No authorization header')
+      throw new Error('No authorization header');
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-
-    if (authError || !user) {
-      console.error('Auth error:', authError)
-      throw new Error('Invalid token')
-    }
-
-    console.log('User authenticated:', user.id)
-
-    // Parse request body
-    const { operation, customUrl } = await req.json()
-    console.log('Processing git sync operation:', { operation, customUrl, masterUrl: MASTER_REPO })
-
-    if (!operation || !customUrl) {
-      throw new Error('Operation type and custom repository URL are required')
-    }
-
-    // Verify GitHub token exists
     const githubToken = Deno.env.get('GITHUB_PAT');
     if (!githubToken) {
-      console.error('GitHub PAT not configured');
       throw new Error('GitHub token not configured');
     }
 
-    // Create a log entry for the verification
-    const { data: logEntry, error: logError } = await supabase
+    const { operation, customUrl, masterUrl } = await req.json();
+    console.log('Processing git sync operation:', { operation, customUrl, masterUrl });
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { 
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false
+        }
+      }
+    );
+
+    // Get user from auth header
+    const { data: { user }, error: userError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (userError) throw userError;
+    console.log('User authenticated:', user.id);
+
+    // Create operation log
+    const { error: logError } = await supabase
       .from('git_sync_logs')
       .insert({
         operation_type: operation,
         status: 'completed',
+        message: `Successfully verified access to ${customUrl}`,
         created_by: user.id,
-        message: `Successfully verified access to ${customUrl}`
-      })
-      .select()
-      .single()
-
-    if (logError) {
-      console.error('Log creation error:', logError)
-      throw new Error('Failed to create operation log')
-    }
-
-    console.log('Operation log created:', logEntry)
-
-    // Perform the actual git operations
-    await performGitSync(operation, customUrl, githubToken);
-
-    // Create success log entry
-    await supabase
-      .from('git_sync_logs')
-      .insert({
-        operation_type: operation,
-        status: 'completed',
-        created_by: user.id,
-        message: `Successfully synced ${operation === 'push' ? 'to' : 'from'} master repository`
       });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Successfully processed ${operation} operation`,
-        details: {
-          operation,
-          customUrl,
-          masterUrl: MASTER_REPO
-        }
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
+    if (logError) throw logError;
 
-  } catch (error) {
-    console.error('Error in git-sync:', error);
-
-    try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-      if (supabaseUrl && supabaseServiceKey) {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
-        await supabase
-          .from('git_sync_logs')
-          .insert({
-            operation_type: 'error',
-            status: 'failed',
-            message: error instanceof Error ? error.message : 'Unknown error',
-            error_details: error instanceof Error ? error.stack : undefined
-          })
-      }
-    } catch (logError) {
-      console.error('Failed to create error log:', logError)
+    if (masterUrl) {
+      console.log(`Performing ${operation} between ${customUrl} and ${masterUrl}`);
+      await performGitSync(operation, customUrl, masterUrl, githubToken);
     }
 
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error in git-sync:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: error.message }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
+    );
   }
 })
