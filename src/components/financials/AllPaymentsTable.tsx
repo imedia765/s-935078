@@ -3,11 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody } from "@/components/ui/table";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, ChevronDown, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { PaymentTableHeader } from "../payments-table/PaymentTableHeader";
 import { PaymentTableRow } from "../payments-table/PaymentTableRow";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface AllPaymentsTableProps {
   showHistory?: boolean;
@@ -43,7 +49,17 @@ const AllPaymentsTable = ({ showHistory = false }: AllPaymentsTableProps) => {
         throw error;
       }
 
-      return { data, count };
+      // Group payments by collector
+      const groupedPayments = data?.reduce((acc, payment) => {
+        const collectorName = payment.collectors?.[0]?.name || 'Unassigned';
+        if (!acc[collectorName]) {
+          acc[collectorName] = [];
+        }
+        acc[collectorName].push(payment);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      return { groupedPayments, count };
     },
   });
 
@@ -105,9 +121,10 @@ const AllPaymentsTable = ({ showHistory = false }: AllPaymentsTableProps) => {
     );
   }
 
-  const payments = paymentsData?.data || [];
+  const groupedPayments = paymentsData?.groupedPayments || {};
+  const collectors = Object.keys(groupedPayments);
 
-  if (!payments.length) {
+  if (collectors.length === 0) {
     return (
       <Card className="bg-dashboard-card border-dashboard-accent1/20 rounded-lg">
         <div className="p-6">
@@ -125,21 +142,43 @@ const AllPaymentsTable = ({ showHistory = false }: AllPaymentsTableProps) => {
     <Card className="bg-dashboard-card border-dashboard-accent1/20 rounded-lg">
       <div className="p-6">
         <h2 className="text-xl font-medium text-white mb-4">Payment History & Approvals</h2>
-        <div className="rounded-md border border-white/10">
-          <Table>
-            <PaymentTableHeader />
-            <TableBody>
-              {payments.map((payment) => (
-                <PaymentTableRow
-                  key={payment.id}
-                  payment={payment}
-                  onApprove={(id) => handleApproval(id, true)}
-                  onReject={(id) => handleApproval(id, false)}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Accordion type="single" collapsible className="space-y-4">
+          {collectors.map((collectorName) => (
+            <AccordionItem
+              key={collectorName}
+              value={collectorName}
+              className="border border-white/10 rounded-lg overflow-hidden"
+            >
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-medium">{collectorName}</span>
+                    <span className="text-sm text-gray-400">
+                      ({groupedPayments[collectorName].length} payments)
+                    </span>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="rounded-md border border-white/10">
+                  <Table>
+                    <PaymentTableHeader />
+                    <TableBody>
+                      {groupedPayments[collectorName].map((payment) => (
+                        <PaymentTableRow
+                          key={payment.id}
+                          payment={payment}
+                          onApprove={(id) => handleApproval(id, true)}
+                          onReject={(id) => handleApproval(id, false)}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </div>
     </Card>
   );
