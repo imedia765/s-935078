@@ -51,7 +51,10 @@ const AllPaymentsTable = ({ showHistory = false }: AllPaymentsTableProps) => {
 
       // Group payments by collector
       const groupedPayments = data?.reduce((acc, payment) => {
-        const collectorName = payment.collectors?.[0]?.name || 'Unassigned';
+        // Get collector name from the members_collectors relationship
+        const collectorName = payment.collectors?.[0]?.name || payment.collector_id;
+        console.log('Payment collector:', payment.collectors, 'Collector ID:', payment.collector_id);
+        
         if (!acc[collectorName]) {
           acc[collectorName] = [];
         }
