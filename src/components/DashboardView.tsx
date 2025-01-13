@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import MemberProfileCard from './MemberProfileCard';
 import SystemAnnouncements from './SystemAnnouncements';
-import PaymentCard from './PaymentCard';
+import PaymentCard from './members/PaymentDialog';
 import PaymentHistoryTable from './PaymentHistoryTable';
 import { Users, Wallet, AlertCircle } from 'lucide-react';
 

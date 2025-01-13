@@ -90,6 +90,42 @@ export type Database = {
         }
         Relationships: []
       }
+      documentation: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_path: string
+          id: string
+          is_current: boolean | null
+          metadata: Json | null
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_path: string
+          id?: string
+          is_current?: boolean | null
+          metadata?: Json | null
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_path?: string
+          id?: string
+          is_current?: boolean | null
+          metadata?: Json | null
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       family_members: {
         Row: {
           created_at: string

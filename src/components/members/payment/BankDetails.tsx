@@ -10,16 +10,20 @@ const BankDetails = ({ memberNumber }: BankDetailsProps) => {
       <h3 className="text-xl font-medium text-dashboard-highlight mb-4">Bank Details</h3>
       <div className="space-y-4">
         <div>
+          <p className="text-dashboard-muted">Bank Name</p>
+          <p className="text-dashboard-text font-medium">HSBC Bank</p>
+        </div>
+        <div>
           <p className="text-dashboard-muted">Account Name</p>
-          <p className="text-dashboard-text font-medium">UKIM Welfare Trust</p>
+          <p className="text-dashboard-text font-medium">Pakistan Welfare Association</p>
         </div>
         <div>
           <p className="text-dashboard-muted">Sort Code</p>
-          <p className="text-dashboard-text font-medium">30-96-26</p>
+          <p className="text-dashboard-text font-medium">40-15-34</p>
         </div>
         <div>
           <p className="text-dashboard-muted">Account Number</p>
-          <p className="text-dashboard-text font-medium">01101427</p>
+          <p className="text-dashboard-text font-medium">41024892</p>
         </div>
         <div>
           <p className="text-dashboard-muted">Reference</p>
