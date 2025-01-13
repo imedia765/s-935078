@@ -1,31 +1,30 @@
+import { Card } from "@/components/ui/card";
+
 interface BankDetailsProps {
-  collectorPrefix?: string;
-  collectorNumber?: string;
+  memberNumber?: string;
 }
 
-const BankDetails = ({ collectorPrefix, collectorNumber }: BankDetailsProps) => {
-  const bankRef = collectorPrefix && collectorNumber 
-    ? `${collectorPrefix}${collectorNumber}`
-    : 'Not available';
-
+const BankDetails = ({ memberNumber }: BankDetailsProps) => {
   return (
     <div className="p-6 bg-dashboard-dark/80 rounded-lg border-2 border-dashboard-accent2/30 shadow-lg">
-      <h3 className="text-dashboard-accent2 font-semibold text-lg mb-4">Bank Details</h3>
-      <div className="space-y-3">
-        <p className="text-white font-medium">HSBC Pakistan Welfare Association</p>
-        <p className="text-dashboard-accent1">Burton In Trent</p>
-        <div className="mt-4 space-y-2">
-          <p className="text-dashboard-text flex items-center">
-            <span className="text-dashboard-accent2 font-medium w-24">Sort Code:</span>
-            <span className="text-white">40-15-31</span>
-          </p>
-          <p className="text-dashboard-text flex items-center">
-            <span className="text-dashboard-accent2 font-medium w-24">Account:</span>
-            <span className="text-white">41024892</span>
-          </p>
-          <p className="text-dashboard-text flex items-center">
-            <span className="text-dashboard-accent2 font-medium w-24">Reference:</span>
-            <span className="text-white font-mono">{bankRef}</span>
+      <h3 className="text-xl font-medium text-dashboard-highlight mb-4">Bank Details</h3>
+      <div className="space-y-4">
+        <div>
+          <p className="text-dashboard-muted">Account Name</p>
+          <p className="text-dashboard-text font-medium">UKIM Welfare Trust</p>
+        </div>
+        <div>
+          <p className="text-dashboard-muted">Sort Code</p>
+          <p className="text-dashboard-text font-medium">30-96-26</p>
+        </div>
+        <div>
+          <p className="text-dashboard-muted">Account Number</p>
+          <p className="text-dashboard-text font-medium">01101427</p>
+        </div>
+        <div>
+          <p className="text-dashboard-muted">Reference</p>
+          <p className="text-dashboard-text font-medium text-blue-500">
+            {memberNumber || '[Your Member Number]'}
           </p>
         </div>
       </div>
