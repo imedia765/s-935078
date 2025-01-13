@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import MemberProfileCard from './MemberProfileCard';
 import SystemAnnouncements from './SystemAnnouncements';
-import PaymentCard from './members/PaymentDialog';
+import PaymentDialog from './members/PaymentDialog';
 import PaymentHistoryTable from './PaymentHistoryTable';
-import { Users, Wallet, AlertCircle } from 'lucide-react';
 
 const DashboardView = () => {
   const { toast } = useToast();
@@ -59,38 +58,6 @@ const DashboardView = () => {
     },
   });
 
-  // Query to fetch collection totals
-  const { data: collectionTotals } = useQuery({
-    queryKey: ['collectionTotals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('members')
-        .select('yearly_payment_status, emergency_collection_status, emergency_collection_amount');
-
-      if (error) throw error;
-
-      const totalMembers = data.length;
-      const yearlyPending = data.filter(m => m.yearly_payment_status === 'pending').length;
-      const emergencyPending = data.filter(m => m.emergency_collection_status === 'pending').length;
-      const totalEmergencyAmount = data.reduce((sum, member) => sum + (member.emergency_collection_amount || 0), 0);
-      const collectedEmergencyAmount = data
-        .filter(m => m.emergency_collection_status === 'completed')
-        .reduce((sum, member) => sum + (member.emergency_collection_amount || 0), 0);
-
-      return {
-        yearlyPending,
-        emergencyPending,
-        totalEmergencyAmount,
-        collectedEmergencyAmount,
-        totalYearlyAmount: totalMembers * 40, // £40 per member
-        collectedYearlyAmount: (totalMembers - yearlyPending) * 40
-      };
-    }
-  });
-
-  const arePaymentsCompleted = memberProfile?.yearly_payment_status === 'completed' && 
-    memberProfile?.emergency_collection_status === 'completed';
-
   return (
     <div className="w-full px-2 sm:px-0">
       <header className="mb-8">
@@ -104,12 +71,8 @@ const DashboardView = () => {
         </div>
         
         <div className="overflow-hidden">
-          <PaymentCard 
-            annualPaymentStatus={(memberProfile?.yearly_payment_status || 'pending') as 'completed' | 'pending'}
-            emergencyCollectionStatus={(memberProfile?.emergency_collection_status || 'pending') as 'completed' | 'pending'}
-            emergencyCollectionAmount={memberProfile?.emergency_collection_amount}
-            annualPaymentDueDate={memberProfile?.yearly_payment_due_date}
-            emergencyCollectionDueDate={memberProfile?.emergency_collection_due_date}
+          <PaymentDialog 
+            memberProfile={memberProfile}
           />
         </div>
 
