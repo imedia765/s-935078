@@ -4,6 +4,7 @@ import PaymentTypeSelector from "./payment/PaymentTypeSelector";
 import BankDetails from "./payment/BankDetails";
 import { useState } from "react";
 import { Collector } from "@/types/collector";
+import { Button } from "@/components/ui/button";
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -24,6 +25,11 @@ const PaymentDialog = ({
 }: PaymentDialogProps) => {
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('yearly');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'bank_transfer'>('bank_transfer');
+
+  const handleSubmit = () => {
+    // Handle the payment submission
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -48,6 +54,13 @@ const PaymentDialog = ({
           {selectedPaymentMethod === 'bank_transfer' && (
             <BankDetails memberNumber={memberNumber} />
           )}
+
+          <Button 
+            onClick={handleSubmit}
+            className="w-full bg-dashboard-accent1 hover:bg-dashboard-accent1/90"
+          >
+            Submit Payment
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

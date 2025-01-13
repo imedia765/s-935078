@@ -113,7 +113,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full px-2 sm:px-0 space-y-4 sm:space-y-6">
       <MembersListHeader 
         userRole={userRole}
         hasMembers={members.length > 0}
@@ -124,16 +124,18 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         members={members}
       />
 
-      <MembersListContent
-        members={members}
-        isLoading={isLoading}
-        userRole={userRole}
-        onPaymentClick={handlePaymentClick}
-        onEditClick={handleEditClick}
-        currentPage={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      <div className="overflow-hidden">
+        <MembersListContent
+          members={members}
+          isLoading={isLoading}
+          userRole={userRole}
+          onPaymentClick={handlePaymentClick}
+          onEditClick={handleEditClick}
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      </div>
 
       {selectedMember && isPaymentDialogOpen && (
         <PaymentDialog
@@ -162,10 +164,14 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
       )}
 
       {userRole === 'collector' && collectorInfo && (
-        <>
-          <CollectorPaymentSummary collectorName={collectorInfo.name} />
-          <CollectorMemberPayments collectorName={collectorInfo.name} />
-        </>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="overflow-hidden">
+            <CollectorPaymentSummary collectorName={collectorInfo.name} />
+          </div>
+          <div className="overflow-hidden">
+            <CollectorMemberPayments collectorName={collectorInfo.name} />
+          </div>
+        </div>
       )}
     </div>
   );

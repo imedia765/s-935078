@@ -77,15 +77,15 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card className="bg-dashboard-card border-white/10 shadow-lg hover:border-dashboard-accent1/50 transition-all duration-300">
         <ProfileHeader />
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row md:items-start gap-6">
+          <div className="flex flex-col md:flex-row md:items-start gap-4 sm:gap-6">
             <ProfileAvatar memberProfile={memberProfile} />
             
-            <div className="flex-1 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex-1 space-y-4 sm:space-y-6 min-w-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-4">
                   <ContactInfo memberProfile={memberProfile} />
                   <AddressDetails memberProfile={memberProfile} />
@@ -126,7 +126,7 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
       {/* Family Members Card */}
       <Card className="bg-dashboard-card border-white/10 shadow-lg hover:border-dashboard-accent1/50 transition-all duration-300">
         <CardContent className="pt-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <h3 className="text-dashboard-muted text-lg font-medium">Family Members</h3>
             <Button
               variant="outline"
@@ -138,7 +138,7 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
               Add Family Member
             </Button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 overflow-x-auto">
             {familyMembers?.map((familyMember) => (
               <FamilyMemberCard
                 key={familyMember.id}

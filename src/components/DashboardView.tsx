@@ -92,28 +92,36 @@ const DashboardView = () => {
     memberProfile?.emergency_collection_status === 'completed';
 
   return (
-    <>
+    <div className="w-full px-2 sm:px-0">
       <header className="mb-8">
-        <h1 className="text-3xl font-medium mb-2 text-white">Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-medium mb-2 text-white">Dashboard</h1>
         <p className="text-dashboard-text">Welcome back!</p>
       </header>
       
-      <div className="grid gap-6">
-        <MemberProfileCard memberProfile={memberProfile} />
+      <div className="grid gap-4 sm:gap-6">
+        <div className="overflow-hidden">
+          <MemberProfileCard memberProfile={memberProfile} />
+        </div>
         
-        <PaymentCard 
-          annualPaymentStatus={(memberProfile?.yearly_payment_status || 'pending') as 'completed' | 'pending'}
-          emergencyCollectionStatus={(memberProfile?.emergency_collection_status || 'pending') as 'completed' | 'pending'}
-          emergencyCollectionAmount={memberProfile?.emergency_collection_amount}
-          annualPaymentDueDate={memberProfile?.yearly_payment_due_date}
-          emergencyCollectionDueDate={memberProfile?.emergency_collection_due_date}
-        />
+        <div className="overflow-hidden">
+          <PaymentCard 
+            annualPaymentStatus={(memberProfile?.yearly_payment_status || 'pending') as 'completed' | 'pending'}
+            emergencyCollectionStatus={(memberProfile?.emergency_collection_status || 'pending') as 'completed' | 'pending'}
+            emergencyCollectionAmount={memberProfile?.emergency_collection_amount}
+            annualPaymentDueDate={memberProfile?.yearly_payment_due_date}
+            emergencyCollectionDueDate={memberProfile?.emergency_collection_due_date}
+          />
+        </div>
 
-        <SystemAnnouncements />
+        <div className="overflow-hidden">
+          <SystemAnnouncements />
+        </div>
 
-        <PaymentHistoryTable />
+        <div className="overflow-x-auto">
+          <PaymentHistoryTable />
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 

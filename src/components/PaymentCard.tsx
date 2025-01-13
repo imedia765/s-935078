@@ -36,8 +36,8 @@ const PaymentCard = ({
   const emergencyCollectionsCompleted = emergencyCollectionStatus === 'completed' ? 1 : 0;
 
   return (
-    <Card className="p-8 bg-dashboard-card border-dashboard-accent1/20">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <Card className="p-4 sm:p-8 bg-dashboard-card border-dashboard-accent1/20">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <AnnualPaymentSection
           yearlyPaymentPercentage={yearlyPaymentPercentage}
           collectedYearlyAmount={collectedYearlyAmount}
