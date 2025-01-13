@@ -1,4 +1,13 @@
-const BankDetails = () => {
+interface BankDetailsProps {
+  collectorPrefix?: string;
+  collectorNumber?: string;
+}
+
+const BankDetails = ({ collectorPrefix, collectorNumber }: BankDetailsProps) => {
+  const bankRef = collectorPrefix && collectorNumber 
+    ? `${collectorPrefix}${collectorNumber}`
+    : 'Not available';
+
   return (
     <div className="p-6 bg-dashboard-dark/80 rounded-lg border-2 border-dashboard-accent2/30 shadow-lg">
       <h3 className="text-dashboard-accent2 font-semibold text-lg mb-4">Bank Details</h3>
@@ -13,6 +22,10 @@ const BankDetails = () => {
           <p className="text-dashboard-text flex items-center">
             <span className="text-dashboard-accent2 font-medium w-24">Account:</span>
             <span className="text-white">41024892</span>
+          </p>
+          <p className="text-dashboard-text flex items-center">
+            <span className="text-dashboard-accent2 font-medium w-24">Reference:</span>
+            <span className="text-white font-mono">{bankRef}</span>
           </p>
         </div>
       </div>

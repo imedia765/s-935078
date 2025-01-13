@@ -430,6 +430,7 @@ export type Database = {
           member_number: string
           notes: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_number: string | null
           payment_type: string
           status: string | null
         }
@@ -444,6 +445,7 @@ export type Database = {
           member_number: string
           notes?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_number?: string | null
           payment_type: string
           status?: string | null
         }
@@ -458,6 +460,7 @@ export type Database = {
           member_number?: string
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_number?: string | null
           payment_type?: string
           status?: string | null
         }
@@ -484,6 +487,42 @@ export type Database = {
             referencedColumns: ["member_number"]
           },
         ]
+      }
+      system_announcements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          priority: number | null
+          severity: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          priority?: number | null
+          severity?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          priority?: number | null
+          severity?: string | null
+          title?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -630,6 +669,10 @@ export type Database = {
       generate_full_backup: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      generate_payment_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_audit_activity_summary: {
         Args: Record<PropertyKey, never>

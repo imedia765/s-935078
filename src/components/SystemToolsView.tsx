@@ -14,6 +14,7 @@ import TestResults from './system/test-runner/TestResults';
 import TestLogs from './system/test-runner/TestLogs';
 import SystemMetricsChart from './system/metrics/SystemMetricsChart';
 import AuditActivityChart from './system/metrics/AuditActivityChart';
+import AnnouncementsManager from './system/AnnouncementsManager';
 
 const SystemToolsView = () => {
   const { toast } = useToast();
@@ -71,6 +72,8 @@ const SystemToolsView = () => {
           <SystemMetricsChart />
           <AuditActivityChart />
         </div>
+
+        <AnnouncementsManager />
 
         <Card className="dashboard-card">
           <div className="p-6 space-y-6">

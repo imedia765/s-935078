@@ -9,6 +9,8 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import PaymentTypeSelector from "./payment/PaymentTypeSelector";
 import PaymentMethodSelector from "./payment/PaymentMethodSelector";
 import BankDetails from "./payment/BankDetails";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -16,7 +18,7 @@ interface PaymentDialogProps {
   memberId: string;
   memberNumber: string;
   memberName: string;
-  collectorInfo: { name: string | null; phone: string | null } | null;
+  collectorInfo: { name: string | null; phone: string | null; prefix: string; number: string } | null;
 }
 
 const PaymentDialog = ({ 
@@ -33,6 +35,8 @@ const PaymentDialog = ({
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('yearly');
   const [paymentAmount, setPaymentAmount] = useState<string>('40');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('bank_transfer');
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'error'>('pending');
 
   const handlePaymentTypeChange = (value: string) => {
     setSelectedPaymentType(value);
@@ -75,19 +79,29 @@ const PaymentDialog = ({
       return data;
     },
     onSuccess: () => {
+      setPaymentStatus('success');
       toast({
         title: "Payment request created",
         description: "An admin will review and approve the payment.",
       });
       queryClient.invalidateQueries({ queryKey: ['members'] });
-      onClose();
+      setTimeout(() => {
+        setShowConfirmation(false);
+        setPaymentStatus('pending');
+        onClose();
+      }, 2000);
     },
     onError: (error) => {
+      setPaymentStatus('error');
       toast({
         title: "Error creating payment request",
         description: error.message,
         variant: "destructive",
       });
+      setTimeout(() => {
+        setPaymentStatus('pending');
+        setShowConfirmation(false);
+      }, 2000);
     }
   });
 
@@ -120,52 +134,122 @@ const PaymentDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-dashboard-card border-dashboard-accent1/20">
-        <DialogHeader>
-          <DialogTitle className="text-dashboard-accent2">
-            Record Payment for {memberName}
-            <span className="text-dashboard-accent1 text-sm ml-2">#{memberNumber}</span>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <PaymentTypeSelector
-            selectedPaymentType={selectedPaymentType}
-            onPaymentTypeChange={handlePaymentTypeChange}
-          />
-          
-          <div>
-            <label className="text-sm font-medium mb-3 block text-dashboard-text">Amount</label>
-            <Input
-              type="number"
-              value={paymentAmount}
-              onChange={(e) => setPaymentAmount(e.target.value)}
-              placeholder="Enter amount"
-              className="border-dashboard-accent1/20 bg-dashboard-dark h-12 text-lg"
-              readOnly={selectedPaymentType === 'yearly'}
-              disabled={userRole === 'member'}
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="bg-dashboard-card border-dashboard-accent1/20">
+          <DialogHeader>
+            <DialogTitle className="text-dashboard-accent2">
+              Record Payment for {memberName}
+              <span className="text-dashboard-accent1 text-sm ml-2">#{memberNumber}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <PaymentTypeSelector
+              selectedPaymentType={selectedPaymentType}
+              onPaymentTypeChange={handlePaymentTypeChange}
             />
-          </div>
-          
-          <PaymentMethodSelector
-            paymentMethod={paymentMethod}
-            onPaymentMethodChange={setPaymentMethod}
-          />
+            
+            <div>
+              <label className="text-sm font-medium mb-3 block text-dashboard-text">Amount</label>
+              <Input
+                type="number"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="border-dashboard-accent1/20 bg-dashboard-dark h-12 text-lg"
+                readOnly={selectedPaymentType === 'yearly'}
+                disabled={userRole === 'member'}
+              />
+            </div>
+            
+            <PaymentMethodSelector
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={setPaymentMethod}
+            />
 
-          {paymentMethod === 'bank_transfer' && <BankDetails />}
-          
-          <Button 
-            className="w-full bg-dashboard-accent2 hover:bg-dashboard-accent2/80 text-white h-12 text-lg font-medium"
-            onClick={handlePaymentSubmit}
-            disabled={userRole === 'member' || !paymentAmount || createPaymentRequest.isPending}
-          >
-            {userRole === 'member' 
-              ? `Contact ${collectorInfo?.name || 'Collector'} for Payments` 
-              : 'Submit Payment Request'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+            {paymentMethod === 'bank_transfer' && (
+              <BankDetails 
+                collectorPrefix={collectorInfo?.prefix}
+                collectorNumber={collectorInfo?.number}
+              />
+            )}
+            
+            <Button 
+              className="w-full bg-dashboard-accent2 hover:bg-dashboard-accent2/80 text-white h-12 text-lg font-medium"
+              onClick={() => setShowConfirmation(true)}
+              disabled={userRole === 'member' || !paymentAmount || createPaymentRequest.isPending}
+            >
+              {userRole === 'member' 
+                ? `Contact ${collectorInfo?.name || 'Collector'} for Payments` 
+                : 'Submit Payment Request'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent className="bg-dashboard-card border-dashboard-accent1/20">
+          {paymentStatus === 'pending' ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-dashboard-accent1 text-xl">
+                  Confirm Payment Request
+                </AlertDialogTitle>
+                <AlertDialogDescription className="space-y-4">
+                  <div className="bg-dashboard-cardHover p-4 rounded-lg">
+                    <p className="text-dashboard-text text-lg mb-2">
+                      Member: <span className="text-dashboard-accent1 font-medium">{memberName}</span>
+                    </p>
+                    <p className="text-dashboard-text text-lg mb-2">
+                      Member #: <span className="text-dashboard-accent2 font-mono">{memberNumber}</span>
+                    </p>
+                    <p className="text-dashboard-text text-lg">
+                      Amount: <span className="text-dashboard-accent1 font-medium">${paymentAmount}</span>
+                    </p>
+                    <p className="text-dashboard-text text-lg">
+                      Payment Type: <span className="text-dashboard-accent1 font-medium capitalize">{selectedPaymentType}</span>
+                    </p>
+                    <p className="text-dashboard-text text-lg">
+                      Method: <span className="text-dashboard-accent1 font-medium capitalize">{paymentMethod.replace('_', ' ')}</span>
+                    </p>
+                  </div>
+                  <p className="text-dashboard-muted">
+                    Please confirm that you want to submit this payment request.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-dashboard-dark text-dashboard-text hover:bg-dashboard-cardHover">
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handlePaymentSubmit}
+                  className="bg-dashboard-accent2 hover:bg-dashboard-accent2/80 text-white"
+                >
+                  Confirm Payment
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <div className="p-6 text-center">
+              {paymentStatus === 'success' ? (
+                <div className="space-y-4">
+                  <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
+                  <h3 className="text-xl font-semibold text-dashboard-accent1">Payment Request Successful</h3>
+                  <p className="text-dashboard-text">Your payment request has been submitted successfully.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <XCircle className="w-16 h-16 text-red-500 mx-auto" />
+                  <h3 className="text-xl font-semibold text-dashboard-accent1">Payment Request Failed</h3>
+                  <p className="text-dashboard-text">There was an error submitting your payment request.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

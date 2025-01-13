@@ -33,7 +33,7 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
       
       const { data, error } = await supabase
         .from('members_collectors')
-        .select('name, phone')
+        .select('name, phone, prefix, number')
         .eq('name', memberProfile.collector)
         .single();
         
