@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Phone, User } from "lucide-react";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 
 interface PaymentDialogProps {
   isOpen: boolean;
@@ -35,6 +36,8 @@ const PaymentDialog = ({
   const [paymentRef, setPaymentRef] = useState<string>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { hasRole } = useRoleAccess();
+  const isCollector = hasRole('collector');
 
   const handleSubmit = async () => {
     if (!collectorInfo?.id) {
@@ -86,12 +89,6 @@ const PaymentDialog = ({
       await queryClient.invalidateQueries({ queryKey: ['payment-requests'] });
       await queryClient.invalidateQueries({ queryKey: ['member-payments'] });
 
-      // Hide splash after 3 seconds and close dialog
-      setTimeout(() => {
-        setShowSplash(false);
-        onClose();
-      }, 3000);
-
     } catch (error: any) {
       console.error('Error submitting payment:', error);
       setPaymentSuccess(false);
@@ -102,12 +99,12 @@ const PaymentDialog = ({
         description: error.message || "Failed to submit payment request",
         variant: "destructive"
       });
-
-      // Hide error splash after 3 seconds
-      setTimeout(() => {
-        setShowSplash(false);
-      }, 3000);
     }
+  };
+
+  const handleSplashClose = () => {
+    setShowSplash(false);
+    onClose();
   };
 
   return (
@@ -160,9 +157,9 @@ const PaymentDialog = ({
           <Button 
             onClick={handleSubmit}
             className="w-full bg-dashboard-accent1 hover:bg-dashboard-accent1/90"
-            disabled={true}
+            disabled={!isCollector}
           >
-            Please Contact Your Collector
+            {isCollector ? 'Record Payment' : 'Please Contact Your Collector'}
           </Button>
         </div>
 
@@ -173,6 +170,7 @@ const PaymentDialog = ({
             amount={selectedPaymentType === 'yearly' ? 40 : 20}
             paymentType={selectedPaymentType}
             memberNumber={memberNumber}
+            onClose={handleSplashClose}
           />
         )}
       </DialogContent>
