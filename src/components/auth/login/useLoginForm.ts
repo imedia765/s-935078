@@ -5,6 +5,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
 import { clearAuthState, verifyMember, handleSignInError } from './utils/authUtils';
 
+interface FailedLoginResponse {
+  locked: boolean;
+  attempts: number;
+  max_attempts: number;
+  lockout_duration: string;
+}
+
 export const useLoginForm = () => {
   const [memberNumber, setMemberNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -125,8 +132,9 @@ export const useLoginForm = () => {
 
         console.log('[Login] Failed login response:', failedLoginData);
 
-        if (failedLoginData.locked) {
-          throw new Error(`Account locked. Too many failed attempts. Please try again after ${failedLoginData.lockout_duration}`);
+        const typedFailedLoginData = failedLoginData as FailedLoginResponse;
+        if (typedFailedLoginData.locked) {
+          throw new Error(`Account locked. Too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
         }
 
         if (signInError.message.includes('Invalid login credentials')) {
