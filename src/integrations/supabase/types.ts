@@ -153,6 +153,41 @@ export type Database = {
         }
         Relationships: []
       }
+      email_audit: {
+        Row: {
+          auth_email: string | null
+          auth_user_id: string | null
+          created_at: string | null
+          id: string
+          member_email: string | null
+          member_number: string | null
+        }
+        Insert: {
+          auth_email?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          member_email?: string | null
+          member_number?: string | null
+        }
+        Update: {
+          auth_email?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          member_email?: string | null
+          member_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_audit_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["member_number"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           created_at: string
@@ -212,13 +247,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "email_logs_member_number_fkey"
-            columns: ["member_number"]
-            isOneToOne: false
-            referencedRelation: "email_audit"
-            referencedColumns: ["member_number"]
-          },
           {
             foreignKeyName: "email_logs_member_number_fkey"
             columns: ["member_number"]
@@ -669,13 +697,6 @@ export type Database = {
             foreignKeyName: "members_collectors_member_number_fkey"
             columns: ["member_number"]
             isOneToOne: true
-            referencedRelation: "email_audit"
-            referencedColumns: ["member_number"]
-          },
-          {
-            foreignKeyName: "members_collectors_member_number_fkey"
-            columns: ["member_number"]
-            isOneToOne: true
             referencedRelation: "members"
             referencedColumns: ["member_number"]
           },
@@ -852,13 +873,6 @@ export type Database = {
             foreignKeyName: "password_reset_tokens_member_number_fkey"
             columns: ["member_number"]
             isOneToOne: false
-            referencedRelation: "email_audit"
-            referencedColumns: ["member_number"]
-          },
-          {
-            foreignKeyName: "password_reset_tokens_member_number_fkey"
-            columns: ["member_number"]
-            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["member_number"]
           },
@@ -920,13 +934,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_logs"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_receipts_member_number_fkey"
-            columns: ["member_number"]
-            isOneToOne: false
-            referencedRelation: "email_audit"
-            referencedColumns: ["member_number"]
           },
           {
             foreignKeyName: "payment_receipts_member_number_fkey"
@@ -1004,13 +1011,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_requests_member_number_fkey"
-            columns: ["member_number"]
-            isOneToOne: false
-            referencedRelation: "email_audit"
-            referencedColumns: ["member_number"]
           },
           {
             foreignKeyName: "payment_requests_member_number_fkey"
@@ -1176,15 +1176,7 @@ export type Database = {
       }
     }
     Views: {
-      email_audit: {
-        Row: {
-          auth_email: string | null
-          auth_user_id: string | null
-          member_email: string | null
-          member_number: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       assign_collector_role: {

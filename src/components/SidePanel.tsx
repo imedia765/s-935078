@@ -46,7 +46,7 @@ const SidePanel = ({ userRole }: SidePanelProps) => {
   const filteredLinks = links.filter(link => {
     if (userRole === 'admin') return true;
     if (userRole === 'collector') {
-      return ['Dashboard', 'Members', 'Financials'].includes(link.title);
+      return ['Dashboard', 'Members'].includes(link.title);
     }
     if (userRole === 'member') {
       return ['Dashboard'].includes(link.title);
