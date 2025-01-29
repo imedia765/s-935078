@@ -36,7 +36,7 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
         countQuery = countQuery.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // If user is a collector, only show their assigned members
+      // Filter for collectors
       if (userRole === 'collector' && collectorInfo?.name) {
         countQuery = countQuery.eq('collector', collectorInfo.name);
       }
@@ -58,7 +58,7 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // If user is a collector, only show their assigned members
+      // Filter for collectors
       if (userRole === 'collector' && collectorInfo?.name) {
         query = query.eq('collector', collectorInfo.name);
       }
@@ -79,7 +79,6 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
 
   const handleEditClick = (memberId: string) => {
     setSelectedMemberId(memberId);
-    // Add your edit logic here
   };
 
   const handleDeleteClick = async (memberId: string) => {
@@ -96,7 +95,7 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
         description: "Member has been successfully deleted",
       });
 
-      refetch(); // Refresh the members list
+      refetch();
     } catch (error: any) {
       toast({
         title: "Error",
