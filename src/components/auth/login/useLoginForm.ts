@@ -132,7 +132,7 @@ export const useLoginForm = () => {
 
         console.log('[Login] Failed login response:', failedLoginData);
 
-        const typedFailedLoginData = failedLoginData as FailedLoginResponse;
+        const typedFailedLoginData = failedLoginData as unknown as FailedLoginResponse;
         if (typedFailedLoginData.locked) {
           throw new Error(`Account locked. Too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
         }
