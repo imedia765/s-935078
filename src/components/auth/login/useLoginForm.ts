@@ -4,9 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
 import { clearAuthState, verifyMember, handleSignInError } from './utils/authUtils';
-import { DatabaseFunctions } from '@/integrations/supabase/types/functions';
-
-type FailedLoginResponse = DatabaseFunctions['handle_failed_login']['Returns'];
 
 export const useLoginForm = () => {
   const [memberNumber, setMemberNumber] = useState('');
@@ -42,10 +39,20 @@ export const useLoginForm = () => {
 
       if (maintenanceData?.is_enabled) {
         console.log('[Login] System in maintenance mode, checking admin credentials');
-        const email = `${memberNumber.toLowerCase()}@temp.com`;
         
+        // Get member's email from members table
+        const { data: memberData, error: memberError } = await supabase
+          .from('members')
+          .select('email')
+          .eq('member_number', memberNumber)
+          .single();
+
+        if (memberError || !memberData?.email) {
+          throw new Error('Member not found or email not set');
+        }
+
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
+          email: memberData.email,
           password,
         });
 
@@ -78,24 +85,25 @@ export const useLoginForm = () => {
         verified: member.verified
       });
 
-      // Get member's email from members table
+      // Get member's email
       const { data: memberData } = await supabase
         .from('members')
         .select('email')
         .eq('member_number', memberNumber)
         .single();
-
-      // Use member's email if available, otherwise fallback to temp email
-      const email = memberData?.email || `${memberNumber.toLowerCase()}@temp.com`;
+        
+      if (!memberData?.email) {
+        throw new Error('Email not set for this member. Please contact support.');
+      }
       
       console.log('[Login] Attempting sign in with:', { 
-        email,
+        email: memberData.email,
         memberNumber,
         hashedPassword: password ? '[REDACTED]' : 'missing'
       });
       
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: memberData.email,
         password: password.trim(),
       });
 
@@ -104,7 +112,7 @@ export const useLoginForm = () => {
           error: signInError,
           code: signInError.status,
           message: signInError.message,
-          email
+          email: memberData.email
         });
         
         const { data: failedLoginData, error: failedLoginError } = await supabase
@@ -115,11 +123,10 @@ export const useLoginForm = () => {
           throw failedLoginError;
         }
 
-        const typedFailedLoginData = failedLoginData as FailedLoginResponse;
-        console.log('[Login] Failed login response:', typedFailedLoginData);
+        console.log('[Login] Failed login response:', failedLoginData);
 
-        if (typedFailedLoginData.locked) {
-          throw new Error(`Account locked. Too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
+        if (failedLoginData.locked) {
+          throw new Error(`Account locked. Too many failed attempts. Please try again after ${failedLoginData.lockout_duration}`);
         }
 
         if (signInError.message.includes('Invalid login credentials')) {

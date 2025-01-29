@@ -183,6 +183,13 @@ export type Database = {
             foreignKeyName: "email_audit_member_number_fkey"
             columns: ["member_number"]
             isOneToOne: false
+            referencedRelation: "email_sync_status"
+            referencedColumns: ["member_number"]
+          },
+          {
+            foreignKeyName: "email_audit_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["member_number"]
           },
@@ -247,6 +254,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "email_logs_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
+            referencedRelation: "email_sync_status"
+            referencedColumns: ["member_number"]
+          },
           {
             foreignKeyName: "email_logs_member_number_fkey"
             columns: ["member_number"]
@@ -517,6 +531,7 @@ export type Database = {
           created_by: string | null
           date_of_birth: string | null
           email: string | null
+          email_verified: boolean | null
           emergency_collection_amount: number | null
           emergency_collection_created_at: string | null
           emergency_collection_due_date: string | null
@@ -565,6 +580,7 @@ export type Database = {
           created_by?: string | null
           date_of_birth?: string | null
           email?: string | null
+          email_verified?: boolean | null
           emergency_collection_amount?: number | null
           emergency_collection_created_at?: string | null
           emergency_collection_due_date?: string | null
@@ -613,6 +629,7 @@ export type Database = {
           created_by?: string | null
           date_of_birth?: string | null
           email?: string | null
+          email_verified?: boolean | null
           emergency_collection_amount?: number | null
           emergency_collection_created_at?: string | null
           emergency_collection_due_date?: string | null
@@ -693,6 +710,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "members_collectors_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: true
+            referencedRelation: "email_sync_status"
+            referencedColumns: ["member_number"]
+          },
           {
             foreignKeyName: "members_collectors_member_number_fkey"
             columns: ["member_number"]
@@ -873,6 +897,13 @@ export type Database = {
             foreignKeyName: "password_reset_tokens_member_number_fkey"
             columns: ["member_number"]
             isOneToOne: false
+            referencedRelation: "email_sync_status"
+            referencedColumns: ["member_number"]
+          },
+          {
+            foreignKeyName: "password_reset_tokens_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["member_number"]
           },
@@ -934,6 +965,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_logs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_receipts_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
+            referencedRelation: "email_sync_status"
+            referencedColumns: ["member_number"]
           },
           {
             foreignKeyName: "payment_receipts_member_number_fkey"
@@ -1011,6 +1049,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
+            referencedRelation: "email_sync_status"
+            referencedColumns: ["member_number"]
           },
           {
             foreignKeyName: "payment_requests_member_number_fkey"
@@ -1176,7 +1221,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      email_sync_status: {
+        Row: {
+          auth_email: string | null
+          auth_user_id: string | null
+          member_email: string | null
+          member_number: string | null
+          sync_status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_collector_role: {
@@ -1476,6 +1530,12 @@ export type Database = {
       }
       is_system_in_maintenance: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_valid_email: {
+        Args: {
+          email: string
+        }
         Returns: boolean
       }
       is_valid_member_number: {
