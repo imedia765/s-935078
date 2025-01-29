@@ -29,7 +29,7 @@ export const useLoginForm = () => {
       const isMobile = window.innerWidth <= 768;
       console.log('[Login] Starting login process', { 
         deviceType: isMobile ? 'mobile' : 'desktop',
-        memberNumber,
+        identifier: memberNumber,
         timestamp: new Date().toISOString()
       });
 
@@ -47,19 +47,9 @@ export const useLoginForm = () => {
       if (maintenanceData?.is_enabled) {
         console.log('[Login] System in maintenance mode, checking admin credentials');
         
-        // Get member's email from members table
-        const { data: memberData, error: memberError } = await supabase
-          .from('members')
-          .select('email')
-          .eq('member_number', memberNumber)
-          .single();
-
-        if (memberError || !memberData?.email) {
-          throw new Error('Member not found or email not set');
-        }
-
+        // Try direct login for maintenance mode
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: memberData.email,
+          email: memberNumber.includes('@') ? memberNumber : `${memberNumber}@temp.com`,
           password,
         });
 
@@ -83,14 +73,40 @@ export const useLoginForm = () => {
         console.log('[Login] Admin access granted during maintenance mode');
       }
 
+      // If it's an email, try direct login
+      if (memberNumber.includes('@')) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: memberNumber,
+          password: password.trim(),
+        });
+
+        if (signInError) {
+          throw new Error('Invalid email or password. Please check your credentials and try again.');
+        }
+
+        console.log('[Login] Email login successful');
+        await queryClient.invalidateQueries();
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+
+        if (isMobile) {
+          window.location.href = '/';
+        } else {
+          navigate('/', { replace: true });
+        }
+        return;
+      }
+
+      // If it's a member number, proceed with existing flow
       console.log('[Login] Starting member verification');
       const member = await verifyMember(memberNumber);
-      console.log('[Login] Member verification successful', {
-        memberNumber,
-        hasAuthId: !!member.auth_user_id,
-        status: member.status,
-        verified: member.verified
-      });
+      
+      if (!member.auth_user_id) {
+        throw new Error('Account not set up. Please contact support.');
+      }
 
       // Get member's email
       const { data: memberData } = await supabase
@@ -103,45 +119,23 @@ export const useLoginForm = () => {
         throw new Error('Email not set for this member. Please contact support.');
       }
       
-      console.log('[Login] Attempting sign in with:', { 
-        email: memberData.email,
-        memberNumber,
-        hashedPassword: password ? '[REDACTED]' : 'missing'
-      });
-      
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: memberData.email,
         password: password.trim(),
       });
 
       if (signInError) {
-        console.error('[Login] Sign in error:', {
-          error: signInError,
-          code: signInError.status,
-          message: signInError.message,
-          email: memberData.email
-        });
-        
         const { data: failedLoginData, error: failedLoginError } = await supabase
           .rpc('handle_failed_login', { member_number: memberNumber });
 
-        if (failedLoginError) {
-          console.error('[Login] Failed login handling error:', failedLoginError);
-          throw failedLoginError;
-        }
-
-        console.log('[Login] Failed login response:', failedLoginData);
+        if (failedLoginError) throw failedLoginError;
 
         const typedFailedLoginData = failedLoginData as unknown as FailedLoginResponse;
         if (typedFailedLoginData.locked) {
           throw new Error(`Account locked. Too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
         }
 
-        if (signInError.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid member number or password. Please check your credentials and try again.');
-        }
-
-        throw signInError;
+        throw new Error('Invalid member number or password. Please check your credentials and try again.');
       }
 
       console.log('[Login] Sign in successful, resetting failed attempts');
@@ -162,28 +156,6 @@ export const useLoginForm = () => {
         return;
       }
 
-      console.log('[Login] Clearing query cache');
-      await queryClient.cancelQueries();
-      await queryClient.clear();
-
-      console.log('[Login] Verifying session');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('[Login] Session verification error:', sessionError);
-        throw sessionError;
-      }
-
-      if (!session) {
-        console.error('[Login] No session established');
-        throw new Error('Failed to establish session');
-      }
-
-      console.log('[Login] Session established successfully', {
-        userId: session.user.id,
-        timestamp: new Date().toISOString()
-      });
-      
       await queryClient.invalidateQueries();
 
       toast({
@@ -192,10 +164,8 @@ export const useLoginForm = () => {
       });
 
       if (isMobile) {
-        console.log('[Login] Redirecting (mobile):', { to: '/' });
         window.location.href = '/';
       } else {
-        console.log('[Login] Navigating (desktop):', { to: '/' });
         navigate('/', { replace: true });
       }
     } catch (error: any) {

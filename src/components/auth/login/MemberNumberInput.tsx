@@ -10,18 +10,18 @@ const MemberNumberInput = ({ memberNumber, setMemberNumber, loading }: MemberNum
   return (
     <div>
       <label htmlFor="memberNumber" className="block text-sm font-medium text-dashboard-text mb-2">
-        Member Number
+        Member Number or Email
       </label>
       <Input
         id="memberNumber"
         type="text"
         value={memberNumber}
-        onChange={(e) => setMemberNumber(e.target.value.toUpperCase())}
-        placeholder="Enter your member number"
+        onChange={(e) => setMemberNumber(e.target.value)}
+        placeholder="Enter your member number or email"
         className="w-full"
         required
         disabled={loading}
-        autoComplete="off"
+        autoComplete="username"
       />
     </div>
   );
