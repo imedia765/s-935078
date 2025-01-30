@@ -27,30 +27,29 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
       console.log('Fetching members with search term:', searchTerm);
       console.log('Collector info:', collectorInfo);
       
+      // First get total count
       let countQuery = supabase
         .from('members')
         .select('*', { count: 'exact', head: true });
       
-      // Apply search filter if exists
       if (searchTerm) {
         countQuery = countQuery.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // Filter for collectors - only show their assigned members
+      // Filter for collectors
       if (userRole === 'collector' && collectorInfo?.name) {
-        console.log('Filtering for collector:', collectorInfo.name);
         countQuery = countQuery.eq('collector', collectorInfo.name);
       }
       
       const { count } = await countQuery;
       const totalCount = count || 0;
       
-      // Calculate pagination values
+      // Calculate safe pagination values
       const maxPage = Math.ceil(totalCount / ITEMS_PER_PAGE);
       const safePage = Math.min(page, maxPage);
       const safeOffset = (safePage - 1) * ITEMS_PER_PAGE;
       
-      // Build data query with same filters
+      // Fetch paginated data
       let query = supabase
         .from('members')
         .select('*');
@@ -59,7 +58,7 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // Apply collector filter to data query
+      // Filter for collectors
       if (userRole === 'collector' && collectorInfo?.name) {
         query = query.eq('collector', collectorInfo.name);
       }
