@@ -17,7 +17,11 @@ export const useLoginForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const setMemberNumber = (value: string) => setState(prev => ({ ...prev, memberNumber: value }));
+  const setMemberNumber = (value: string) => {
+    // Ensure consistent uppercase format
+    setState(prev => ({ ...prev, memberNumber: value.toUpperCase() }));
+  };
+  
   const setPassword = (value: string) => setState(prev => ({ ...prev, password: value }));
   const setLoading = (value: boolean) => setState(prev => ({ ...prev, loading: value }));
   const setError = (value: string | null) => setState(prev => ({ ...prev, error: value }));
@@ -37,14 +41,15 @@ export const useLoginForm = () => {
         timestamp: new Date().toISOString()
       });
 
-      // Validate member number format
-      if (!state.memberNumber.match(/^[A-Z]{2}\d{5}$/)) {
+      // Validate member number format with uppercase check
+      const memberNumberRegex = /^[A-Z]{2}\d{5}$/;
+      if (!memberNumberRegex.test(state.memberNumber)) {
         setError('Invalid member number format. Please use the format XX00000 (e.g., TM10003)');
         setLoading(false);
         return;
       }
 
-      // Construct legacy email
+      // Construct legacy email using lowercase
       const loginEmail = `${state.memberNumber.toLowerCase()}@temp.com`;
       console.log('[Login] Using legacy email:', loginEmail);
 
