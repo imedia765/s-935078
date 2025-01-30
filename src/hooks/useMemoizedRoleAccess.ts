@@ -3,7 +3,7 @@ import { useRoleAccess } from './useRoleAccess';
 import type { UserRole } from '@/types/collector-roles';
 
 export const useMemoizedRoleAccess = () => {
-  const { userRoles, roleLoading, error } = useRoleAccess();
+  const { userRoles, isLoading, error } = useRoleAccess();
 
   const rolePermissions = useMemo(() => ({
     isAdmin: userRoles?.includes('admin'),
@@ -22,7 +22,7 @@ export const useMemoizedRoleAccess = () => {
   return {
     rolePermissions,
     navigationPermissions,
-    roleLoading,
+    isLoading,
     error,
     userRoles
   };
