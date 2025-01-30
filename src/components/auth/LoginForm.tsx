@@ -23,6 +23,9 @@ const LoginForm = () => {
             <p className="text-xs text-dashboard-dark/80 mb-2">
               Please provide your full name and member number when messaging
             </p>
+            <p className="text-xs text-dashboard-dark/80 mb-2">
+              Note: This support is for app-related issues only. For all other matters, please contact your collector.
+            </p>
             <a 
               href="https://wa.me/447476816917"
               target="_blank"
