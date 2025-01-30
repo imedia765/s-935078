@@ -16,11 +16,11 @@ export const useRoleAccess = () => {
     queryKey: ['userRoles', session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) {
-        console.log('No user session found');
+        console.log('[RoleAccess] No user session found');
         return [];
       }
 
-      console.log('Fetching roles for user:', session.user.id);
+      console.log('[RoleAccess] Fetching roles for user:', session.user.id);
 
       const { data, error } = await supabase
         .from('user_roles')
@@ -28,23 +28,29 @@ export const useRoleAccess = () => {
         .eq('user_id', session.user.id);
 
       if (error) {
-        console.error('Error fetching user roles:', error);
+        console.error('[RoleAccess] Error fetching user roles:', error);
         throw error;
       }
 
+      // Get all roles from the database
       const roles = data.map(r => r.role) as UserRole[];
-      console.log('Fetched roles:', roles);
+      console.log('[RoleAccess] Raw fetched roles:', roles);
 
-      // Ensure member role is always present
-      if (!roles.includes('member')) {
-        roles.push('member');
-      }
+      // Create a Set to ensure unique roles
+      const uniqueRoles = new Set(roles);
+      
+      // Always ensure member role is present
+      uniqueRoles.add('member');
 
-      return roles;
+      // Convert back to array
+      const finalRoles = Array.from(uniqueRoles);
+      console.log('[RoleAccess] Final roles after processing:', finalRoles);
+
+      return finalRoles;
     },
     enabled: !!session?.user?.id,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    gcTime: 1000 * 60 * 10 // Keep in cache for 10 minutes (previously cacheTime)
+    gcTime: 1000 * 60 * 10 // Keep in cache for 10 minutes
   });
 
   // Memoize initialization effect to prevent unnecessary re-renders
@@ -55,7 +61,7 @@ export const useRoleAccess = () => {
           await syncRoles(session.user.id);
           setInitialized(true);
         } catch (error) {
-          console.error('Failed to initialize roles:', error);
+          console.error('[RoleAccess] Failed to initialize roles:', error);
         }
       }
     };
@@ -65,12 +71,12 @@ export const useRoleAccess = () => {
 
   // Memoize role check functions
   const hasRole = useCallback((role: UserRole) => {
-    console.log('Checking for role:', role, 'in userRoles:', userRoles);
+    console.log('[RoleAccess] Checking for role:', role, 'in userRoles:', userRoles);
     return userRoles.includes(role);
   }, [userRoles]);
 
   const hasAnyRole = useCallback((roles: UserRole[]) => {
-    console.log('Checking for any roles:', roles, 'in userRoles:', userRoles);
+    console.log('[RoleAccess] Checking for any roles:', roles, 'in userRoles:', userRoles);
     return roles.some(role => hasRole(role));
   }, [hasRole]);
 
@@ -85,7 +91,7 @@ export const useRoleAccess = () => {
     const allowedRoles = roleMap[tab] || [];
     const hasAccess = hasAnyRole(allowedRoles);
     
-    console.log('Tab access check:', {
+    console.log('[RoleAccess] Tab access check:', {
       tab,
       allowedRoles,
       userRoles,
@@ -96,11 +102,24 @@ export const useRoleAccess = () => {
     return hasAccess;
   }, [hasAnyRole, userRoles]);
 
-  // Memoize primary role calculation with admin priority
+  // Memoize primary role calculation with proper priority
   const userRole = useMemo(() => {
-    console.log('Calculating primary role from:', userRoles);
-    if (userRoles.includes('admin')) return 'admin';
-    if (userRoles.includes('collector')) return 'collector';
+    console.log('[RoleAccess] Calculating primary role from:', userRoles);
+    
+    // Admin takes precedence if present
+    if (userRoles.includes('admin')) {
+      console.log('[RoleAccess] User has admin role, setting as primary');
+      return 'admin';
+    }
+    
+    // Then collector
+    if (userRoles.includes('collector')) {
+      console.log('[RoleAccess] User has collector role, setting as primary');
+      return 'collector';
+    }
+    
+    // Member is the default
+    console.log('[RoleAccess] Setting member as primary role');
     return 'member';
   }, [userRoles]);
 
