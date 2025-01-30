@@ -17,7 +17,7 @@ const MemberNumberInput = ({ memberNumber, setMemberNumber, loading, error }: Me
         id="memberNumber"
         type="text"
         value={memberNumber}
-        onChange={(e) => setMemberNumber(e.target.value)}
+        onChange={(e) => setMemberNumber(e.target.value.toUpperCase())}
         placeholder="Enter your member number or email"
         className={`w-full ${error ? 'border-red-500' : ''}`}
         required
