@@ -48,8 +48,6 @@ export const useLoginForm = () => {
 
       if (maintenanceData?.is_enabled) {
         console.log('[Login] System in maintenance mode, checking admin credentials');
-        
-        // Try direct login for maintenance mode
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: memberNumber.includes('@') ? memberNumber : `${memberNumber}@temp.com`,
           password,
@@ -75,36 +73,35 @@ export const useLoginForm = () => {
         console.log('[Login] Admin access granted during maintenance mode');
       }
 
-      // If it's an email, try direct login
+      // If it's an email, try direct login first
       if (memberNumber.includes('@')) {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: memberNumber,
-          password: password.trim(),
-        });
+        try {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: memberNumber,
+            password: password.trim(),
+          });
 
-        if (signInError) {
-          console.error('[Login] Email login error:', signInError);
-          setError('Invalid email or password. Please check your credentials and try again.');
-          return;
+          if (!signInError) {
+            console.log('[Login] Email login successful');
+            await queryClient.invalidateQueries();
+            toast({
+              title: "Login successful",
+              description: "Welcome back!",
+            });
+
+            if (isMobile) {
+              window.location.href = '/';
+            } else {
+              navigate('/', { replace: true });
+            }
+            return;
+          }
+        } catch (emailError) {
+          console.log('[Login] Direct email login failed, continuing with member flow');
         }
-
-        console.log('[Login] Email login successful');
-        await queryClient.invalidateQueries();
-        
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-
-        if (isMobile) {
-          window.location.href = '/';
-        } else {
-          navigate('/', { replace: true });
-        }
-        return;
       }
 
-      // If it's a member number, proceed with existing flow
+      // Proceed with member number flow
       console.log('[Login] Starting member verification');
       const member = await verifyMember(memberNumber);
       
