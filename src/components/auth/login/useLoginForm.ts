@@ -4,14 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
 import { LoginState } from './types/loginTypes';
-import { checkMaintenanceMode, validateAdminAccess } from './utils/maintenanceUtils';
-import { attemptEmailLogin } from './utils/emailLoginUtils';
-import { 
-  validateMemberNumberFormat, 
-  handleFailedLogin, 
-  resetFailedAttempts,
-  checkPasswordResetRequired 
-} from './utils/memberLoginUtils';
 
 export const useLoginForm = () => {
   const [state, setState] = useState<LoginState>({
@@ -45,49 +37,42 @@ export const useLoginForm = () => {
         timestamp: new Date().toISOString()
       });
 
-      // Validate member number format if not an email
-      try {
-        validateMemberNumberFormat(state.memberNumber);
-      } catch (error: any) {
-        setError(error.message);
+      // Validate member number format
+      if (!state.memberNumber.match(/^[A-Z]{2}\d{5}$/)) {
+        setError('Invalid member number format. Please use the format XX00000 (e.g., TM10003)');
         setLoading(false);
         return;
       }
 
-      // Try to sign in
-      try {
-        const signInData = await attemptEmailLogin(state.memberNumber, state.password);
-        console.log('[Login] Login successful');
-        
-        await queryClient.invalidateQueries();
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
+      // Construct legacy email
+      const loginEmail = `${state.memberNumber.toLowerCase()}@temp.com`;
+      console.log('[Login] Using legacy email:', loginEmail);
 
-        if (isMobile) {
-          window.location.href = '/';
-        } else {
-          navigate('/', { replace: true });
-        }
-        return;
-      } catch (signInError: any) {
+      // Attempt login
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: state.password
+      });
+
+      if (signInError) {
         console.error('[Login] Sign in error:', signInError);
-        
-        // Only handle failed login tracking for member numbers
-        if (!state.memberNumber.includes('@')) {
-          const failedLoginData = await handleFailedLogin(state.memberNumber);
-
-          if (failedLoginData.locked) {
-            setError(`Account locked due to too many failed attempts. Please try again after ${failedLoginData.lockout_duration}`);
-            return;
-          }
-
-          setError(`Invalid credentials. ${failedLoginData.max_attempts - failedLoginData.attempts} attempts remaining.`);
-        } else {
-          setError('Invalid email or password.');
-        }
+        setError('Invalid member number or password');
         return;
+      }
+
+      // Success path
+      console.log('[Login] Login successful');
+      await queryClient.invalidateQueries();
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+
+      if (isMobile) {
+        window.location.href = '/';
+      } else {
+        navigate('/', { replace: true });
       }
 
     } catch (error: any) {
