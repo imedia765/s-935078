@@ -270,6 +270,66 @@ export type Database = {
           },
         ]
       }
+      email_migration_backup: {
+        Row: {
+          id: string
+          member_number: string
+          migrated_at: string | null
+          original_auth_email: string | null
+          original_email: string | null
+          restored_at: string | null
+        }
+        Insert: {
+          id?: string
+          member_number: string
+          migrated_at?: string | null
+          original_auth_email?: string | null
+          original_email?: string | null
+          restored_at?: string | null
+        }
+        Update: {
+          id?: string
+          member_number?: string
+          migrated_at?: string | null
+          original_auth_email?: string | null
+          original_email?: string | null
+          restored_at?: string | null
+        }
+        Relationships: []
+      }
+      email_migration_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          member_number: string
+          new_value: Json | null
+          old_value: Json | null
+          operation: string
+          success: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          member_number: string
+          new_value?: Json | null
+          old_value?: Json | null
+          operation: string
+          success?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          member_number?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          operation?: string
+          success?: boolean | null
+        }
+        Relationships: []
+      }
       email_queue_config: {
         Row: {
           auto_process_interval: number
@@ -1626,6 +1686,12 @@ export type Database = {
         }
         Returns: string
       }
+      rollback_email_migration: {
+        Args: {
+          p_member_number: string
+        }
+        Returns: Json
+      }
       run_combined_system_checks: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1655,6 +1721,12 @@ export type Database = {
         Args: {
           p_member_number: string
           p_current_password: string
+        }
+        Returns: Json
+      }
+      validate_email_migration: {
+        Args: {
+          p_member_number: string
         }
         Returns: Json
       }
