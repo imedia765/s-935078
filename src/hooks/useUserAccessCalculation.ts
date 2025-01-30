@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { UserAccess, DEFAULT_USER_ACCESS, isValidRole } from '@/types/user-access';
 import { useToast } from "@/hooks/use-toast";
+import { deepMerge } from '@/utils/objectUtils';
+import { enhancedRolePermissionsMap, baseRolePermissionsMap } from '@/config/rolePermissions';
 
 interface RoleData {
   role: string;
@@ -13,6 +15,12 @@ interface EnhancedRoleData {
   is_active: boolean;
 }
 
+const logDebug = (message: string, data?: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[UserAccess] ${message}`, data);
+  }
+};
+
 export const useUserAccessCalculation = (userId: string | null) => {
   const { toast } = useToast();
 
@@ -20,7 +28,7 @@ export const useUserAccessCalculation = (userId: string | null) => {
     queryKey: ['user-access', userId],
     queryFn: async (): Promise<UserAccess> => {
       if (!userId) {
-        console.log('[UserAccess] No user ID provided, returning default access');
+        logDebug('No user ID provided, returning default access');
         return DEFAULT_USER_ACCESS;
       }
 
@@ -41,111 +49,39 @@ export const useUserAccessCalculation = (userId: string | null) => {
         if (basicRoles.error) throw basicRoles.error;
         if (enhancedRoles.error) throw enhancedRoles.error;
 
-        console.log('[UserAccess] Fetched roles:', {
+        logDebug('Fetched roles:', {
           basicRoles: basicRoles.data,
           enhancedRoles: enhancedRoles.data
         });
 
         // Start with default access
-        const userAccess: UserAccess = { ...DEFAULT_USER_ACCESS };
+        let userAccess: UserAccess = { ...DEFAULT_USER_ACCESS };
 
         // Process basic roles
         const roles = (basicRoles.data || []) as RoleData[];
         const activeEnhancedRoles = (enhancedRoles.data || []) as EnhancedRoleData[];
 
-        // Set base role (prioritize admin > collector > member)
-        if (roles.some(r => r.role === 'admin')) {
+        // Set base role and its permissions (prioritize admin > collector > member)
+        if (roles.some(r => isValidRole(r.role) && r.role === 'admin')) {
           userAccess.baseRole = 'admin';
-        } else if (roles.some(r => r.role === 'collector')) {
+          userAccess = deepMerge(userAccess, baseRolePermissionsMap['admin']);
+        } else if (roles.some(r => isValidRole(r.role) && r.role === 'collector')) {
           userAccess.baseRole = 'collector';
-        }
-
-        // Apply permissions based on base role
-        if (userAccess.baseRole === 'admin') {
-          // Admin gets full access
-          userAccess.permissions = {
-            users: {
-              manageBasicUsers: true,
-              manageAdminUsers: true,
-              viewUsers: true,
-              impersonateUsers: true
-            },
-            collectors: {
-              manageCollectors: true,
-              assignCollectors: true,
-              viewCollectorPerformance: true
-            },
-            payments: {
-              collectPayments: true,
-              viewPaymentReports: true,
-              managePaymentMethods: true,
-              refundPayments: true,
-              exportFinancialData: true
-            },
-            system: {
-              accessSystem: true,
-              manageSystemSettings: true,
-              viewSystemLogs: true,
-              performSystemMaintenance: true
-            },
-            audit: {
-              viewAuditLogs: true,
-              exportAuditLogs: true
-            },
-            dashboard: {
-              viewDashboard: true,
-              viewPerformanceMetrics: true,
-              viewFinancialSummary: true
-            }
-          };
-        } else if (userAccess.baseRole === 'collector') {
-          // Collector gets specific permissions
-          userAccess.permissions = {
-            ...userAccess.permissions,
-            users: {
-              ...userAccess.permissions.users,
-              viewUsers: true
-            },
-            collectors: {
-              ...userAccess.permissions.collectors,
-              viewCollectorPerformance: true
-            },
-            payments: {
-              ...userAccess.permissions.payments,
-              collectPayments: true,
-              viewPaymentReports: true
-            },
-            dashboard: {
-              ...userAccess.permissions.dashboard,
-              viewPerformanceMetrics: true
-            }
-          };
+          userAccess = deepMerge(userAccess, baseRolePermissionsMap['collector']);
+        } else {
+          userAccess.baseRole = 'member';
+          userAccess = deepMerge(userAccess, baseRolePermissionsMap['member']);
         }
 
         // Apply enhanced role permissions
         activeEnhancedRoles.forEach(enhancedRole => {
-          switch (enhancedRole.role_name) {
-            case 'system_admin':
-              userAccess.permissions.system.manageSystemSettings = true;
-              userAccess.permissions.system.viewSystemLogs = true;
-              break;
-            case 'financial_admin':
-              userAccess.permissions.payments.managePaymentMethods = true;
-              userAccess.permissions.payments.refundPayments = true;
-              userAccess.permissions.payments.exportFinancialData = true;
-              break;
-            case 'user_manager':
-              userAccess.permissions.users.manageBasicUsers = true;
-              userAccess.permissions.users.viewUsers = true;
-              break;
-            case 'audit_viewer':
-              userAccess.permissions.audit.viewAuditLogs = true;
-              break;
-            // Add more enhanced role mappings as needed
+          const additionalPermissions = enhancedRolePermissionsMap[enhancedRole.role_name];
+          if (additionalPermissions) {
+            userAccess = deepMerge(userAccess, { permissions: additionalPermissions });
           }
         });
 
-        console.log('[UserAccess] Calculated access:', userAccess);
+        logDebug('Calculated access:', userAccess);
         return userAccess;
 
       } catch (error) {
