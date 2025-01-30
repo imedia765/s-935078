@@ -21,7 +21,7 @@ const LoginForm = () => {
               Need assistance? Contact Support via WhatsApp
             </p>
             <p className="text-xs text-dashboard-dark/80 mb-2">
-              When messaging, please include your full name and member number for faster assistance
+              When messaging, please include your full name, member number, and a brief description of your issue for faster assistance
             </p>
             <p className="text-xs text-dashboard-dark/80 mb-2">
               Note: Our WhatsApp support is dedicated to app-related inquiries only. For all other matters, please reach out to your collector directly.
