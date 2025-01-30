@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from './useAuthSession';
@@ -29,9 +29,12 @@ export const useRoleAccess = () => {
 
       return data.map(r => r.role) as UserRole[];
     },
-    enabled: !!session?.user?.id
+    enabled: !!session?.user?.id,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    cacheTime: 1000 * 60 * 10 // Keep in cache for 10 minutes
   });
 
+  // Memoize initialization effect to prevent unnecessary re-renders
   useEffect(() => {
     const initializeRoles = async () => {
       if (session?.user?.id && !initialized) {
@@ -47,15 +50,16 @@ export const useRoleAccess = () => {
     initializeRoles();
   }, [session?.user?.id, syncRoles, initialized]);
 
-  const hasRole = (role: UserRole) => {
+  // Memoize role check functions
+  const hasRole = useCallback((role: UserRole) => {
     return userRoles.includes(role);
-  };
+  }, [userRoles]);
 
-  const hasAnyRole = (roles: UserRole[]) => {
+  const hasAnyRole = useCallback((roles: UserRole[]) => {
     return roles.some(role => hasRole(role));
-  };
+  }, [hasRole]);
 
-  const canAccessTab = (tab: string): boolean => {
+  const canAccessTab = useCallback((tab: string): boolean => {
     const roleMap: Record<string, UserRole[]> = {
       dashboard: ['member', 'admin', 'collector'],
       users: ['admin', 'collector'],
@@ -65,16 +69,18 @@ export const useRoleAccess = () => {
 
     const allowedRoles = roleMap[tab] || [];
     return hasAnyRole(allowedRoles);
-  };
+  }, [hasAnyRole]);
 
-  // Get primary role (admin > collector > member)
-  const userRole = userRoles.includes('admin') 
-    ? 'admin' 
-    : userRoles.includes('collector')
-      ? 'collector'
-      : userRoles.includes('member')
-        ? 'member'
-        : null;
+  // Memoize primary role calculation
+  const userRole = useMemo(() => 
+    userRoles.includes('admin') 
+      ? 'admin' 
+      : userRoles.includes('collector')
+        ? 'collector'
+        : userRoles.includes('member')
+          ? 'member'
+          : null
+  , [userRoles]);
 
   return {
     userRoles,

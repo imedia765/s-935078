@@ -21,15 +21,21 @@ export const useRoleSync = () => {
         console.log('Role sync completed successfully:', data);
         return data;
       } catch (error: any) {
-        console.error('Error in role sync mutation:', error);
-        toast({
-          title: "Role Sync Failed",
-          description: error.message,
-          variant: "destructive"
-        });
+        // Only show toast for network errors, not auth errors
+        if (!error.message?.includes('auth')) {
+          console.error('Error in role sync mutation:', error);
+          toast({
+            title: "Role Sync Failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
         throw error;
       }
     },
+    // Add retry configuration to prevent rapid retries
+    retry: 1,
+    retryDelay: 1000,
     meta: {
       errorMessage: "Failed to sync user roles"
     }
