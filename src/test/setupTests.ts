@@ -1,8 +1,6 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { expect, afterEach, vi } from 'vitest';
-
-// Setup a basic DOM environment for tests
 import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {
@@ -16,6 +14,25 @@ global.document = dom.window.document;
 global.navigator = {
   userAgent: 'node.js',
 } as Navigator;
+
+// Mock Supabase client
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    auth: {
+      signInWithPassword: vi.fn(),
+      signUp: vi.fn(),
+      signOut: vi.fn(),
+      getSession: vi.fn(),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => Promise.resolve({ data: [], error: null }))
+        }))
+      }))
+    }))
+  }
+}));
 
 // Mock localStorage
 global.localStorage = {
@@ -37,6 +54,11 @@ global.window.matchMedia = vi.fn().mockImplementation(query => ({
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
   dispatchEvent: vi.fn(),
+}));
+
+// Mock utils
+vi.mock('@/lib/utils', () => ({
+  cn: (...inputs: any[]) => inputs.join(' ')
 }));
 
 // Cleanup after each test case
