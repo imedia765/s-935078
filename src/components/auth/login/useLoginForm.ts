@@ -35,8 +35,9 @@ export const useLoginForm = () => {
     if (state.loading || !state.memberNumber.trim() || !state.password.trim()) return;
     
     setError(null);
+    setLoading(true);
+
     try {
-      setLoading(true);
       const isMobile = window.innerWidth <= 768;
       console.log('[Login] Starting login process', { 
         deviceType: isMobile ? 'mobile' : 'desktop',
@@ -44,10 +45,19 @@ export const useLoginForm = () => {
         timestamp: new Date().toISOString()
       });
 
-      // Try to sign in directly with the provided credentials
+      // Validate member number format if not an email
+      try {
+        validateMemberNumberFormat(state.memberNumber);
+      } catch (error: any) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Try to sign in
       try {
         const signInData = await attemptEmailLogin(state.memberNumber, state.password);
-        console.log('[Login] Direct login successful');
+        console.log('[Login] Login successful');
         
         await queryClient.invalidateQueries();
         toast({
@@ -63,14 +73,20 @@ export const useLoginForm = () => {
         return;
       } catch (signInError: any) {
         console.error('[Login] Sign in error:', signInError);
-        const failedLoginData = await handleFailedLogin(state.memberNumber);
+        
+        // Only handle failed login tracking for member numbers
+        if (!state.memberNumber.includes('@')) {
+          const failedLoginData = await handleFailedLogin(state.memberNumber);
 
-        if (failedLoginData.locked) {
-          setError(`Account locked due to too many failed attempts. Please try again after ${failedLoginData.lockout_duration}`);
-          return;
+          if (failedLoginData.locked) {
+            setError(`Account locked due to too many failed attempts. Please try again after ${failedLoginData.lockout_duration}`);
+            return;
+          }
+
+          setError(`Invalid credentials. ${failedLoginData.max_attempts - failedLoginData.attempts} attempts remaining.`);
+        } else {
+          setError('Invalid email or password.');
         }
-
-        setError(`Invalid credentials. ${failedLoginData.max_attempts - failedLoginData.attempts} attempts remaining.`);
         return;
       }
 
