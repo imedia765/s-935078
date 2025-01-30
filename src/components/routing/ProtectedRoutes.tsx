@@ -7,7 +7,7 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useRoleSync } from "@/hooks/useRoleSync";
 import { Loader2 } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
-import { canAccessTab, getDefaultRoute } from "@/utils/roleUtils";
+import { getDefaultRoute } from "@/utils/roleUtils";
 
 interface ProtectedRoutesProps {
   session: Session | null;
@@ -17,7 +17,7 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { roleLoading, userRole, userRoles, canAccessTab: roleAccessCheck } = useRoleAccess();
+  const { isLoading: roleLoading, userRole, userRoles, canAccessTab } = useRoleAccess();
   const { syncRoles } = useRoleSync();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -37,7 +37,7 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
     console.log('Path changed, updating active tab:', {
       path: location.pathname,
       newTab,
-      canAccess: roleAccessCheck(newTab),
+      canAccess: canAccessTab(newTab),
       userRole,
       isLoading: roleLoading
     });
@@ -61,7 +61,7 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
         return;
       }
       
-      if (!roleAccessCheck(newTab)) {
+      if (!canAccessTab(newTab)) {
         console.log('User cannot access tab:', newTab);
         if (!hasShownAccessDenied) {
           toast({
@@ -77,7 +77,7 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
     }
     
     setActiveTab(newTab);
-  }, [location.pathname, navigate, userRoles, userRole, toast, roleLoading, isInitialLoad, hasShownAccessDenied, roleAccessCheck]);
+  }, [location.pathname, navigate, userRoles, userRole, toast, roleLoading, isInitialLoad, hasShownAccessDenied, canAccessTab]);
 
   useEffect(() => {
     let mounted = true;
@@ -157,7 +157,7 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
 
   // Only check route access after roles are loaded
   const currentTab = pathToTab(location.pathname);
-  if (!roleLoading && !isInitialLoad && userRoles && !canAccessTab(currentTab, userRoles)) {
+  if (!roleLoading && !isInitialLoad && userRoles && !canAccessTab(currentTab)) {
     const defaultRoute = getDefaultRoute(userRoles);
     return <Navigate to={defaultRoute} replace />;
   }
@@ -183,7 +183,7 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
             return;
           }
           
-          if (!roleAccessCheck(tab)) {
+          if (!canAccessTab(tab)) {
             if (!hasShownAccessDenied) {
               toast({
                 title: "Access Denied",

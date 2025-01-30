@@ -3,13 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from './useAuthSession';
 import { useRoleSync } from './useRoleSync';
+import { Database } from "@/integrations/supabase/types";
+
+type UserRole = Database['public']['Enums']['app_role'];
 
 export const useRoleAccess = () => {
   const { session } = useAuthSession();
   const { syncRoles } = useRoleSync();
   const [initialized, setInitialized] = useState(false);
 
-  const { data: userRoles = [], isLoading } = useQuery({
+  const { data: userRoles = [], isLoading, error } = useQuery({
     queryKey: ['userRoles', session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return [];
@@ -24,7 +27,7 @@ export const useRoleAccess = () => {
         throw error;
       }
 
-      return data.map(r => r.role);
+      return data.map(r => r.role) as UserRole[];
     },
     enabled: !!session?.user?.id
   });
@@ -44,18 +47,42 @@ export const useRoleAccess = () => {
     initializeRoles();
   }, [session?.user?.id, syncRoles, initialized]);
 
-  const hasRole = (role: string) => {
+  const hasRole = (role: UserRole) => {
     return userRoles.includes(role);
   };
 
-  const hasAnyRole = (roles: string[]) => {
+  const hasAnyRole = (roles: UserRole[]) => {
     return roles.some(role => hasRole(role));
   };
 
+  const canAccessTab = (tab: string): boolean => {
+    const roleMap: Record<string, UserRole[]> = {
+      dashboard: ['member', 'admin', 'collector'],
+      users: ['admin', 'collector'],
+      financials: ['admin'],
+      system: ['admin']
+    };
+
+    const allowedRoles = roleMap[tab] || [];
+    return hasAnyRole(allowedRoles);
+  };
+
+  // Get primary role (admin > collector > member)
+  const userRole = userRoles.includes('admin') 
+    ? 'admin' 
+    : userRoles.includes('collector')
+      ? 'collector'
+      : userRoles.includes('member')
+        ? 'member'
+        : null;
+
   return {
     userRoles,
+    userRole,
     hasRole,
     hasAnyRole,
-    isLoading
+    canAccessTab,
+    isLoading,
+    error
   };
 };

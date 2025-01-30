@@ -28,7 +28,7 @@ interface MemberProfileCardProps {
 }
 
 const MemberProfileCard = ({ memberProfile, rolePermissions }: MemberProfileCardProps) => {
-  const { userRole } = useRoleAccess();
+  const { userRole, userRoles } = useRoleAccess();
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showAddFamilyDialog, setShowAddFamilyDialog] = useState(false);
