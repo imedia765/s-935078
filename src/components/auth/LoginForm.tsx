@@ -13,7 +13,7 @@ const LoginForm = () => {
   return (
     <div className="bg-dashboard-card rounded-lg shadow-lg p-8 mb-12">
       {/* WhatsApp Support Notice */}
-      <div className="mb-8 bg-dashboard-softGreen border border-dashboard-accent3/20 rounded-lg p-6">
+      <div className="mb-6 bg-dashboard-softGreen border border-dashboard-accent3/20 rounded-lg p-4 max-w-md mx-auto">
         <div className="flex items-center space-x-3">
           <MessageSquare className="h-5 w-5 text-dashboard-accent3" />
           <div className="text-dashboard-dark">
