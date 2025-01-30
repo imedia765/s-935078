@@ -36,7 +36,7 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
         countQuery = countQuery.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // Filter for collectors
+      // Filter for collectors - only show their assigned members
       if (userRole === 'collector' && collectorInfo?.name) {
         countQuery = countQuery.eq('collector', collectorInfo.name);
       }
@@ -58,7 +58,7 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // Filter for collectors
+      // Filter for collectors - only show their assigned members
       if (userRole === 'collector' && collectorInfo?.name) {
         query = query.eq('collector', collectorInfo.name);
       }
