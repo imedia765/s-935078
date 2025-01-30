@@ -17,7 +17,7 @@ const RoleBasedRenderer = ({
   requireAllRoles = false,
   fallback = null
 }: RoleBasedRendererProps) => {
-  const { hasRole, hasAnyRole } = useRoleAccess();
+  const { hasRole, hasAnyRole, userRoles } = useRoleAccess();
 
   // Memoize access check to prevent unnecessary re-renders
   const hasAccess = useMemo(() => {
@@ -26,6 +26,11 @@ const RoleBasedRenderer = ({
       return true;
     }
 
+    // Check if user has both member and admin roles
+    const isMemberAndAdmin = hasRole('member') && hasRole('admin');
+    console.log('[RoleRenderer] Member and Admin check:', isMemberAndAdmin);
+
+    // If requireAllRoles is true, check that user has all specified roles
     const access = requireAllRoles
       ? allowedRoles.every(role => hasRole(role))
       : hasAnyRole(allowedRoles);
@@ -34,11 +39,13 @@ const RoleBasedRenderer = ({
       allowedRoles,
       requireAllRoles,
       hasAccess: access,
+      userRoles,
+      isMemberAndAdmin,
       timestamp: new Date().toISOString()
     });
 
     return access;
-  }, [allowedRoles, requireAllRoles, hasRole, hasAnyRole]);
+  }, [allowedRoles, requireAllRoles, hasRole, hasAnyRole, userRoles]);
 
   return <>{hasAccess ? children : fallback}</>;
 };
