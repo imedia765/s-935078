@@ -64,13 +64,13 @@ export const useUserAccessCalculation = (userId: string | null) => {
         // Set base role and its permissions (prioritize admin > collector > member)
         if (roles.some(r => isValidRole(r.role) && r.role === 'admin')) {
           userAccess.baseRole = 'admin';
-          userAccess = deepMerge(userAccess, baseRolePermissionsMap['admin']);
+          userAccess = deepMerge(userAccess, { permissions: baseRolePermissionsMap['admin'] });
         } else if (roles.some(r => isValidRole(r.role) && r.role === 'collector')) {
           userAccess.baseRole = 'collector';
-          userAccess = deepMerge(userAccess, baseRolePermissionsMap['collector']);
+          userAccess = deepMerge(userAccess, { permissions: baseRolePermissionsMap['collector'] });
         } else {
           userAccess.baseRole = 'member';
-          userAccess = deepMerge(userAccess, baseRolePermissionsMap['member']);
+          userAccess = deepMerge(userAccess, { permissions: baseRolePermissionsMap['member'] });
         }
 
         // Apply enhanced role permissions

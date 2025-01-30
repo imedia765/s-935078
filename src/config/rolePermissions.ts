@@ -5,6 +5,7 @@ type PermissionMapping = Partial<UserAccess['permissions']>;
 export const enhancedRolePermissionsMap: Record<string, PermissionMapping> = {
   'system_admin': {
     system: {
+      accessSystem: true,
       manageSystemSettings: true,
       viewSystemLogs: true,
       performSystemMaintenance: true
@@ -12,6 +13,8 @@ export const enhancedRolePermissionsMap: Record<string, PermissionMapping> = {
   },
   'financial_admin': {
     payments: {
+      collectPayments: true,
+      viewPaymentReports: true,
       managePaymentMethods: true,
       refundPayments: true,
       exportFinancialData: true
@@ -20,6 +23,7 @@ export const enhancedRolePermissionsMap: Record<string, PermissionMapping> = {
   'user_manager': {
     users: {
       manageBasicUsers: true,
+      manageAdminUsers: false,
       viewUsers: true
     }
   },
@@ -70,17 +74,23 @@ export const baseRolePermissionsMap: Record<string, PermissionMapping> = {
   },
   'collector': {
     users: {
+      manageBasicUsers: false,
+      manageAdminUsers: false,
       viewUsers: true
     },
     collectors: {
+      manageCollectors: false,
+      assignCollectors: false,
       viewCollectorPerformance: true
     },
     payments: {
       collectPayments: true,
-      viewPaymentReports: true
+      viewPaymentReports: true,
+      managePaymentMethods: false
     },
     system: {
-      accessSystem: true
+      accessSystem: true,
+      manageSystemSettings: false
     },
     dashboard: {
       viewDashboard: true,
@@ -88,8 +98,26 @@ export const baseRolePermissionsMap: Record<string, PermissionMapping> = {
     }
   },
   'member': {
+    users: {
+      manageBasicUsers: false,
+      manageAdminUsers: false,
+      viewUsers: false
+    },
+    collectors: {
+      manageCollectors: false,
+      assignCollectors: false
+    },
+    payments: {
+      collectPayments: false,
+      viewPaymentReports: false,
+      managePaymentMethods: false
+    },
     system: {
-      accessSystem: true
+      accessSystem: true,
+      manageSystemSettings: false
+    },
+    audit: {
+      viewAuditLogs: false
     },
     dashboard: {
       viewDashboard: true
