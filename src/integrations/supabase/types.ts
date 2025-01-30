@@ -297,6 +297,54 @@ export type Database = {
         }
         Relationships: []
       }
+      email_sync_tracking: {
+        Row: {
+          auth_email: string | null
+          auth_user_id: string | null
+          created_at: string | null
+          id: string
+          member_email: string | null
+          member_number: string | null
+          sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auth_email?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          member_email?: string | null
+          member_number?: string | null
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auth_email?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          member_email?: string | null
+          member_number?: string | null
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_tracking_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
+            referencedRelation: "email_sync_status"
+            referencedColumns: ["member_number"]
+          },
+          {
+            foreignKeyName: "email_sync_tracking_member_number_fkey"
+            columns: ["member_number"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["member_number"]
+          },
+        ]
+      }
       enhanced_roles: {
         Row: {
           created_at: string | null
