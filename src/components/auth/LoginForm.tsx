@@ -18,13 +18,13 @@ const LoginForm = () => {
           <MessageSquare className="h-5 w-5 text-dashboard-accent3" />
           <div className="text-dashboard-dark">
             <p className="text-sm font-medium mb-2">
-              Having login issues? Contact us on WhatsApp
+              Need assistance? Contact Support via WhatsApp
             </p>
             <p className="text-xs text-dashboard-dark/80 mb-2">
-              Please provide your full name and member number when messaging
+              When messaging, please include your full name and member number for faster assistance
             </p>
             <p className="text-xs text-dashboard-dark/80 mb-2">
-              Note: This support is for app-related issues only. For all other matters, please contact your collector.
+              Note: Our WhatsApp support is dedicated to app-related inquiries only. For all other matters, please reach out to your collector directly.
             </p>
             <a 
               href="https://wa.me/447476816917"
