@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation, Outlet, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -22,8 +22,6 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
-  const lastToastTimeRef = useRef<number>(0);
-  const toastDebounceTime = 3000; // 3 seconds between toasts
 
   // Convert path to tab
   const pathToTab = (path: string) => {
@@ -33,55 +31,31 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
 
   const [activeTab, setActiveTab] = useState(pathToTab(location.pathname));
 
-  const showAccessDeniedToast = () => {
-    const now = Date.now();
-    if (now - lastToastTimeRef.current >= toastDebounceTime) {
-      console.log('Showing access denied toast, last toast was shown:', 
-        Math.round((now - lastToastTimeRef.current) / 1000), 'seconds ago');
-      
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access this section.",
-        variant: "destructive",
-      });
-      lastToastTimeRef.current = now;
-    } else {
-      console.log('Skipping access denied toast due to debounce');
-    }
-  };
-
   useEffect(() => {
     const newTab = pathToTab(location.pathname);
-    console.log('Path changed, updating active tab:', {
+    console.log('Path changed:', {
       path: location.pathname,
       newTab,
-      canAccess: canAccessTab(newTab),
-      userRole,
-      isLoading: roleLoading
+      userRoles
     });
     
     // Only check access after roles are loaded
     if (!roleLoading && !isInitialLoad && userRoles) {
-      console.log('Checking access for tab:', newTab);
-      
-      // Restrict system and financials to admin only
+      // Simple admin-only check for restricted sections
       if ((newTab === 'system' || newTab === 'financials') && !userRoles.includes('admin')) {
-        console.log('Access denied to restricted section');
-        showAccessDeniedToast();
-        navigate('/dashboard');
-        return;
-      }
-      
-      if (!canAccessTab(newTab)) {
-        console.log('User cannot access tab:', newTab);
-        showAccessDeniedToast();
+        console.log('Access denied to admin-only section');
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access this section.",
+          variant: "destructive",
+        });
         navigate('/dashboard');
         return;
       }
     }
     
     setActiveTab(newTab);
-  }, [location.pathname, navigate, userRoles, userRole, toast, roleLoading, isInitialLoad, canAccessTab]);
+  }, [location.pathname, navigate, userRoles, roleLoading, isInitialLoad]);
 
   useEffect(() => {
     let mounted = true;
@@ -119,14 +93,13 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!mounted) return;
 
-      console.log('Auth state change in protected routes:', {
+      console.log('Auth state change:', {
         event,
-        hasSession: !!currentSession,
-        userRole
+        hasSession: !!currentSession
       });
       
       if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !currentSession)) {
-        console.log('User signed out or token refresh failed, redirecting to login');
+        console.log('User signed out or token refresh failed');
         navigate('/login', { replace: true });
         return;
       }
@@ -136,16 +109,10 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, session, syncRoles, userRole, toast]);
+  }, [navigate, session, syncRoles, toast]);
 
-  // Show loading state during initial auth check or role loading
+  // Show loading state during initial auth check
   if (isAuthChecking || (isInitialLoad && roleLoading)) {
-    console.log('Showing loading state:', {
-      isInitialLoad,
-      roleLoading,
-      hasSession: !!session,
-      isAuthChecking
-    });
     return (
       <div className="flex items-center justify-center min-h-screen bg-dashboard-dark">
         <Loader2 className="w-8 h-8 animate-spin text-dashboard-accent1" />
@@ -155,15 +122,8 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
 
   // If no session, redirect to login
   if (!session) {
-    console.log('No session in ProtectedRoutes, redirecting to login');
+    console.log('No session, redirecting to login');
     return <Navigate to="/login" replace />;
-  }
-
-  // Only check route access after roles are loaded
-  const currentTab = pathToTab(location.pathname);
-  if (!roleLoading && !isInitialLoad && userRoles && !canAccessTab(currentTab)) {
-    const defaultRoute = getDefaultRoute(userRoles);
-    return <Navigate to={defaultRoute} replace />;
   }
 
   return (
@@ -172,18 +132,14 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
       isSidebarOpen={isSidebarOpen}
       onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       onTabChange={(tab) => {
-        // Check access before allowing tab change
-        if (!roleLoading && userRoles) {
-          // Restrict system and financials to admin only
-          if ((tab === 'system' || tab === 'financials') && !userRoles.includes('admin')) {
-            showAccessDeniedToast();
-            return;
-          }
-          
-          if (!canAccessTab(tab)) {
-            showAccessDeniedToast();
-            return;
-          }
+        // Simple admin check for restricted sections
+        if ((tab === 'system' || tab === 'financials') && !userRoles?.includes('admin')) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access this section.",
+            variant: "destructive",
+          });
+          return;
         }
         const path = tab === 'dashboard' ? '/' : `/${tab}`;
         navigate(path);
