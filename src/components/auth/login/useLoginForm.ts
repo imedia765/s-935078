@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
 import { LoginState } from './types/loginTypes';
 import { checkMaintenanceMode, validateAdminAccess } from './utils/maintenanceUtils';
-import { attemptEmailLogin, getMemberEmail } from './utils/emailLoginUtils';
+import { attemptEmailLogin } from './utils/emailLoginUtils';
 import { 
   validateMemberNumberFormat, 
   handleFailedLogin, 
@@ -44,53 +44,23 @@ export const useLoginForm = () => {
         timestamp: new Date().toISOString()
       });
 
-      // Check maintenance mode
-      const maintenanceData = await checkMaintenanceMode();
-      if (maintenanceData?.is_enabled) {
-        console.log('[Login] System in maintenance mode, checking admin credentials');
-        const signInData = await attemptEmailLogin(
-          state.memberNumber.includes('@') ? state.memberNumber : `${state.memberNumber}@temp.com`,
-          state.password
-        );
-
-        const isAdmin = await validateAdminAccess(signInData);
-        if (!isAdmin) {
-          throw new Error(maintenanceData.message || 'System is temporarily offline for maintenance');
-        }
-        console.log('[Login] Admin access granted during maintenance mode');
-      }
-
-      // Try email login first if it's an email
-      if (state.memberNumber.includes('@')) {
-        try {
-          const signInData = await attemptEmailLogin(state.memberNumber, state.password);
-          console.log('[Login] Email login successful');
-          await queryClient.invalidateQueries();
-          toast({
-            title: "Login successful",
-            description: "Welcome back!",
-          });
-
-          if (isMobile) {
-            window.location.href = '/';
-          } else {
-            navigate('/', { replace: true });
-          }
-          return;
-        } catch (emailError) {
-          console.log('[Login] Direct email login failed, continuing with member flow');
-        }
-      }
-
-      // Validate member number format
-      validateMemberNumberFormat(state.memberNumber);
-
-      // Get member's email
-      const memberEmail = await getMemberEmail(state.memberNumber);
-
-      // Try to sign in with the member's email
+      // Try to sign in directly with the provided credentials
       try {
-        await attemptEmailLogin(memberEmail, state.password);
+        const signInData = await attemptEmailLogin(state.memberNumber, state.password);
+        console.log('[Login] Direct login successful');
+        
+        await queryClient.invalidateQueries();
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+
+        if (isMobile) {
+          window.location.href = '/';
+        } else {
+          navigate('/', { replace: true });
+        }
+        return;
       } catch (signInError: any) {
         console.error('[Login] Sign in error:', signInError);
         const failedLoginData = await handleFailedLogin(state.memberNumber);
@@ -104,30 +74,6 @@ export const useLoginForm = () => {
         return;
       }
 
-      console.log('[Login] Sign in successful, resetting failed attempts');
-      await resetFailedAttempts(state.memberNumber);
-
-      const passwordResetRequired = await checkPasswordResetRequired(state.memberNumber);
-      if (passwordResetRequired) {
-        console.log('[Login] Password reset required');
-        toast({
-          title: "Password reset required",
-          description: "Please set a new password for your account",
-        });
-        return;
-      }
-
-      await queryClient.invalidateQueries();
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-
-      if (isMobile) {
-        window.location.href = '/';
-      } else {
-        navigate('/', { replace: true });
-      }
     } catch (error: any) {
       console.error('[Login] Error:', {
         message: error.message,

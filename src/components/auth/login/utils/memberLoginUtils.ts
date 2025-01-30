@@ -2,7 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { FailedLoginResponse } from "../types/loginTypes";
 
 export const validateMemberNumberFormat = (memberNumber: string) => {
-  if (!memberNumber.includes('@') && !/^[A-Z]{2}\d{5}$/.test(memberNumber)) {
+  // Skip validation if it's an email
+  if (memberNumber.includes('@')) return;
+  
+  if (!/^[A-Z]{2}\d{5}$/.test(memberNumber)) {
     throw new Error('Invalid member number format. Please use the format XX00000');
   }
 };
