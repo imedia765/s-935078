@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-import { UserAccess, DEFAULT_USER_ACCESS, isValidRole } from '@/types/user-access';
 import { useToast } from "@/hooks/use-toast";
+import { UserAccess, DEFAULT_USER_ACCESS, isValidRole } from '@/types/user-access';
 import { deepMerge } from '@/utils/objectUtils';
-import { enhancedRolePermissionsMap, baseRolePermissionsMap } from '@/config/rolePermissions';
+import { baseRolePermissionsMap, enhancedRolePermissionsMap } from '@/config/rolePermissions';
 
 interface RoleData {
   role: string;
@@ -29,7 +29,7 @@ export const useUserAccessCalculation = (userId: string | null) => {
     queryFn: async (): Promise<UserAccess> => {
       if (!userId) {
         logDebug('No user ID provided, returning default access');
-        return DEFAULT_USER_ACCESS;
+        return { ...DEFAULT_USER_ACCESS };
       }
 
       try {
@@ -56,28 +56,26 @@ export const useUserAccessCalculation = (userId: string | null) => {
 
         // Start with default access
         let userAccess: UserAccess = { ...DEFAULT_USER_ACCESS };
-
-        // Process basic roles
         const roles = (basicRoles.data || []) as RoleData[];
         const activeEnhancedRoles = (enhancedRoles.data || []) as EnhancedRoleData[];
 
         // Set base role and its permissions (prioritize admin > collector > member)
         if (roles.some(r => isValidRole(r.role) && r.role === 'admin')) {
           userAccess.baseRole = 'admin';
-          userAccess = deepMerge(userAccess, { permissions: baseRolePermissionsMap['admin'] });
+          userAccess.permissions = { ...userAccess.permissions, ...baseRolePermissionsMap['admin'] };
         } else if (roles.some(r => isValidRole(r.role) && r.role === 'collector')) {
           userAccess.baseRole = 'collector';
-          userAccess = deepMerge(userAccess, { permissions: baseRolePermissionsMap['collector'] });
+          userAccess.permissions = { ...userAccess.permissions, ...baseRolePermissionsMap['collector'] };
         } else {
           userAccess.baseRole = 'member';
-          userAccess = deepMerge(userAccess, { permissions: baseRolePermissionsMap['member'] });
+          userAccess.permissions = { ...userAccess.permissions, ...baseRolePermissionsMap['member'] };
         }
 
         // Apply enhanced role permissions
         activeEnhancedRoles.forEach(enhancedRole => {
           const additionalPermissions = enhancedRolePermissionsMap[enhancedRole.role_name];
           if (additionalPermissions) {
-            userAccess = deepMerge(userAccess, { permissions: additionalPermissions });
+            userAccess.permissions = deepMerge(userAccess.permissions, additionalPermissions);
           }
         });
 
@@ -91,7 +89,7 @@ export const useUserAccessCalculation = (userId: string | null) => {
           description: "There was a problem determining user permissions",
           variant: "destructive",
         });
-        return DEFAULT_USER_ACCESS;
+        return { ...DEFAULT_USER_ACCESS };
       }
     },
     enabled: !!userId,
