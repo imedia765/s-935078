@@ -16,6 +16,7 @@ export const useLoginForm = () => {
   const [memberNumber, setMemberNumber] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -24,6 +25,7 @@ export const useLoginForm = () => {
     e.preventDefault();
     if (loading || !memberNumber.trim() || !password.trim()) return;
     
+    setError(null);
     try {
       setLoading(true);
       const isMobile = window.innerWidth <= 768;
@@ -81,7 +83,8 @@ export const useLoginForm = () => {
         });
 
         if (signInError) {
-          throw new Error('Invalid email or password. Please check your credentials and try again.');
+          setError('Invalid email or password. Please check your credentials and try again.');
+          return;
         }
 
         console.log('[Login] Email login successful');
@@ -105,7 +108,8 @@ export const useLoginForm = () => {
       const member = await verifyMember(memberNumber);
       
       if (!member.auth_user_id) {
-        throw new Error('Account not set up. Please contact support.');
+        setError('Account not set up. Please contact support.');
+        return;
       }
 
       // Get member's email
@@ -116,7 +120,8 @@ export const useLoginForm = () => {
         .single();
         
       if (!memberData?.email) {
-        throw new Error('Email not set for this member. Please contact support.');
+        setError('Email not set for this member. Please contact support.');
+        return;
       }
       
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -132,10 +137,12 @@ export const useLoginForm = () => {
 
         const typedFailedLoginData = failedLoginData as unknown as FailedLoginResponse;
         if (typedFailedLoginData.locked) {
-          throw new Error(`Account locked. Too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
+          setError(`Account locked due to too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
+          return;
         }
 
-        throw new Error('Invalid member number or password. Please check your credentials and try again.');
+        setError(`Invalid credentials. ${typedFailedLoginData.max_attempts - typedFailedLoginData.attempts} attempts remaining.`);
+        return;
       }
 
       console.log('[Login] Sign in successful, resetting failed attempts');
@@ -176,6 +183,8 @@ export const useLoginForm = () => {
         timestamp: new Date().toISOString()
       });
       
+      setError(error.message || 'An unexpected error occurred');
+      
       toast({
         title: "Login failed",
         description: error.message || 'An unexpected error occurred',
@@ -193,5 +202,6 @@ export const useLoginForm = () => {
     setPassword,
     loading,
     handleLogin,
+    error
   };
 };

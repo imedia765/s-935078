@@ -4,9 +4,10 @@ interface MemberNumberInputProps {
   memberNumber: string;
   setMemberNumber: (value: string) => void;
   loading: boolean;
+  error?: string | null;
 }
 
-const MemberNumberInput = ({ memberNumber, setMemberNumber, loading }: MemberNumberInputProps) => {
+const MemberNumberInput = ({ memberNumber, setMemberNumber, loading, error }: MemberNumberInputProps) => {
   return (
     <div>
       <label htmlFor="memberNumber" className="block text-sm font-medium text-dashboard-text mb-2">
@@ -18,10 +19,11 @@ const MemberNumberInput = ({ memberNumber, setMemberNumber, loading }: MemberNum
         value={memberNumber}
         onChange={(e) => setMemberNumber(e.target.value)}
         placeholder="Enter your member number or email"
-        className="w-full"
+        className={`w-full ${error ? 'border-red-500' : ''}`}
         required
         disabled={loading}
         autoComplete="username"
+        aria-invalid={error ? "true" : "false"}
       />
     </div>
   );
