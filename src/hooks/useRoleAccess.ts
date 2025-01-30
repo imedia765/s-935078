@@ -15,7 +15,12 @@ export const useRoleAccess = () => {
   const { data: userRoles = [], isLoading, error } = useQuery({
     queryKey: ['userRoles', session?.user?.id],
     queryFn: async () => {
-      if (!session?.user?.id) return [];
+      if (!session?.user?.id) {
+        console.log('No user session found');
+        return [];
+      }
+
+      console.log('Fetching roles for user:', session.user.id);
 
       const { data, error } = await supabase
         .from('user_roles')
@@ -27,7 +32,15 @@ export const useRoleAccess = () => {
         throw error;
       }
 
-      return data.map(r => r.role) as UserRole[];
+      const roles = data.map(r => r.role) as UserRole[];
+      console.log('Fetched roles:', roles);
+
+      // Ensure member role is always present
+      if (!roles.includes('member')) {
+        roles.push('member');
+      }
+
+      return roles;
     },
     enabled: !!session?.user?.id,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
@@ -52,10 +65,12 @@ export const useRoleAccess = () => {
 
   // Memoize role check functions
   const hasRole = useCallback((role: UserRole) => {
+    console.log('Checking for role:', role, 'in userRoles:', userRoles);
     return userRoles.includes(role);
   }, [userRoles]);
 
   const hasAnyRole = useCallback((roles: UserRole[]) => {
+    console.log('Checking for any roles:', roles, 'in userRoles:', userRoles);
     return roles.some(role => hasRole(role));
   }, [hasRole]);
 
@@ -68,19 +83,26 @@ export const useRoleAccess = () => {
     };
 
     const allowedRoles = roleMap[tab] || [];
-    return hasAnyRole(allowedRoles);
-  }, [hasAnyRole]);
+    const hasAccess = hasAnyRole(allowedRoles);
+    
+    console.log('Tab access check:', {
+      tab,
+      allowedRoles,
+      userRoles,
+      hasAccess,
+      timestamp: new Date().toISOString()
+    });
 
-  // Memoize primary role calculation
-  const userRole = useMemo(() => 
-    userRoles.includes('admin') 
-      ? 'admin' 
-      : userRoles.includes('collector')
-        ? 'collector'
-        : userRoles.includes('member')
-          ? 'member'
-          : null
-  , [userRoles]);
+    return hasAccess;
+  }, [hasAnyRole, userRoles]);
+
+  // Memoize primary role calculation with admin priority
+  const userRole = useMemo(() => {
+    console.log('Calculating primary role from:', userRoles);
+    if (userRoles.includes('admin')) return 'admin';
+    if (userRoles.includes('collector')) return 'collector';
+    return 'member';
+  }, [userRoles]);
 
   return {
     userRoles,
