@@ -3,27 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from '@tanstack/react-query';
-import { clearAuthState, verifyMember, handleSignInError } from './utils/authUtils';
-
-interface FailedLoginResponse {
-  locked: boolean;
-  attempts: number;
-  max_attempts: number;
-  lockout_duration: string;
-}
+import { LoginState } from './types/loginTypes';
+import { checkMaintenanceMode, validateAdminAccess } from './utils/maintenanceUtils';
+import { attemptEmailLogin, getMemberEmail } from './utils/emailLoginUtils';
+import { 
+  validateMemberNumberFormat, 
+  handleFailedLogin, 
+  resetFailedAttempts,
+  checkPasswordResetRequired 
+} from './utils/memberLoginUtils';
 
 export const useLoginForm = () => {
-  const [memberNumber, setMemberNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<LoginState>({
+    memberNumber: '',
+    password: '',
+    loading: false,
+    error: null
+  });
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const setMemberNumber = (value: string) => setState(prev => ({ ...prev, memberNumber: value }));
+  const setPassword = (value: string) => setState(prev => ({ ...prev, password: value }));
+  const setLoading = (value: boolean) => setState(prev => ({ ...prev, loading: value }));
+  const setError = (value: string | null) => setState(prev => ({ ...prev, error: value }));
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading || !memberNumber.trim() || !password.trim()) return;
+    if (state.loading || !state.memberNumber.trim() || !state.password.trim()) return;
     
     setError(null);
     try {
@@ -31,174 +40,93 @@ export const useLoginForm = () => {
       const isMobile = window.innerWidth <= 768;
       console.log('[Login] Starting login process', { 
         deviceType: isMobile ? 'mobile' : 'desktop',
-        identifier: memberNumber,
+        identifier: state.memberNumber,
         timestamp: new Date().toISOString()
       });
 
-      // Check maintenance mode first
-      const { data: maintenanceData, error: maintenanceError } = await supabase
-        .from('maintenance_settings')
-        .select('is_enabled, message')
-        .single();
-
-      if (maintenanceError) {
-        console.error('[Login] Error checking maintenance mode:', maintenanceError);
-        throw new Error('Unable to verify system status');
-      }
-
+      // Check maintenance mode
+      const maintenanceData = await checkMaintenanceMode();
       if (maintenanceData?.is_enabled) {
         console.log('[Login] System in maintenance mode, checking admin credentials');
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: memberNumber.includes('@') ? memberNumber : `${memberNumber}@temp.com`,
-          password,
-        });
+        const signInData = await attemptEmailLogin(
+          state.memberNumber.includes('@') ? state.memberNumber : `${state.memberNumber}@temp.com`,
+          state.password
+        );
 
-        if (signInError) {
-          console.log('[Login] Login failed during maintenance mode');
-          throw new Error(maintenanceData.message || 'System is temporarily offline for maintenance');
-        }
-
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', signInData.user.id);
-
-        const isAdmin = roles?.some(r => r.role === 'admin');
-        
+        const isAdmin = await validateAdminAccess(signInData);
         if (!isAdmin) {
-          console.log('[Login] Non-admin access attempted during maintenance');
           throw new Error(maintenanceData.message || 'System is temporarily offline for maintenance');
         }
-
         console.log('[Login] Admin access granted during maintenance mode');
       }
 
-      // If it's an email, try direct login first
-      if (memberNumber.includes('@')) {
+      // Try email login first if it's an email
+      if (state.memberNumber.includes('@')) {
         try {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: memberNumber,
-            password: password.trim(),
+          const signInData = await attemptEmailLogin(state.memberNumber, state.password);
+          console.log('[Login] Email login successful');
+          await queryClient.invalidateQueries();
+          toast({
+            title: "Login successful",
+            description: "Welcome back!",
           });
 
-          if (!signInError) {
-            console.log('[Login] Email login successful');
-            await queryClient.invalidateQueries();
-            toast({
-              title: "Login successful",
-              description: "Welcome back!",
-            });
-
-            if (isMobile) {
-              window.location.href = '/';
-            } else {
-              navigate('/', { replace: true });
-            }
-            return;
+          if (isMobile) {
+            window.location.href = '/';
+          } else {
+            navigate('/', { replace: true });
           }
+          return;
         } catch (emailError) {
           console.log('[Login] Direct email login failed, continuing with member flow');
         }
       }
 
-      // For member number flow, first check if it's a valid member number format
-      if (!memberNumber.includes('@') && !/^[A-Z]{2}\d{5}$/.test(memberNumber)) {
-        setError('Invalid member number format. Please use the format XX00000');
+      // Validate member number format
+      validateMemberNumberFormat(state.memberNumber);
+
+      // Get member's email
+      const memberEmail = await getMemberEmail(state.memberNumber);
+
+      // Try to sign in with the member's email
+      try {
+        await attemptEmailLogin(memberEmail, state.password);
+      } catch (signInError: any) {
+        console.error('[Login] Sign in error:', signInError);
+        const failedLoginData = await handleFailedLogin(state.memberNumber);
+
+        if (failedLoginData.locked) {
+          setError(`Account locked due to too many failed attempts. Please try again after ${failedLoginData.lockout_duration}`);
+          return;
+        }
+
+        setError(`Invalid credentials. ${failedLoginData.max_attempts - failedLoginData.attempts} attempts remaining.`);
         return;
       }
 
-      // Proceed with member number flow
-      console.log('[Login] Starting member verification');
-      try {
-        const member = await verifyMember(memberNumber);
-        
-        if (!member.auth_user_id) {
-          setError('Account not set up. Please contact support.');
-          return;
-        }
+      console.log('[Login] Sign in successful, resetting failed attempts');
+      await resetFailedAttempts(state.memberNumber);
 
-        // Get member's email
-        const { data: memberData } = await supabase
-          .from('members')
-          .select('email')
-          .eq('member_number', memberNumber)
-          .maybeSingle();
-          
-        if (!memberData?.email) {
-          setError('Email not set for this member. Please contact support.');
-          return;
-        }
-
-        // Try to sign in with the member's email
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: memberData.email,
-          password: password.trim(),
-        });
-
-        if (signInError) {
-          console.error('[Login] Sign in error:', signInError);
-          const { data: failedLoginData, error: failedLoginError } = await supabase
-            .rpc('handle_failed_login', { member_number: memberNumber });
-
-          if (failedLoginError) throw failedLoginError;
-
-          // Explicitly cast the response to FailedLoginResponse after validating its shape
-          const typedFailedLoginData = failedLoginData as unknown as FailedLoginResponse;
-          
-          // Validate the response has the expected properties
-          if (!typedFailedLoginData || 
-              typeof typedFailedLoginData.locked !== 'boolean' ||
-              typeof typedFailedLoginData.attempts !== 'number' ||
-              typeof typedFailedLoginData.max_attempts !== 'number' ||
-              typeof typedFailedLoginData.lockout_duration !== 'string') {
-            throw new Error('Invalid response from failed login handler');
-          }
-
-          if (typedFailedLoginData.locked) {
-            setError(`Account locked due to too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
-            return;
-          }
-
-          setError(`Invalid credentials. ${typedFailedLoginData.max_attempts - typedFailedLoginData.attempts} attempts remaining.`);
-          return;
-        }
-
-        console.log('[Login] Sign in successful, resetting failed attempts');
-        await supabase.rpc('reset_failed_login', { member_number: memberNumber });
-
-        const { data: memberData2 } = await supabase
-          .from('members')
-          .select('password_reset_required')
-          .eq('member_number', memberNumber)
-          .maybeSingle();
-
-        if (memberData2?.password_reset_required) {
-          console.log('[Login] Password reset required');
-          toast({
-            title: "Password reset required",
-            description: "Please set a new password for your account",
-          });
-          return;
-        }
-
-        await queryClient.invalidateQueries();
-
+      const passwordResetRequired = await checkPasswordResetRequired(state.memberNumber);
+      if (passwordResetRequired) {
+        console.log('[Login] Password reset required');
         toast({
-          title: "Login successful",
-          description: "Welcome back!",
+          title: "Password reset required",
+          description: "Please set a new password for your account",
         });
+        return;
+      }
 
-        if (isMobile) {
-          window.location.href = '/';
-        } else {
-          navigate('/', { replace: true });
-        }
-      } catch (error: any) {
-        if (error.message === 'Member not found or inactive') {
-          setError('Invalid member number or account inactive');
-        } else {
-          setError(error.message || 'An unexpected error occurred');
-        }
+      await queryClient.invalidateQueries();
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+
+      if (isMobile) {
+        window.location.href = '/';
+      } else {
+        navigate('/', { replace: true });
       }
     } catch (error: any) {
       console.error('[Login] Error:', {
@@ -221,12 +149,12 @@ export const useLoginForm = () => {
   };
 
   return {
-    memberNumber,
-    password,
+    memberNumber: state.memberNumber,
+    password: state.password,
+    loading: state.loading,
+    error: state.error,
     setMemberNumber,
     setPassword,
-    loading,
-    handleLogin,
-    error
+    handleLogin
   };
 };
