@@ -101,79 +101,93 @@ export const useLoginForm = () => {
         }
       }
 
+      // For member number flow, first check if it's a valid member number format
+      if (!memberNumber.includes('@') && !/^[A-Z]{2}\d{5}$/.test(memberNumber)) {
+        setError('Invalid member number format. Please use the format XX00000');
+        return;
+      }
+
       // Proceed with member number flow
       console.log('[Login] Starting member verification');
-      const member = await verifyMember(memberNumber);
-      
-      if (!member.auth_user_id) {
-        setError('Account not set up. Please contact support.');
-        return;
-      }
-
-      // Get member's email
-      const { data: memberData } = await supabase
-        .from('members')
-        .select('email')
-        .eq('member_number', memberNumber)
-        .single();
+      try {
+        const member = await verifyMember(memberNumber);
         
-      if (!memberData?.email) {
-        setError('Email not set for this member. Please contact support.');
-        return;
-      }
-
-      // Try to sign in with the member's email
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: memberData.email,
-        password: password.trim(),
-      });
-
-      if (signInError) {
-        console.error('[Login] Sign in error:', signInError);
-        const { data: failedLoginData, error: failedLoginError } = await supabase
-          .rpc('handle_failed_login', { member_number: memberNumber });
-
-        if (failedLoginError) throw failedLoginError;
-
-        const typedFailedLoginData = failedLoginData as unknown as FailedLoginResponse;
-        if (typedFailedLoginData.locked) {
-          setError(`Account locked due to too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
+        if (!member.auth_user_id) {
+          setError('Account not set up. Please contact support.');
           return;
         }
 
-        setError(`Invalid credentials. ${typedFailedLoginData.max_attempts - typedFailedLoginData.attempts} attempts remaining.`);
-        return;
-      }
+        // Get member's email
+        const { data: memberData } = await supabase
+          .from('members')
+          .select('email')
+          .eq('member_number', memberNumber)
+          .maybeSingle();
+          
+        if (!memberData?.email) {
+          setError('Email not set for this member. Please contact support.');
+          return;
+        }
 
-      console.log('[Login] Sign in successful, resetting failed attempts');
-      await supabase.rpc('reset_failed_login', { member_number: memberNumber });
-
-      const { data: memberData2 } = await supabase
-        .from('members')
-        .select('password_reset_required')
-        .eq('member_number', memberNumber)
-        .maybeSingle();
-
-      if (memberData2?.password_reset_required) {
-        console.log('[Login] Password reset required');
-        toast({
-          title: "Password reset required",
-          description: "Please set a new password for your account",
+        // Try to sign in with the member's email
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: memberData.email,
+          password: password.trim(),
         });
-        return;
-      }
 
-      await queryClient.invalidateQueries();
+        if (signInError) {
+          console.error('[Login] Sign in error:', signInError);
+          const { data: failedLoginData, error: failedLoginError } = await supabase
+            .rpc('handle_failed_login', { member_number: memberNumber });
 
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
+          if (failedLoginError) throw failedLoginError;
 
-      if (isMobile) {
-        window.location.href = '/';
-      } else {
-        navigate('/', { replace: true });
+          const typedFailedLoginData = failedLoginData as FailedLoginResponse;
+          if (typedFailedLoginData.locked) {
+            setError(`Account locked due to too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
+            return;
+          }
+
+          setError(`Invalid credentials. ${typedFailedLoginData.max_attempts - typedFailedLoginData.attempts} attempts remaining.`);
+          return;
+        }
+
+        console.log('[Login] Sign in successful, resetting failed attempts');
+        await supabase.rpc('reset_failed_login', { member_number: memberNumber });
+
+        const { data: memberData2 } = await supabase
+          .from('members')
+          .select('password_reset_required')
+          .eq('member_number', memberNumber)
+          .maybeSingle();
+
+        if (memberData2?.password_reset_required) {
+          console.log('[Login] Password reset required');
+          toast({
+            title: "Password reset required",
+            description: "Please set a new password for your account",
+          });
+          return;
+        }
+
+        await queryClient.invalidateQueries();
+
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+
+        if (isMobile) {
+          window.location.href = '/';
+        } else {
+          navigate('/', { replace: true });
+        }
+      } catch (error: any) {
+        if (error.message === 'Member not found or inactive') {
+          setError('Invalid member number or account inactive');
+        } else {
+          setError(error.message || 'An unexpected error occurred');
+        }
       }
     } catch (error: any) {
       console.error('[Login] Error:', {
