@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation, Outlet, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -22,7 +22,8 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
-  const [hasShownAccessDenied, setHasShownAccessDenied] = useState(false);
+  const lastToastTimeRef = useRef<number>(0);
+  const toastDebounceTime = 3000; // 3 seconds between toasts
 
   // Convert path to tab
   const pathToTab = (path: string) => {
@@ -31,6 +32,23 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
   };
 
   const [activeTab, setActiveTab] = useState(pathToTab(location.pathname));
+
+  const showAccessDeniedToast = () => {
+    const now = Date.now();
+    if (now - lastToastTimeRef.current >= toastDebounceTime) {
+      console.log('Showing access denied toast, last toast was shown:', 
+        Math.round((now - lastToastTimeRef.current) / 1000), 'seconds ago');
+      
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this section.",
+        variant: "destructive",
+      });
+      lastToastTimeRef.current = now;
+    } else {
+      console.log('Skipping access denied toast due to debounce');
+    }
+  };
 
   useEffect(() => {
     const newTab = pathToTab(location.pathname);
@@ -49,35 +67,21 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
       // Restrict system and financials to admin only
       if ((newTab === 'system' || newTab === 'financials') && !userRoles.includes('admin')) {
         console.log('Access denied to restricted section');
-        if (!hasShownAccessDenied) {
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to access this section.",
-            variant: "destructive",
-          });
-          setHasShownAccessDenied(true);
-        }
+        showAccessDeniedToast();
         navigate('/dashboard');
         return;
       }
       
       if (!canAccessTab(newTab)) {
         console.log('User cannot access tab:', newTab);
-        if (!hasShownAccessDenied) {
-          toast({
-            title: "Access Denied",
-            description: "You don't have permission to access this section.",
-            variant: "destructive",
-          });
-          setHasShownAccessDenied(true);
-        }
+        showAccessDeniedToast();
         navigate('/dashboard');
         return;
       }
     }
     
     setActiveTab(newTab);
-  }, [location.pathname, navigate, userRoles, userRole, toast, roleLoading, isInitialLoad, hasShownAccessDenied, canAccessTab]);
+  }, [location.pathname, navigate, userRoles, userRole, toast, roleLoading, isInitialLoad, canAccessTab]);
 
   useEffect(() => {
     let mounted = true;
@@ -172,26 +176,12 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
         if (!roleLoading && userRoles) {
           // Restrict system and financials to admin only
           if ((tab === 'system' || tab === 'financials') && !userRoles.includes('admin')) {
-            if (!hasShownAccessDenied) {
-              toast({
-                title: "Access Denied",
-                description: "You don't have permission to access this section.",
-                variant: "destructive",
-              });
-              setHasShownAccessDenied(true);
-            }
+            showAccessDeniedToast();
             return;
           }
           
           if (!canAccessTab(tab)) {
-            if (!hasShownAccessDenied) {
-              toast({
-                title: "Access Denied",
-                description: "You don't have permission to access this section.",
-                variant: "destructive",
-              });
-              setHasShownAccessDenied(true);
-            }
+            showAccessDeniedToast();
             return;
           }
         }
