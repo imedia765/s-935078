@@ -1,113 +1,61 @@
-import { Database } from "@/integrations/supabase/types";
-import { useRoleStore } from '@/store/roleStore';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { hasRole, hasAnyRole, canAccessTab } from '@/utils/roleUtils';
-
-export type UserRole = Database['public']['Enums']['app_role'];
+import { useAuthSession } from './useAuthSession';
+import { useRoleSync } from './useRoleSync';
 
 export const useRoleAccess = () => {
-  const { toast } = useToast();
-  const {
-    userRole,
-    userRoles,
-    isLoading: roleLoading,
-    error,
-    permissions,
-    setUserRole,
-    setUserRoles,
-    setIsLoading,
-    setError
-  } = useRoleStore();
+  const { session } = useAuthSession();
+  const { syncRoles } = useRoleSync();
+  const [initialized, setInitialized] = useState(false);
 
-  const { refetch } = useQuery({
-    queryKey: ['userRoles'],
+  const { data: userRoles = [], isLoading } = useQuery({
+    queryKey: ['userRoles', session?.user?.id],
     queryFn: async () => {
-      console.log('[RoleAccess] Starting role fetch process...');
-      setIsLoading(true);
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.user) {
-          console.log('[RoleAccess] No authenticated session found');
-          setUserRoles(null);
-          setUserRole(null);
-          return null;
-        }
+      if (!session?.user?.id) return [];
 
-        console.log('[RoleAccess] Fetching roles for user:', {
-          userId: session.user.id,
-          email: session.user.email,
-          timestamp: new Date().toISOString()
-        });
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id);
 
-        const { data: roleData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', session.user.id);
-
-        if (rolesError) throw rolesError;
-
-        console.log('[RoleAccess] Raw role data:', roleData);
-
-        const userRoles = roleData?.map(r => r.role as UserRole) || ['member'];
-        console.log('[RoleAccess] Mapped roles:', userRoles);
-
-        // Set primary role (admin > collector > member)
-        const primaryRole = userRoles.includes('admin' as UserRole) 
-          ? 'admin' as UserRole 
-          : userRoles.includes('collector' as UserRole)
-            ? 'collector' as UserRole
-            : 'member' as UserRole;
-
-        console.log('[RoleAccess] Final role determination:', {
-          userRole: primaryRole,
-          userRoles,
-          timestamp: new Date().toISOString()
-        });
-        
-        setUserRoles(userRoles);
-        setUserRole(primaryRole);
-        return userRoles;
-      } catch (error: any) {
-        console.error('[RoleAccess] Role fetch error:', error);
-        setError(error);
+      if (error) {
+        console.error('Error fetching user roles:', error);
         throw error;
-      } finally {
-        setIsLoading(false);
       }
+
+      return data.map(r => r.role);
     },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    gcTime: 1000 * 60 * 5,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 5000, // Poll every 5 seconds
-    meta: {
-      errorMessage: 'Failed to load user roles',
-      onError: (error: Error) => {
-        console.error('[RoleAccess] Role loading error:', error);
-        toast({
-          title: "Error loading roles",
-          description: "There was a problem loading your permissions. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
+    enabled: !!session?.user?.id
   });
 
+  useEffect(() => {
+    const initializeRoles = async () => {
+      if (session?.user?.id && !initialized) {
+        try {
+          await syncRoles(session.user.id);
+          setInitialized(true);
+        } catch (error) {
+          console.error('Failed to initialize roles:', error);
+        }
+      }
+    };
+
+    initializeRoles();
+  }, [session?.user?.id, syncRoles, initialized]);
+
+  const hasRole = (role: string) => {
+    return userRoles.includes(role);
+  };
+
+  const hasAnyRole = (roles: string[]) => {
+    return roles.some(role => hasRole(role));
+  };
+
   return {
-    userRole,
     userRoles,
-    roleLoading,
-    error,
-    permissions,
-    hasRole: (role: UserRole) => hasRole(userRoles, role),
-    hasAnyRole: (roles: UserRole[]) => hasAnyRole(userRoles, roles),
-    canAccessTab: (tab: string) => canAccessTab(tab, userRoles),
-    refetchRoles: refetch
+    hasRole,
+    hasAnyRole,
+    isLoading
   };
 };
