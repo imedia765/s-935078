@@ -24,6 +24,7 @@ vi.mock('@/hooks/use-toast', () => ({
   }),
 }));
 
+
 // Mock react-query
 vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({

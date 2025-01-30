@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { Button } from '../button';
+import { expect } from 'vitest';
+import { cn } from "@/lib/utils";
 import '@testing-library/jest-dom';
 
 describe('Button Component', () => {
