@@ -13,14 +13,22 @@ const LoginForm = () => {
   return (
     <div className="bg-dashboard-card rounded-lg shadow-lg p-8 mb-12">
       {/* WhatsApp Support Notice */}
-      <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-center text-yellow-800">
-          <MessageSquare className="h-5 w-5 mr-2" />
-          <p className="text-sm">
-            Having login issues? Contact us on WhatsApp:
-            <br />
-            <span className="font-medium">Zaheer - 07476 816917</span>
-          </p>
+      <div className="mb-8 bg-dashboard-softGreen border border-dashboard-accent3/20 rounded-lg p-6">
+        <div className="flex items-center space-x-3">
+          <MessageSquare className="h-5 w-5 text-dashboard-accent3" />
+          <div className="text-dashboard-dark">
+            <p className="text-sm font-medium mb-1">
+              Having login issues? Contact us on WhatsApp
+            </p>
+            <a 
+              href="https://wa.me/447476816917"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-dashboard-accent3 hover:text-dashboard-accent3/80 font-semibold transition-colors"
+            >
+              Zaheer - 07476 816917
+            </a>
+          </div>
         </div>
       </div>
 
