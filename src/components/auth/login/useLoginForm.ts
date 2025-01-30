@@ -142,7 +142,18 @@ export const useLoginForm = () => {
 
           if (failedLoginError) throw failedLoginError;
 
-          const typedFailedLoginData = failedLoginData as FailedLoginResponse;
+          // Explicitly cast the response to FailedLoginResponse after validating its shape
+          const typedFailedLoginData = failedLoginData as unknown as FailedLoginResponse;
+          
+          // Validate the response has the expected properties
+          if (!typedFailedLoginData || 
+              typeof typedFailedLoginData.locked !== 'boolean' ||
+              typeof typedFailedLoginData.attempts !== 'number' ||
+              typeof typedFailedLoginData.max_attempts !== 'number' ||
+              typeof typedFailedLoginData.lockout_duration !== 'string') {
+            throw new Error('Invalid response from failed login handler');
+          }
+
           if (typedFailedLoginData.locked) {
             setError(`Account locked due to too many failed attempts. Please try again after ${typedFailedLoginData.lockout_duration}`);
             return;
