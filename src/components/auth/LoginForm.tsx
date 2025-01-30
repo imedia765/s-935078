@@ -17,8 +17,11 @@ const LoginForm = () => {
         <div className="flex items-center space-x-3">
           <MessageSquare className="h-5 w-5 text-dashboard-accent3" />
           <div className="text-dashboard-dark">
-            <p className="text-sm font-medium mb-1">
+            <p className="text-sm font-medium mb-2">
               Having login issues? Contact us on WhatsApp
+            </p>
+            <p className="text-xs text-dashboard-dark/80 mb-2">
+              Please provide your full name and member number when messaging
             </p>
             <a 
               href="https://wa.me/447476816917"
