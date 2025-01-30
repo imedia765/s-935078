@@ -24,9 +24,9 @@ const LoginForm = () => {
               href="https://wa.me/447476816917"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-dashboard-accent3 hover:text-dashboard-accent3/80 font-semibold transition-colors"
+              className="inline-flex items-center text-dashboard-accent3 hover:text-dashboard-accent3/80 font-semibold transition-colors"
             >
-              Zaheer - 07476 816917
+              Open WhatsApp Chat →
             </a>
           </div>
         </div>
