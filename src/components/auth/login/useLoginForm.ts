@@ -83,6 +83,7 @@ export const useLoginForm = () => {
         });
 
         if (signInError) {
+          console.error('[Login] Email login error:', signInError);
           setError('Invalid email or password. Please check your credentials and try again.');
           return;
         }
@@ -123,13 +124,15 @@ export const useLoginForm = () => {
         setError('Email not set for this member. Please contact support.');
         return;
       }
-      
+
+      // Try to sign in with the member's email
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: memberData.email,
         password: password.trim(),
       });
 
       if (signInError) {
+        console.error('[Login] Sign in error:', signInError);
         const { data: failedLoginData, error: failedLoginError } = await supabase
           .rpc('handle_failed_login', { member_number: memberNumber });
 
