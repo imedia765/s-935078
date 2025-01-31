@@ -4,7 +4,7 @@ import { expect, afterEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {
-  url: 'http://localhost:3000',
+  url: 'https://pwaburton.co.uk',
   pretendToBeVisual: true,
   resources: 'usable'
 });

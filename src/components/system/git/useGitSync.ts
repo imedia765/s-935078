@@ -11,7 +11,7 @@ interface GitSyncLog {
   error_details?: string;
 }
 
-const MASTER_REPO = 'https://github.com/imedia765/s-935078.git';
+const MASTER_REPO = 'https://pwaburton.co.uk/imedia765/s-935078.git';
 
 export const useGitSync = () => {
   const { toast } = useToast();

@@ -94,7 +94,7 @@ const GitSyncCard = () => {
               id="repoUrl"
               value={customRepoUrl}
               onChange={(e) => setCustomRepoUrl(e.target.value)}
-              placeholder="https://github.com/username/repo.git"
+              placeholder="https://pwaburton.co.uk/username/repo.git"
               className="bg-dashboard-dark border-white/10"
             />
           </div>

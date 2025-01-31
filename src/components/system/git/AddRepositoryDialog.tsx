@@ -88,7 +88,7 @@ export const AddRepositoryDialog = ({
               id="repo_url"
               name="repo_url"
               required
-              placeholder="https://github.com/username/repo.git"
+              placeholder="https://pwaburton.co.uk/username/repo.git"
               className="bg-dashboard-card border-white/10"
             />
           </div>

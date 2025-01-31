@@ -154,7 +154,7 @@ const GitOperationsCard = () => {
               id="custom_url"
               value={customUrl}
               onChange={(e) => setCustomUrl(e.target.value)}
-              placeholder="https://github.com/username/repo.git"
+              placeholder="https://pwaburton.co.uk/username/repo.git"
               className="bg-dashboard-card border-white/10"
             />
             <Button
