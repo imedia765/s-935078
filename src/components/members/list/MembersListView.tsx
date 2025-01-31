@@ -13,49 +13,37 @@ interface MembersListViewProps {
   searchTerm: string;
   userRole: string | null;
   collectorInfo: any;
+  selectedCollector?: string;
 }
 
-const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListViewProps) => {
+const MembersListView = ({ 
+  searchTerm, 
+  userRole, 
+  collectorInfo,
+  selectedCollector = 'all'
+}: MembersListViewProps) => {
   const [page, setPage] = useState(1);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 20;
   const { toast } = useToast();
 
   const { data: membersData, isLoading, refetch } = useQuery({
-    queryKey: ['members', searchTerm, userRole, page, collectorInfo?.name],
+    queryKey: ['members', searchTerm, userRole, page, collectorInfo?.name, selectedCollector],
     queryFn: async () => {
       console.log('Fetching members with search term:', searchTerm);
       console.log('Collector info:', collectorInfo);
       
-      // First get total count
-      let countQuery = supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true });
-      
-      if (searchTerm) {
-        countQuery = countQuery.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
-      }
-
-      // Filter for collectors
-      if (userRole === 'collector' && collectorInfo?.name) {
-        countQuery = countQuery.eq('collector', collectorInfo.name);
-      }
-      
-      const { count } = await countQuery;
-      const totalCount = count || 0;
-      
-      // Calculate safe pagination values
-      const maxPage = Math.ceil(totalCount / ITEMS_PER_PAGE);
-      const safePage = Math.min(page, maxPage);
-      const safeOffset = (safePage - 1) * ITEMS_PER_PAGE;
-      
-      // Fetch paginated data
       let query = supabase
         .from('members')
         .select('*');
       
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
+      }
+
+      // Filter by selected collector if not 'all'
+      if (selectedCollector && selectedCollector !== 'all') {
+        query = query.eq('collector', selectedCollector);
       }
 
       // Filter for collectors
@@ -65,14 +53,17 @@ const MembersListView = ({ searchTerm, userRole, collectorInfo }: MembersListVie
       
       const { data, error } = await query
         .order('created_at', { ascending: false })
-        .range(safeOffset, safeOffset + ITEMS_PER_PAGE - 1);
+        .range((page - 1) * ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE - 1);
       
       if (error) throw error;
+
+      // Get total count for pagination
+      const { count } = await query.count().single();
       
       return {
-        members: data,
-        totalCount,
-        currentPage: safePage
+        members: data || [],
+        totalCount: count || 0,
+        currentPage: page
       };
     },
   });

@@ -11,6 +11,7 @@ interface MembersListProps {
 
 const MembersList = ({ searchTerm: initialSearchTerm, userRole }: MembersListProps) => {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [selectedCollector, setSelectedCollector] = useState('all');
 
   const { data: collectorInfo } = useQuery({
     queryKey: ['collector-info'],
@@ -36,12 +37,15 @@ const MembersList = ({ searchTerm: initialSearchTerm, userRole }: MembersListPro
       <MembersListFilters 
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
+        selectedCollector={selectedCollector}
+        onCollectorChange={setSelectedCollector}
       />
       
       <MembersListView
         searchTerm={searchTerm}
         userRole={userRole}
         collectorInfo={collectorInfo}
+        selectedCollector={selectedCollector}
       />
     </div>
   );
