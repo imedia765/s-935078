@@ -82,7 +82,7 @@ const MembersListView = ({
         currentPage: page
       };
     },
-    keepPreviousData: true
+    placeholderData: 'keepPrevious'
   });
 
   const handleEditClick = (memberId: string) => {
