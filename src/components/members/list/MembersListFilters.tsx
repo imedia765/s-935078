@@ -64,15 +64,22 @@ const MembersListFilters = ({
                   <SelectValue placeholder="Filter by collector" />
                 </div>
               </SelectTrigger>
-              <SelectContent className="bg-dashboard-card border-dashboard-cardBorder">
-                <SelectItem value="all" className="text-dashboard-text hover:text-white">
+              <SelectContent 
+                className="z-50 min-w-[8rem] overflow-hidden rounded-md border bg-dashboard-card text-dashboard-text shadow-md"
+                position="popper"
+                sideOffset={5}
+              >
+                <SelectItem 
+                  value="all" 
+                  className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-dashboard-cardHover focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                >
                   All Collectors
                 </SelectItem>
                 {collectors?.map((collector) => (
                   <SelectItem 
                     key={collector.id} 
                     value={collector.name || ''}
-                    className="text-dashboard-text hover:text-white"
+                    className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-dashboard-cardHover focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                   >
                     {collector.name}
                   </SelectItem>
