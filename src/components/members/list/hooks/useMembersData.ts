@@ -45,10 +45,9 @@ export const useMembersData = ({
         console.log('Filtering for collector:', collectorInfo.name);
         query = query.eq('collector', collectorInfo.name);
       } else if (selectedCollector && selectedCollector !== 'all') {
-        // If a specific collector is selected from dropdown
-        const prefix = selectedCollector.substring(0, 2);
-        console.log('Filtering by collector prefix:', prefix);
-        query = query.ilike('member_number', `${prefix}%`);
+        // If a specific collector is selected, use direct collector name matching
+        console.log('Filtering by collector:', selectedCollector);
+        query = query.eq('collector', selectedCollector);
       }
 
       // Add pagination
@@ -70,7 +69,7 @@ export const useMembersData = ({
         firstMember: data?.[0],
         appliedFilters: {
           collector: selectedCollector,
-          prefix: selectedCollector !== 'all' ? selectedCollector.substring(0, 2) : null
+          searchTerm
         }
       });
       
@@ -80,7 +79,7 @@ export const useMembersData = ({
         currentPage: page
       };
     },
-    staleTime: 0, // Disable cache to ensure fresh data on every request
-    gcTime: 0 // Changed from cacheTime to gcTime
+    staleTime: 0,
+    gcTime: 0
   });
 };
