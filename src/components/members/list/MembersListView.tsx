@@ -30,42 +30,51 @@ const MembersListView = ({
   const { data: membersData, isLoading, refetch } = useQuery({
     queryKey: ['members', searchTerm, userRole, page, collectorInfo?.name, selectedCollector],
     queryFn: async () => {
-      console.log('Fetching members with search term:', searchTerm);
-      console.log('Selected collector:', selectedCollector);
-      console.log('Collector info:', collectorInfo);
+      console.log('Starting query with params:', {
+        searchTerm,
+        selectedCollector,
+        userRole,
+        collectorInfo
+      });
       
       let query = supabase
         .from('members')
         .select('*', { count: 'exact' });
-      
-      // Build search filter
+
+      // Apply search filter if present
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
-      // Filter by selected collector if not 'all'
-      if (selectedCollector && selectedCollector !== 'all') {
-        console.log('Filtering by collector:', selectedCollector);
+      // Apply collector filter based on role and selection
+      if (userRole === 'collector' && collectorInfo?.name) {
+        // If user is a collector, only show their assigned members
+        console.log('Filtering for collector:', collectorInfo.name);
+        query = query.eq('collector', collectorInfo.name);
+      } else if (selectedCollector && selectedCollector !== 'all') {
+        // If a specific collector is selected (and user has permission to view)
+        console.log('Filtering by selected collector:', selectedCollector);
         query = query.eq('collector', selectedCollector);
       }
-      // Filter for collectors
-      else if (userRole === 'collector' && collectorInfo?.name) {
-        console.log('Filtering by collector info:', collectorInfo.name);
-        query = query.eq('collector', collectorInfo.name);
-      }
 
-      // Get total count and data in one query
-      const { data, error, count } = await query
-        .order('created_at', { ascending: false })
-        .range((page - 1) * ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE - 1);
+      // Add pagination
+      query = query
+        .range((page - 1) * ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE - 1)
+        .order('created_at', { ascending: false });
+
+      console.log('Executing query...');
+      const { data, error, count } = await query;
       
       if (error) {
         console.error('Error fetching members:', error);
         throw error;
       }
       
-      console.log('Fetched members count:', count);
-      console.log('Fetched members:', data);
+      console.log('Query results:', {
+        count,
+        resultsLength: data?.length,
+        firstMember: data?.[0]
+      });
       
       return {
         members: data || [],
@@ -73,6 +82,7 @@ const MembersListView = ({
         currentPage: page
       };
     },
+    keepPreviousData: true
   });
 
   const handleEditClick = (memberId: string) => {
