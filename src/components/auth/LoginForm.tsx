@@ -15,10 +15,11 @@ const LoginForm = () => {
   const { memberNumber, password, setMemberNumber, setPassword, loading, handleLogin, error } = useLoginForm();
   const [supportName, setSupportName] = useState('');
   const [supportIssue, setSupportIssue] = useState('');
+  const [supportMemberNumber, setSupportMemberNumber] = useState('');
 
   const handleWhatsAppSupport = () => {
     const message = encodeURIComponent(
-      `[PWA-SUPPORT]\nMember #: ${supportName ? supportName : 'Not provided'}\nName: ${supportName}\nIssue: ${supportIssue}`
+      `[PWA-SUPPORT]\nMember #: ${supportMemberNumber ? supportMemberNumber : 'Not provided'}\nName: ${supportName}\nIssue: ${supportIssue}`
     );
     window.open(`https://wa.me/447476816917?text=${message}`, '_blank');
   };
@@ -35,6 +36,17 @@ const LoginForm = () => {
             </p>
             
             <div className="space-y-3 mb-4">
+              <div>
+                <Label htmlFor="supportMemberNumber" className="text-xs text-dashboard-dark/80 mb-1">Member Number (if known)</Label>
+                <Input
+                  id="supportMemberNumber"
+                  value={supportMemberNumber}
+                  onChange={(e) => setSupportMemberNumber(e.target.value.toUpperCase())}
+                  placeholder="Enter your member number (e.g. TM12345)"
+                  className="bg-white/80"
+                />
+              </div>
+
               <div>
                 <Label htmlFor="supportName" className="text-xs text-dashboard-dark/80 mb-1">Your Name</Label>
                 <Input
