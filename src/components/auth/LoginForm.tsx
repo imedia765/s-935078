@@ -58,12 +58,12 @@ const LoginForm = () => {
           
           {/* WhatsApp Support Section */}
           <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-dashboard-accent1 hover:bg-dashboard-accent1/90 text-white rounded-lg transition-colors">
+            <CollapsibleTrigger className="flex items-center justify-center w-full p-4 bg-dashboard-accent1 hover:bg-dashboard-accent1/90 text-white rounded-lg transition-colors">
               <div className="flex items-center space-x-2">
                 <MessageSquare className="h-5 w-5" />
                 <span className="font-medium">Need Help? Contact Support</span>
               </div>
-              {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              {isOpen ? <ChevronUp className="h-5 w-5 ml-2" /> : <ChevronDown className="h-5 w-5 ml-2" />}
             </CollapsibleTrigger>
             
             <CollapsibleContent className="mt-2">
