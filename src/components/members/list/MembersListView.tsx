@@ -50,15 +50,17 @@ const MembersListView = ({
       if (userRole === 'collector' && collectorInfo?.name) {
         query = query.eq('collector', collectorInfo.name);
       }
-      
+
+      // Get total count
+      const { count } = await query
+        .select('*', { count: 'exact', head: true });
+
+      // Get paginated data
       const { data, error } = await query
         .order('created_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE - 1);
       
       if (error) throw error;
-
-      // Get total count for pagination
-      const { count } = await query.count().single();
       
       return {
         members: data || [],
