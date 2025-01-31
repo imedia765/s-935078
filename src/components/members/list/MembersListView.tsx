@@ -26,6 +26,9 @@ const MembersListView = ({
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  console.log('MembersListView - Selected Collector:', selectedCollector);
+  console.log('MembersListView - Collector Info:', collectorInfo);
+
   const { data: membersData, isLoading, refetch } = useMembersData({
     searchTerm,
     selectedCollector,
