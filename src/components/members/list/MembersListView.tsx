@@ -31,23 +31,26 @@ const MembersListView = ({
     queryKey: ['members', searchTerm, userRole, page, collectorInfo?.name, selectedCollector],
     queryFn: async () => {
       console.log('Fetching members with search term:', searchTerm);
+      console.log('Selected collector:', selectedCollector);
       console.log('Collector info:', collectorInfo);
       
       let query = supabase
         .from('members')
         .select('*', { count: 'exact' });
       
+      // Build search filter
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
       }
 
       // Filter by selected collector if not 'all'
       if (selectedCollector && selectedCollector !== 'all') {
+        console.log('Filtering by collector:', selectedCollector);
         query = query.eq('collector', selectedCollector);
       }
-
       // Filter for collectors
-      if (userRole === 'collector' && collectorInfo?.name) {
+      else if (userRole === 'collector' && collectorInfo?.name) {
+        console.log('Filtering by collector info:', collectorInfo.name);
         query = query.eq('collector', collectorInfo.name);
       }
 
@@ -56,7 +59,13 @@ const MembersListView = ({
         .order('created_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE - 1);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching members:', error);
+        throw error;
+      }
+      
+      console.log('Fetched members count:', count);
+      console.log('Fetched members:', data);
       
       return {
         members: data || [],
