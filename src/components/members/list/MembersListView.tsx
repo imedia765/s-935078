@@ -43,7 +43,7 @@ const MembersListView = ({
 
       // Apply search filter if present
       if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
+        query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
       }
 
       // Apply collector filter based on role and selection
@@ -52,9 +52,9 @@ const MembersListView = ({
         console.log('Filtering for collector:', collectorInfo.name);
         query = query.eq('collector', collectorInfo.name);
       } else if (selectedCollector && selectedCollector !== 'all') {
-        // If a specific collector is selected (and user has permission to view)
-        console.log('Filtering by selected collector:', selectedCollector);
-        query = query.eq('collector', selectedCollector);
+        // If a specific collector is selected from dropdown
+        console.log('Filtering by selected collector prefix:', selectedCollector.substring(0, 2));
+        query = query.ilike('member_number', `${selectedCollector.substring(0, 2)}%`);
       }
 
       // Add pagination
