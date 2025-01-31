@@ -34,7 +34,8 @@ const MembersListView = ({
         searchTerm,
         selectedCollector,
         userRole,
-        collectorInfo
+        collectorInfo,
+        page
       });
       
       let query = supabase
@@ -44,6 +45,7 @@ const MembersListView = ({
       // Apply search filter if present
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
+        console.log('Applied search filter:', searchTerm);
       }
 
       // Apply collector filter based on role and selection
@@ -53,8 +55,9 @@ const MembersListView = ({
         query = query.eq('collector', collectorInfo.name);
       } else if (selectedCollector && selectedCollector !== 'all') {
         // If a specific collector is selected from dropdown
-        console.log('Filtering by selected collector prefix:', selectedCollector.substring(0, 2));
-        query = query.ilike('member_number', `${selectedCollector.substring(0, 2)}%`);
+        const prefix = selectedCollector.substring(0, 2);
+        console.log('Filtering by collector prefix:', prefix);
+        query = query.ilike('member_number', `${prefix}%`);
       }
 
       // Add pagination
@@ -73,7 +76,11 @@ const MembersListView = ({
       console.log('Query results:', {
         count,
         resultsLength: data?.length,
-        firstMember: data?.[0]
+        firstMember: data?.[0],
+        appliedFilters: {
+          collector: selectedCollector,
+          prefix: selectedCollector !== 'all' ? selectedCollector.substring(0, 2) : null
+        }
       });
       
       return {
@@ -82,7 +89,7 @@ const MembersListView = ({
         currentPage: page
       };
     },
-    placeholderData: (previousData) => previousData
+    placeholderData: (previousData) => previousData,
   });
 
   const handleEditClick = (memberId: string) => {
