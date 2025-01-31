@@ -35,7 +35,7 @@ const MembersListView = ({
       
       let query = supabase
         .from('members')
-        .select('*');
+        .select('*', { count: 'exact' });
       
       if (searchTerm) {
         query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,collector.ilike.%${searchTerm}%`);
@@ -51,12 +51,8 @@ const MembersListView = ({
         query = query.eq('collector', collectorInfo.name);
       }
 
-      // Get total count
-      const { count } = await query
-        .select('*', { count: 'exact', head: true });
-
-      // Get paginated data
-      const { data, error } = await query
+      // Get total count and data in one query
+      const { data, error, count } = await query
         .order('created_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE + ITEMS_PER_PAGE - 1);
       
