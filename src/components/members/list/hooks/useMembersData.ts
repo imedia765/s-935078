@@ -80,7 +80,7 @@ export const useMembersData = ({
         currentPage: page
       };
     },
-    staleTime: 0, // Disable caching to ensure fresh data on every request
-    cacheTime: 0
+    staleTime: 0, // Disable cache to ensure fresh data on every request
+    gcTime: 0 // Changed from cacheTime to gcTime
   });
 };
