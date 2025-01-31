@@ -65,13 +65,14 @@ const MembersListFilters = ({
                 </div>
               </SelectTrigger>
               <SelectContent 
-                className="z-50 min-w-[8rem] overflow-hidden rounded-md border bg-dashboard-card text-dashboard-text shadow-md"
+                className="bg-dashboard-card border-dashboard-cardBorder"
                 position="popper"
                 sideOffset={5}
+                align="end"
               >
                 <SelectItem 
-                  value="all" 
-                  className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-dashboard-cardHover focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                  value="all"
+                  className="text-dashboard-text hover:bg-dashboard-cardHover hover:text-white"
                 >
                   All Collectors
                 </SelectItem>
@@ -79,7 +80,7 @@ const MembersListFilters = ({
                   <SelectItem 
                     key={collector.id} 
                     value={collector.name || ''}
-                    className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-dashboard-cardHover focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                    className="text-dashboard-text hover:bg-dashboard-cardHover hover:text-white"
                   >
                     {collector.name}
                   </SelectItem>
