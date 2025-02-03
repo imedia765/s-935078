@@ -5,8 +5,28 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+const Instructions = ({ isReset }: { isReset: boolean }) => (
+  <div className="mb-6 text-sm text-gray-400">
+    {isReset ? (
+      <p>Please enter your new password below. Make sure it's secure and unique.</p>
+    ) : (
+      <div className="space-y-2">
+        <p>To reset your password, please provide:</p>
+        <ul className="list-disc list-inside">
+          <li>Your member number</li>
+          <li>Your registered email address</li>
+          <li>Your contact number for verification</li>
+        </ul>
+        <p>We'll send you instructions to reset your password.</p>
+      </div>
+    )}
+  </div>
+);
+
 export const ResetPassword = () => {
   const [memberNumber, setMemberNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchParams] = useSearchParams();
   const [newPassword, setNewPassword] = useState("");
@@ -31,6 +51,16 @@ export const ResetPassword = () => {
           variant: "destructive",
           title: "Error",
           description: "Member number not found",
+        });
+        return;
+      }
+
+      // Validate email matches
+      if (member.email.toLowerCase() !== email.toLowerCase()) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Email address does not match our records",
         });
         return;
       }
@@ -136,6 +166,8 @@ export const ResetPassword = () => {
           {token ? "Reset Password" : "Forgot Password"}
         </h1>
 
+        <Instructions isReset={!!token} />
+
         {!token ? (
           <form onSubmit={handleRequestReset} className="space-y-4">
             <div>
@@ -148,6 +180,36 @@ export const ResetPassword = () => {
                 placeholder="Enter your member number"
                 value={memberNumber}
                 onChange={(e) => setMemberNumber(e.target.value)}
+                className="bg-black/40"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm mb-2">
+                Email Address
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-black/40"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="contactNumber" className="block text-sm mb-2">
+                Contact Number
+              </label>
+              <Input
+                id="contactNumber"
+                type="tel"
+                placeholder="Enter your contact number"
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
                 className="bg-black/40"
                 disabled={isLoading}
               />
