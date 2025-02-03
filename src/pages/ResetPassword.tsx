@@ -102,11 +102,14 @@ export const ResetPassword = () => {
         return;
       }
 
-      // Reset password
-      const { error: resetError } = await supabase.rpc("handle_password_reset", {
-        token_value: token,
-        new_password: newPassword,
-      });
+      // Reset password using the correct function
+      const { error: resetError } = await supabase.rpc(
+        "handle_password_reset_with_token",
+        {
+          token_value: token,
+          new_password: newPassword,
+        }
+      );
 
       if (resetError) throw resetError;
 
