@@ -2,14 +2,79 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, Bell, CreditCard } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 export const Index = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic
+    setIsLoading(true);
+
+    try {
+      // First check if member exists and is active
+      const { data: member, error: memberError } = await supabase
+        .from("members")
+        .select("*")
+        .eq("member_number", memberNumber)
+        .single();
+
+      if (memberError || !member) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Member number not found",
+        });
+        return;
+      }
+
+      if (member.status !== "active") {
+        toast({
+          variant: "destructive",
+          title: "Account Inactive",
+          description: "Please contact support to activate your account",
+        });
+        return;
+      }
+
+      // Attempt to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: `${memberNumber.toLowerCase()}@temp.com`,
+        password,
+      });
+
+      if (signInError) {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: signInError.message,
+        });
+        return;
+      }
+
+      // Success - redirect to profile
+      toast({
+        title: "Welcome back!",
+        description: "Successfully logged in",
+      });
+      navigate("/profile");
+
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred",
+      });
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -73,6 +138,7 @@ export const Index = () => {
                 value={memberNumber}
                 onChange={(e) => setMemberNumber(e.target.value)}
                 className="bg-black/40"
+                disabled={isLoading}
               />
             </div>
 
@@ -92,11 +158,16 @@ export const Index = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-black/40"
+                disabled={isLoading}
               />
             </div>
 
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-              Login
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-primary/90"
+              disabled={isLoading}
+            >
+              {isLoading ? "Logging in..." : "Login"}
             </Button>
 
             <div className="text-center space-y-4">
