@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Shield, Bell, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export const Index = () => {
   const [memberNumber, setMemberNumber] = useState("");
@@ -50,6 +50,15 @@ export const Index = () => {
       });
 
       if (signInError) {
+        // Handle failed login attempt
+        const { error: loginError } = await supabase.rpc("handle_failed_login", {
+          member_number: memberNumber,
+        });
+
+        if (loginError) {
+          console.error("Error handling failed login:", loginError);
+        }
+
         toast({
           variant: "destructive",
           title: "Login Failed",
@@ -147,9 +156,14 @@ export const Index = () => {
                 <label htmlFor="password" className="block text-sm">
                   Password
                 </label>
-                <a href="#" className="text-sm text-primary hover:underline">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-sm text-primary hover:underline px-0"
+                  onClick={() => navigate("/reset-password")}
+                >
                   Forgot Password?
-                </a>
+                </Button>
               </div>
               <Input
                 id="password"
