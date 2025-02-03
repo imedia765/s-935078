@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,6 +18,7 @@ serve(async (req) => {
 
     console.log("Sending password reset email to:", email);
     console.log("Reset URL:", resetUrl);
+    console.log("Member Number:", memberNumber);
 
     const client = new SMTPClient({
       connection: {
