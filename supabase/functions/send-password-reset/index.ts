@@ -12,15 +12,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let client: SMTPClient | null = null;
+
   try {
     const { email, memberNumber, token } = await req.json();
     const resetUrl = `${req.headers.get("origin")}/reset-password?token=${token}`;
 
-    console.log("Sending password reset email to:", email);
-    console.log("Reset URL:", resetUrl);
+    console.log("Starting password reset email process");
+    console.log("Email:", email);
     console.log("Member Number:", memberNumber);
+    console.log("Reset URL:", resetUrl);
 
-    const client = new SMTPClient({
+    client = new SMTPClient({
       connection: {
         hostname: "smtp.gmail.com",
         port: 587,
@@ -48,9 +51,7 @@ serve(async (req) => {
       `,
     });
 
-    await client.close();
-
-    console.log("Email sent successfully to:", email);
+    console.log("Email sent successfully");
 
     return new Response(
       JSON.stringify({ message: "Password reset email sent successfully" }),
@@ -61,13 +62,26 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error sending password reset email:", error);
+    console.error("Error in send-password-reset function:", error);
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: "Failed to send password reset email"
+      }),
       {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
+  } finally {
+    if (client) {
+      try {
+        await client.close();
+        console.log("SMTP connection closed");
+      } catch (error) {
+        console.error("Error closing SMTP connection:", error);
+      }
+    }
   }
 });
