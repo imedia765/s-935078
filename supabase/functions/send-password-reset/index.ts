@@ -19,7 +19,7 @@ serve(async (req) => {
     const resetUrl = `${req.headers.get("origin")}/reset-password?token=${token}`;
 
     const { data, error } = await resend.emails.send({
-      from: "PWA Burton <burtonpwa@gmail.com>",
+      from: "PWA Burton <onboarding@resend.dev>", // Changed to use resend.dev domain
       to: [email],
       subject: "Reset Your Password",
       html: `
@@ -41,6 +41,7 @@ serve(async (req) => {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error) {
+    console.error("Error sending password reset email:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
