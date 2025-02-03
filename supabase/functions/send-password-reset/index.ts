@@ -1,12 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { SMTPClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
@@ -21,14 +18,26 @@ serve(async (req) => {
     console.log("Sending password reset email to:", email);
     console.log("Reset URL:", resetUrl);
 
-    const { data, error } = await resend.emails.send({
-      from: "PWA Burton <onboarding@resend.dev>",
-      to: ["burtonpwa@gmail.com"], // Send to verified email in test mode
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 587,
+        tls: true,
+        auth: {
+          username: "burtonpwa@gmail.com",
+          password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
+        }
+      }
+    });
+
+    await client.send({
+      from: "PWA Burton <burtonpwa@gmail.com>",
+      to: email,
       subject: "Reset Your Password",
+      content: "Please enable HTML to view this email",
       html: `
         <h1>Password Reset Request</h1>
         <p>Hello Member ${memberNumber},</p>
-        <p>[TEST MODE] This email was intended for: ${email}</p>
         <p>We received a request to reset your password. Click the link below to set a new password:</p>
         <p><a href="${resetUrl}">Reset Password</a></p>
         <p>If you didn't request this, you can safely ignore this email.</p>
@@ -37,17 +46,18 @@ serve(async (req) => {
       `,
     });
 
-    if (error) {
-      console.error("Resend API error:", error);
-      throw error;
-    }
+    await client.close();
 
-    console.log("Email sent successfully:", data);
+    console.log("Email sent successfully to:", email);
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response(
+      JSON.stringify({ message: "Password reset email sent successfully" }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+
   } catch (error) {
     console.error("Error sending password reset email:", error);
     return new Response(
