@@ -27,10 +27,12 @@ serve(async (req) => {
     
     const resetLink = `${req.headers.get("origin")}/reset-password?token=${token}`;
 
-    // Initialize SMTP client
+    // Initialize SMTP client with connection config
     client = new SmtpClient();
+    
+    console.log("Connecting to SMTP server...");
 
-    // Connect to SMTP server
+    // Connect with explicit TLS
     await client.connectTLS({
       hostname: "smtp.gmail.com",
       port: 587,
@@ -38,20 +40,37 @@ serve(async (req) => {
       password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
     });
 
-    // Send email
+    console.log("Connected to SMTP server, sending email...");
+
+    // Send email with enhanced HTML template
     await client.send({
       from: "PWA Burton <burtonpwa@gmail.com>",
       to: email,
       subject: "Reset Your Password",
       content: "Please enable HTML to view this email",
       html: `
-        <h1>Password Reset Request</h1>
-        <p>Hello Member ${memberNumber},</p>
-        <p>We received a request to reset your password. Click the link below to set a new password:</p>
-        <p><a href="${resetLink}">Reset Password</a></p>
-        <p>If you didn't request this, you can safely ignore this email.</p>
-        <p>This link will expire in 1 hour.</p>
-        <p>Best regards,<br>PWA Burton Team</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #333;">Password Reset Request</h1>
+          <p>Hello Member ${memberNumber},</p>
+          <p>We received a request to reset your password. Click the button below to set a new password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}" 
+               style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+              Reset Password
+            </a>
+          </div>
+          <p>If you didn't request this, you can safely ignore this email.</p>
+          <p>This link will expire in 1 hour.</p>
+          <p style="color: #666; font-size: 14px;">
+            If the button above doesn't work, copy and paste this link into your browser:<br>
+            <span style="color: #0066cc;">${resetLink}</span>
+          </p>
+          <hr style="border: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #666; font-size: 12px;">
+            Best regards,<br>
+            PWA Burton Team
+          </p>
+        </div>
       `,
     });
 
