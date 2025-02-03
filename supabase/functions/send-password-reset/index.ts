@@ -27,18 +27,18 @@ serve(async (req) => {
     
     const resetLink = `${req.headers.get("origin")}/reset-password?token=${token}`;
 
-    client = new SmtpClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 587,
-        tls: true,
-        auth: {
-          username: "burtonpwa@gmail.com",
-          password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
-        }
-      }
+    // Initialize SMTP client
+    client = new SmtpClient();
+
+    // Connect to SMTP server
+    await client.connectTLS({
+      hostname: "smtp.gmail.com",
+      port: 587,
+      username: "burtonpwa@gmail.com",
+      password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
     });
 
+    // Send email
     await client.send({
       from: "PWA Burton <burtonpwa@gmail.com>",
       to: email,
