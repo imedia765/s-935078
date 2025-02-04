@@ -28,35 +28,29 @@ export function RoleManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("table");
 
-  // Query for all users and their roles
+  // Query for all users and their roles using members table
   const { data: userData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      console.log("Fetching all users data...");
-      const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
+      console.log("Fetching users data from members table...");
+      const { data: members, error: membersError } = await supabase
+        .from('members')
+        .select(`
+          auth_user_id,
+          email,
+          user_roles (role)
+        `);
       
-      if (usersError) {
-        console.error("Users fetch error:", usersError);
-        throw usersError;
+      if (membersError) {
+        console.error("Members fetch error:", membersError);
+        throw membersError;
       }
 
-      // Get roles for each user
-      const usersWithRoles = await Promise.all(
-        users.users.map(async (user) => {
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id);
-          
-          return {
-            id: user.id,
-            email: user.email,
-            user_roles: roles || []
-          };
-        })
-      );
-
-      return usersWithRoles as User[];
+      return members.map(member => ({
+        id: member.auth_user_id,
+        email: member.email,
+        user_roles: member.user_roles || []
+      })) as User[];
     }
   });
 
@@ -168,130 +162,116 @@ export function RoleManagement() {
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by email or ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <TabsList>
+        <TabsTrigger value="table">Table View</TabsTrigger>
+        <TabsTrigger value="errors">Error View</TabsTrigger>
+        <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+      </TabsList>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="table">Table View</TabsTrigger>
-          <TabsTrigger value="errors">Error View</TabsTrigger>
-          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="table">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Roles</TableHead>
-                  <TableHead>Actions</TableHead>
+      <TabsContent value="table">
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Roles</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers?.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell className="font-mono text-sm">{user.id}</TableCell>
+                  <TableCell>
+                    {user.user_roles?.map((role: any) => role.role).join(", ")}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateMagicLink(user.id)}
+                    >
+                      Generate Magic Link
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell className="font-mono text-sm">{user.id}</TableCell>
-                    <TableCell>
-                      {user.user_roles?.map((role: any) => role.role).join(", ")}
-                    </TableCell>
-                    <TableCell>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="errors">
+        <div className="space-y-4">
+          {roleValidation?.validation?.map((validation: any, index: number) => (
+            <Alert
+              key={index}
+              variant={validation.status === 'Good' ? 'default' : 'destructive'}
+              className="glass-card"
+            >
+              {validation.status === 'Good' ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertTitle className="flex items-center justify-between">
+                <span>{validation.check_type}</span>
+                <div className="flex gap-2">
+                  {validation.status !== 'Good' && (
+                    <>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => generateMagicLink(user.id)}
+                        onClick={() => handleFixRoleError(validation.details?.user_id, validation.check_type)}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Fix Issue
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generateMagicLink(validation.details?.user_id)}
                       >
                         Generate Magic Link
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="errors">
-          <div className="space-y-4">
-            {roleValidation?.validation?.map((validation: any, index: number) => (
-              <Alert
-                key={index}
-                variant={validation.status === 'Good' ? 'default' : 'destructive'}
-                className="glass-card"
-              >
-                {validation.status === 'Good' ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-                <AlertTitle className="flex items-center justify-between">
-                  <span>{validation.check_type}</span>
-                  <div className="flex gap-2">
-                    {validation.status !== 'Good' && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleFixRoleError(validation.details?.user_id, validation.check_type)}
-                        >
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Fix Issue
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => generateMagicLink(validation.details?.user_id)}
-                        >
-                          Generate Magic Link
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </AlertTitle>
-                <AlertDescription>
-                  <pre className="mt-2 text-sm whitespace-pre-wrap">
-                    {JSON.stringify(validation.details, null, 2)}
-                  </pre>
-                </AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <div className="glass-card p-4">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Recent Role Changes
-            </h3>
-            <ScrollArea className="h-[200px]">
-              {roleValidation?.auditLogs?.map((log: any, index: number) => (
-                <div key={index} className="mb-2 p-2 border-b last:border-0">
-                  <div className="flex justify-between text-sm">
-                    <span>{new Date(log.timestamp).toLocaleString()}</span>
-                    <span className="font-medium">{log.operation}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {JSON.stringify(log.new_values)}
-                  </div>
+                    </>
+                  )}
                 </div>
-              ))}
-            </ScrollArea>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+              </AlertTitle>
+              <AlertDescription>
+                <pre className="mt-2 text-sm whitespace-pre-wrap">
+                  {JSON.stringify(validation.details, null, 2)}
+                </pre>
+              </AlertDescription>
+            </Alert>
+          ))}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="audit">
+        <div className="glass-card p-4">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Recent Role Changes
+          </h3>
+          <ScrollArea className="h-[200px]">
+            {roleValidation?.auditLogs?.map((log: any, index: number) => (
+              <div key={index} className="mb-2 p-2 border-b last:border-0">
+                <div className="flex justify-between text-sm">
+                  <span>{new Date(log.timestamp).toLocaleString()}</span>
+                  <span className="font-medium">{log.operation}</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {JSON.stringify(log.new_values)}
+                </div>
+              </div>
+            ))}
+          </ScrollArea>
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 }
