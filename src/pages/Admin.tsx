@@ -112,27 +112,52 @@ export default function Admin() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6 text-gradient">Admin Dashboard</h1>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList>
-          <TabsTrigger value="system">System Health</TabsTrigger>
-          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-          <TabsTrigger value="roles">Role Management</TabsTrigger>
-          <TabsTrigger value="members">Member Search</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+        <TabsList className="w-full justify-start bg-black/40 backdrop-blur-xl border border-white/10">
+          <TabsTrigger 
+            value="system"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
+            System Health
+          </TabsTrigger>
+          <TabsTrigger 
+            value="audit"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
+            Audit Logs
+          </TabsTrigger>
+          <TabsTrigger 
+            value="roles"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
+            Role Management
+          </TabsTrigger>
+          <TabsTrigger 
+            value="members"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
+            Member Search
+          </TabsTrigger>
+          <TabsTrigger 
+            value="maintenance"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
+            Maintenance
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="system">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">System Health Checks</h2>
+          <Card className="p-6 glass-card">
+            <h2 className="text-xl font-semibold mb-4 text-gradient">System Health Checks</h2>
             {systemError && <ErrorAlert error={systemError as Error} />}
             {isLoadingChecks ? (
               <p>Loading system checks...</p>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-primary/5">
                     <TableHead>Check Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Details</TableHead>
@@ -140,19 +165,19 @@ export default function Admin() {
                 </TableHeader>
                 <TableBody>
                   {systemChecks?.map((check: any, index: number) => (
-                    <TableRow key={index}>
+                    <TableRow key={index} className="hover:bg-primary/5">
                       <TableCell>{check.check_type}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded ${
-                          check.status === 'Good' ? 'bg-green-100 text-green-800' :
-                          check.status === 'Warning' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
+                          check.status === 'Good' ? 'bg-green-500/20 text-green-400' :
+                          check.status === 'Warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-red-500/20 text-red-400'
                         }`}>
                           {check.status}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <pre className="text-sm whitespace-pre-wrap">
+                        <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
                           {JSON.stringify(check.details, null, 2)}
                         </pre>
                       </TableCell>
@@ -165,15 +190,15 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="audit">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Audit Activity</h2>
+          <Card className="p-6 glass-card">
+            <h2 className="text-xl font-semibold mb-4 text-gradient">Audit Activity</h2>
             {auditError && <ErrorAlert error={auditError as Error} />}
             {isLoadingAudit ? (
               <p>Loading audit logs...</p>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-primary/5">
                     <TableHead>Time</TableHead>
                     <TableHead>Operation</TableHead>
                     <TableHead>Count</TableHead>
@@ -181,7 +206,7 @@ export default function Admin() {
                 </TableHeader>
                 <TableBody>
                   {auditActivity?.map((activity: any, index: number) => (
-                    <TableRow key={index}>
+                    <TableRow key={index} className="hover:bg-primary/5">
                       <TableCell>{new Date(activity.hour_bucket).toLocaleString()}</TableCell>
                       <TableCell>{activity.operation}</TableCell>
                       <TableCell>{activity.count}</TableCell>
@@ -194,26 +219,25 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="roles">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Role Management</h2>
+          <Card className="p-6 glass-card">
+            <h2 className="text-xl font-semibold mb-4 text-gradient">Role Management</h2>
             <RoleManagement />
           </Card>
         </TabsContent>
 
         <TabsContent value="members">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Member Search</h2>
+          <Card className="p-6 glass-card">
+            <h2 className="text-xl font-semibold mb-4 text-gradient">Member Search</h2>
             <MemberSearch />
           </Card>
         </TabsContent>
 
         <TabsContent value="maintenance">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">System Maintenance</h2>
+          <Card className="p-6 glass-card">
+            <h2 className="text-xl font-semibold mb-4 text-gradient">System Maintenance</h2>
             <MaintenanceManagement />
           </Card>
         </TabsContent>
-
       </Tabs>
     </div>
   );
