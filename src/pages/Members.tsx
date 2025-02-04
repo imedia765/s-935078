@@ -58,7 +58,6 @@ interface MemberFormData {
 
 export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('full_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -307,18 +306,10 @@ export default function Members() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h1 className="text-2xl font-bold text-gradient">Members List</h1>
           <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-            <div className="relative flex-1 md:flex-initial">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search members..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  debouncedSearch(e.target.value);
-                }}
-                className="pl-9 w-full bg-card text-card-foreground"
-              />
-            </div>
+            <SearchInput
+              placeholder="Search members..."
+              onSearch={setDebouncedSearchTerm}
+            />
             <Select
               value={selectedCollector}
               onValueChange={(value) => setSelectedCollector(value)}
