@@ -51,7 +51,7 @@ export function MaintenanceManagement() {
     }
   });
 
-  // Query system health with mapping from details to check_details
+  // Query system health with updated field names
   const { data: systemHealth } = useQuery({
     queryKey: ["systemHealth"],
     queryFn: async () => {
@@ -60,11 +60,7 @@ export function MaintenanceManagement() {
         console.error("System health check error:", error);
         throw error;
       }
-      // Map the response data to match our interface
-      return data.map((check: any) => ({
-        ...check,
-        check_details: check.details || {},  // Map details to check_details
-      })) as SystemCheck[];
+      return data as SystemCheck[];
     }
   });
 
@@ -187,14 +183,18 @@ export function MaintenanceManagement() {
                       {check.status}
                     </div>
                     <div className="mt-2 text-sm text-muted-foreground">
-                      <div className="flex justify-between">
-                        <span>{check.metric_name}:</span>
-                        <span>{check.current_value}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Threshold:</span>
-                        <span>{check.threshold}</span>
-                      </div>
+                      {check.metric_name && (
+                        <div className="flex justify-between">
+                          <span>{check.metric_name}:</span>
+                          <span>{check.current_value}</span>
+                        </div>
+                      )}
+                      {check.threshold && (
+                        <div className="flex justify-between">
+                          <span>Threshold:</span>
+                          <span>{check.threshold}</span>
+                        </div>
+                      )}
                       {Object.entries(check.check_details || {}).map(([key, value]) => (
                         <div key={key} className="flex justify-between">
                           <span>{key.replace(/_/g, ' ')}:</span>
@@ -222,7 +222,6 @@ export function MaintenanceManagement() {
               </Button>
             </div>
 
-            {/* Maintenance History */}
             <div className="mt-8">
               <h3 className="text-lg font-medium mb-4">Maintenance History</h3>
               {isLoadingHistory ? (

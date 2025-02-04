@@ -1739,7 +1739,7 @@ export type Database = {
           current_value: number
           threshold: number
           status: string
-          details: Json
+          check_details: Json
           test_category: string
         }[]
       }
