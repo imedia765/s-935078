@@ -47,7 +47,6 @@ export function FinancialManagement() {
     }
   });
 
-  // Calculate statistics
   const stats = memberStats ? {
     totalMembers: memberStats.length,
     directMembers: memberStats.filter(m => !m.members_collectors).length,
@@ -68,7 +67,6 @@ export function FinancialManagement() {
     }, { '0-17': 0, '18-29': 0, '30-49': 0, '50-69': 0, '70+': 0 })
   } : null;
 
-  // Fetch collectors data
   const { data: collectorsData, isLoading: loadingCollectors } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
@@ -81,7 +79,7 @@ export function FinancialManagement() {
           email,
           phone,
           active,
-          members:members(
+          members!members_collector_id_fkey (
             id,
             full_name,
             payment_amount,
@@ -96,7 +94,6 @@ export function FinancialManagement() {
     }
   });
 
-  // Fetch all payments
   const { data: paymentsData, isLoading: loadingPayments } = useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
@@ -109,8 +106,12 @@ export function FinancialManagement() {
           payment_type,
           status,
           created_at,
-          member:members(full_name),
-          collector:members_collectors(name)
+          members!payment_requests_member_id_fkey (
+            full_name
+          ),
+          members_collectors!payment_requests_collector_id_fkey (
+            name
+          )
         `)
         .order('created_at', { ascending: false });
       
@@ -146,18 +147,19 @@ export function FinancialManagement() {
 
   const COLORS = ['#8c5dd3', '#3b82f6', '#22c55e'];
 
-  // Calculate collector statistics
   const collectorStats = collectorsData ? {
     totalCollectors: collectorsData.length,
     activeCollectors: collectorsData.filter(c => c.active).length,
     totalCollected: collectorsData.reduce((sum, collector) => {
-      return sum + (collector.members?.reduce((memberSum, member) => 
-        memberSum + (member.payment_amount || 0), 0) || 0);
+      const memberPayments = (collector.members || []).reduce((memberSum, member) => 
+        memberSum + (member.payment_amount || 0), 0);
+      return sum + memberPayments;
     }, 0),
     averageCollection: collectorsData.length ? (
       collectorsData.reduce((sum, collector) => {
-        return sum + (collector.members?.reduce((memberSum, member) => 
-          memberSum + (member.payment_amount || 0), 0) || 0);
+        const memberPayments = (collector.members || []).reduce((memberSum, member) => 
+          memberSum + (member.payment_amount || 0), 0);
+        return sum + memberPayments;
       }, 0) / collectorsData.length
     ).toFixed(2) : 0
   } : null;
@@ -353,9 +355,9 @@ export function FinancialManagement() {
                             {collector.active ? 'Active' : 'Inactive'}
                           </span>
                         </TableCell>
-                        <TableCell>{collector.members?.length || 0}</TableCell>
-                        <TableCell>£{collector.members?.reduce((sum, member) => 
-                          sum + (member.payment_amount || 0), 0) || 0}</TableCell>
+                        <TableCell>{(collector.members || []).length}</TableCell>
+                        <TableCell>£{(collector.members || []).reduce((sum, member) => 
+                          sum + (member.payment_amount || 0), 0)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -387,8 +389,8 @@ export function FinancialManagement() {
                   {paymentsData?.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>{payment.member?.full_name}</TableCell>
-                      <TableCell>{payment.collector?.name}</TableCell>
+                      <TableCell>{payment.members?.full_name}</TableCell>
+                      <TableCell>{payment.members_collectors?.name}</TableCell>
                       <TableCell>£{payment.amount}</TableCell>
                       <TableCell className="capitalize">{payment.payment_method}</TableCell>
                       <TableCell className="capitalize">{payment.payment_type}</TableCell>
