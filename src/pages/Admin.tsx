@@ -28,7 +28,9 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks');
+        const { data, error } = await supabase.rpc('run_combined_system_checks', {
+          select: 'check_type, status, system_details:details'
+        });
         if (error) {
           console.error("System checks error:", error);
           throw error;
@@ -138,7 +140,7 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                          {JSON.stringify(check.details || {}, null, 2)}
+                          {JSON.stringify(check.system_details || {}, null, 2)}
                         </pre>
                       </TableCell>
                     </TableRow>
