@@ -138,7 +138,7 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                          {JSON.stringify(check.details || {}, null, 2)}
+                          {JSON.stringify(check.check_details || {}, null, 2)}
                         </pre>
                       </TableCell>
                     </TableRow>
