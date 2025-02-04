@@ -1,16 +1,17 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
-import { User, Settings, Users, LogOut } from "lucide-react"
+import { User, Settings, Users, LogOut, Loader2 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
 
-  const { data: session } = useQuery({
+  const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -18,7 +19,7 @@ export const Navigation = () => {
     }
   })
 
-  const { data: userRoles } = useQuery({
+  const { data: userRoles, isLoading: rolesLoading } = useQuery({
     queryKey: ["userRoles"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -48,62 +49,82 @@ export const Navigation = () => {
   }
 
   const isActive = (path: string) => location.pathname === path
-  const isAdmin = userRoles?.includes("admin")
-  const isCollector = userRoles?.includes("collector")
+  const hasAccess = (requiredRole: string) => {
+    if (!userRoles) return false
+    return userRoles.includes('admin') || userRoles.includes(requiredRole)
+  }
 
   const menuItems = [
-    { path: "/profile", icon: <User className="mr-2 h-4 w-4" />, label: "Profile" },
+    { 
+      path: "/profile", 
+      icon: <User className="mr-2 h-4 w-4" />, 
+      label: "Profile",
+      show: true
+    },
+    { 
+      path: "/members", 
+      icon: <Users className="mr-2 h-4 w-4" />, 
+      label: "Members",
+      show: hasAccess('collector')
+    },
+    { 
+      path: "/admin", 
+      icon: <Settings className="mr-2 h-4 w-4" />, 
+      label: "Admin",
+      show: hasAccess('admin')
+    }
   ]
 
-  if (isCollector || isAdmin) {
-    menuItems.push({
-      path: "/members",
-      icon: <Users className="mr-2 h-4 w-4" />,
-      label: "Members"
-    })
-  }
-
-  if (isAdmin) {
-    menuItems.push({
-      path: "/admin",
-      icon: <Settings className="mr-2 h-4 w-4" />,
-      label: "Admin"
-    })
-  }
+  const isLoading = sessionLoading || rolesLoading
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center py-2 border-b border-white/10">
-          <p className="text-lg font-arabic text-primary">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
+        <div className="text-center py-4 border-b border-white/10">
+          <p className="text-xl font-arabic text-primary tracking-wider">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
         </div>
 
         {session && (
-          <div className="flex items-center justify-between p-4">
-            <NavigationMenu>
-              <NavigationMenuList className="space-x-2">
-                {menuItems.map((item) => (
-                  <NavigationMenuItem key={item.path}>
+          <div className="flex items-center justify-between p-6">
+            {isLoading ? (
+              <div className="flex items-center space-x-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Loading navigation...</span>
+              </div>
+            ) : (
+              <NavigationMenu>
+                <NavigationMenuList className="flex items-center space-x-6">
+                  {menuItems.filter(item => item.show).map((item) => (
+                    <NavigationMenuItem key={item.path}>
+                      <NavigationMenuLink
+                        className={cn(
+                          "group inline-flex h-10 w-max items-center justify-center rounded-md px-6 py-2 text-sm font-medium transition-all duration-200",
+                          "hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+                          isActive(item.path) ? 
+                            "bg-primary/20 text-primary shadow-sm" : 
+                            "bg-black/40 text-gray-200"
+                        )}
+                        onClick={() => navigate(item.path)}
+                      >
+                        {item.icon} {item.label}
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  ))}
+                  <NavigationMenuItem className="ml-auto">
                     <NavigationMenuLink
-                      className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                        isActive(item.path) ? "bg-primary/20 text-primary" : "bg-black/40"
-                      }`}
-                      onClick={() => navigate(item.path)}
+                      className={cn(
+                        "group inline-flex h-10 w-max items-center justify-center rounded-md px-6 py-2 text-sm font-medium transition-all duration-200",
+                        "hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none",
+                        "bg-black/40 text-red-500"
+                      )}
+                      onClick={handleSignOut}
                     >
-                      {item.icon} {item.label}
+                      <LogOut className="mr-2 h-4 w-4" /> Sign Out
                     </NavigationMenuLink>
                   </NavigationMenuItem>
-                ))}
-                <NavigationMenuItem className="ml-auto">
-                  <NavigationMenuLink
-                    className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40 text-red-500"
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
+                </NavigationMenuList>
+              </NavigationMenu>
+            )}
           </div>
         )}
       </div>

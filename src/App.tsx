@@ -1,23 +1,23 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
-import Index from "./pages/Index";
-import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
-import Members from "./pages/Members";
-import ResetPassword from "./pages/ResetPassword";
-import NotFound from "./pages/NotFound";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { Toaster } from "@/components/ui/toaster"
+import { Toaster as Sonner } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { Navigation } from "@/components/Navigation"
+import Index from "./pages/Index"
+import Profile from "./pages/Profile"
+import Admin from "./pages/Admin"
+import Members from "./pages/Members"
+import ResetPassword from "./pages/ResetPassword"
+import NotFound from "./pages/NotFound"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
+import { Loader2 } from "lucide-react"
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
-type UserRole = "admin" | "collector" | "member";
+type UserRole = "admin" | "collector" | "member"
 
-// Protected Route Component
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: UserRole }) => {
   const { data: userRoles, isLoading } = useQuery({
     queryKey: ["userRoles"],
@@ -34,9 +34,18 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode,
     }
   })
 
-  if (isLoading) return null
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Checking permissions...</p>
+        </div>
+      </div>
+    )
+  }
 
-  if (requiredRole && !userRoles?.includes(requiredRole)) {
+  if (requiredRole && !userRoles?.includes('admin') && !userRoles?.includes(requiredRole)) {
     return <Navigate to="/" replace />
   }
 
@@ -79,6 +88,6 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+)
 
-export default App;
+export default App
