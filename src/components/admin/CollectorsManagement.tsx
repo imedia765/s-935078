@@ -40,13 +40,13 @@ export function CollectorsManagement() {
             full_name,
             email
           ),
-          payments (
+          payment_requests (
             status,
             amount,
             created_at
           )
         `)
-        .order('created_at', { foreignTable: 'payments', ascending: false });
+        .order('created_at', { foreignTable: 'payment_requests', ascending: false });
       if (error) throw error;
       return data;
     }
@@ -176,7 +176,7 @@ export function CollectorsManagement() {
           </div>
           <p className="text-3xl font-bold text-purple-500 mt-2">
             £{collectors?.reduce((acc: number, curr: any) => {
-              const totalPayments = curr.payments?.reduce((sum: number, payment: any) => 
+              const totalPayments = curr.payment_requests?.reduce((sum: number, payment: any) => 
                 payment.status === 'approved' ? sum + (payment.amount || 0) : sum, 0) || 0;
               return acc + totalPayments;
             }, 0).toFixed(2) || '0.00'}
@@ -230,7 +230,7 @@ export function CollectorsManagement() {
               </TableHeader>
               <TableBody>
                 {collectors?.map((collector: any) => {
-                  const lastPayment = collector.payments?.[0];
+                  const lastPayment = collector.payment_requests?.[0];
                   const paymentStatus = lastPayment?.status || 'no payments';
                   const statusColor = getPaymentStatusColor(paymentStatus);
                   const StatusIcon = getPaymentStatusIcon(paymentStatus);

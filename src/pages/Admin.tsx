@@ -28,10 +28,19 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       try {
-        // Add explicit column selection to avoid ambiguity
         const { data, error } = await supabase.rpc('run_combined_system_checks', undefined, {
           count: 'exact',
-          head: false
+          head: false,
+          // Explicitly select columns to avoid ambiguity
+          select: `
+            check_type,
+            metric_name,
+            current_value,
+            threshold,
+            status,
+            check_details:details,
+            test_category
+          `
         });
         if (error) throw error;
         console.log("System checks response:", data);
