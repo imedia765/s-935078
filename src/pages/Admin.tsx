@@ -18,6 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { MemberSearch } from "@/components/admin/MemberSearch";
 import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
+import { CollectorsManagement } from "@/components/admin/CollectorsManagement";
 
 export default function Admin() {
   const { toast } = useToast();
@@ -141,6 +142,12 @@ export default function Admin() {
             Member Search
           </TabsTrigger>
           <TabsTrigger 
+            value="collectors"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
+            Collectors
+          </TabsTrigger>
+          <TabsTrigger 
             value="maintenance"
             className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
           >
@@ -236,6 +243,13 @@ export default function Admin() {
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">System Maintenance</h2>
             <MaintenanceManagement />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="collectors">
+          <Card className="p-6 glass-card">
+            <h2 className="text-xl font-semibold mb-4 text-gradient">Collectors Management</h2>
+            <CollectorsManagement />
           </Card>
         </TabsContent>
       </Tabs>
