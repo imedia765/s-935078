@@ -3,22 +3,15 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { MemberSearch } from "@/components/admin/MemberSearch";
 import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
 import { FinancialManagement } from "@/components/admin/FinancialManagement";
+import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
+import { useState } from "react";
 
 export default function Admin() {
   const { toast } = useToast();
@@ -41,15 +34,6 @@ export default function Admin() {
         console.error("System checks error:", error);
         throw error;
       }
-    }
-  });
-
-  const { data: auditActivity, isLoading: isLoadingAudit, error: auditError } = useQuery({
-    queryKey: ["auditActivity"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_audit_activity_summary');
-      if (error) throw error;
-      return data;
     }
   });
 
@@ -122,33 +106,11 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* Audit Logs Tab */}
+        {/* Enhanced Audit Logs Tab */}
         <TabsContent value="audit">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">Audit Activity</h2>
-            {auditError && <ErrorAlert error={auditError as Error} />}
-            {isLoadingAudit ? (
-              <p>Loading audit logs...</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-primary/5">
-                    <TableHead>Time</TableHead>
-                    <TableHead>Operation</TableHead>
-                    <TableHead>Count</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {auditActivity?.map((activity: any, index: number) => (
-                    <TableRow key={index} className="hover:bg-primary/5">
-                      <TableCell>{new Date(activity.hour_bucket).toLocaleString()}</TableCell>
-                      <TableCell>{activity.operation}</TableCell>
-                      <TableCell>{activity.count}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <AuditLogViewer />
           </Card>
         </TabsContent>
 
