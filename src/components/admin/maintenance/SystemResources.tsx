@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Cpu, HardDrive, Network, Memory } from "lucide-react";
+import { Cpu, HardDrive, Network, Ram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function SystemResources() {
@@ -10,7 +10,12 @@ export function SystemResources() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_system_resources');
       if (error) throw error;
-      return data;
+      return data as {
+        cpu_usage: number;
+        memory_usage: number;
+        disk_usage: number;
+        network_status: string;
+      };
     },
     refetchInterval: 30000 // Refresh every 30 seconds
   });
@@ -28,7 +33,7 @@ export function SystemResources() {
 
       <Card className="p-4 space-y-2">
         <div className="flex items-center gap-2">
-          <Memory className="h-4 w-4" />
+          <Ram className="h-4 w-4" />
           <h4 className="font-medium">Memory Usage</h4>
         </div>
         <Progress value={resources?.memory_usage || 0} />

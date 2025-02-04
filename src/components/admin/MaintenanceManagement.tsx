@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
@@ -12,11 +12,20 @@ import { BackupManagement } from "./maintenance/BackupManagement";
 import { ErrorLogViewer } from "./maintenance/ErrorLogViewer";
 import { PerformanceMetrics } from "./maintenance/PerformanceMetrics";
 import { SecurityDashboard } from "./maintenance/SecurityDashboard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function MaintenanceManagement() {
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Query maintenance mode status
   const { data: maintenanceMode, refetch: refetchMaintenanceMode } = useQuery({
@@ -41,7 +50,56 @@ export function MaintenanceManagement() {
     }
   });
 
-  // Toggle maintenance mode
+  // Query maintenance history
+  const { data: maintenanceHistory } = useQuery({
+    queryKey: ["maintenanceHistory"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('maintenance_history')
+        .select('*')
+        .order('execution_time', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const handleRunMaintenance = async () => {
+    setIsRunning(true);
+    try {
+      const { error } = await supabase.rpc('run_maintenance');
+      if (error) throw error;
+      toast({
+        title: "Maintenance Complete",
+        description: "System maintenance has been completed successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleScheduleMaintenance = async () => {
+    try {
+      const { error } = await supabase.rpc('schedule_maintenance');
+      if (error) throw error;
+      toast({
+        title: "Maintenance Scheduled",
+        description: "Daily maintenance has been scheduled successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleToggleMaintenanceMode = async () => {
     try {
       const { error } = await supabase
@@ -77,7 +135,7 @@ export function MaintenanceManagement() {
       <div className="flex items-center justify-between p-4 border rounded-lg bg-background">
         <div className="space-y-0.5">
           <div className="flex items-center">
-            <Shield className="w-5 h-5 mr-2 text-yellow-500" />
+            <ShieldAlert className="w-5 h-5 mr-2 text-yellow-500" />
             <h3 className="font-medium">Maintenance Mode</h3>
           </div>
           <p className="text-sm text-muted-foreground">
