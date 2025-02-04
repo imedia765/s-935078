@@ -24,9 +24,9 @@ import {
 
 interface SystemCheck {
   check_type: string;
-  metric_name: string;
-  current_value: number;
-  threshold: number;
+  metric_name: string | null;
+  current_value: number | null;
+  threshold: number | null;
   status: string;
   check_details: Record<string, any>;
   test_category: string;
