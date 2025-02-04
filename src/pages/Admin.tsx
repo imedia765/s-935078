@@ -19,6 +19,7 @@ import { RoleManagement } from "@/components/admin/RoleManagement";
 import { MemberSearch } from "@/components/admin/MemberSearch";
 import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
 import { CollectorsManagement } from "@/components/admin/CollectorsManagement";
+import { FinancialManagement } from "@/components/admin/FinancialManagement";
 
 export default function Admin() {
   const { toast } = useToast();
@@ -33,7 +34,6 @@ export default function Admin() {
           console.error("System checks error:", error);
           throw error;
         }
-        // Transform the data to handle the renamed details column
         return data?.map((check: any) => ({
           ...check,
           details: check.check_details || check.details || {}
@@ -54,7 +54,6 @@ export default function Admin() {
     }
   });
 
-  // Error Display Component
   const ErrorAlert = ({ error }: { error: Error | null }) => {
     if (!error) return null;
     return (
@@ -74,42 +73,13 @@ export default function Admin() {
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
         <TabsList className="w-full justify-start bg-black/40 backdrop-blur-xl border border-white/10">
-          <TabsTrigger 
-            value="system"
-            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-          >
-            System Health
-          </TabsTrigger>
-          <TabsTrigger 
-            value="audit"
-            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-          >
-            Audit Logs
-          </TabsTrigger>
-          <TabsTrigger 
-            value="roles"
-            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-          >
-            Role Management
-          </TabsTrigger>
-          <TabsTrigger 
-            value="members"
-            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-          >
-            Member Search
-          </TabsTrigger>
-          <TabsTrigger 
-            value="collectors"
-            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-          >
-            Collectors
-          </TabsTrigger>
-          <TabsTrigger 
-            value="maintenance"
-            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-          >
-            Maintenance
-          </TabsTrigger>
+          <TabsTrigger value="system">System Health</TabsTrigger>
+          <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+          <TabsTrigger value="roles">Role Management</TabsTrigger>
+          <TabsTrigger value="members">Member Search</TabsTrigger>
+          <TabsTrigger value="collectors">Collectors</TabsTrigger>
+          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+          <TabsTrigger value="financial">Financial</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system">
@@ -203,10 +173,9 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="collectors">
+        <TabsContent value="financial">
           <Card className="p-6 glass-card">
-            <h2 className="text-xl font-semibold mb-4 text-gradient">Collectors Management</h2>
-            <CollectorsManagement />
+            <FinancialManagement />
           </Card>
         </TabsContent>
 
