@@ -230,7 +230,7 @@ export type Database = {
           recipient_email: string
           resend_id?: string | null
           sent_at?: string | null
-          status: Database["public"]["Enums"]["email_status"]
+          status?: Database["public"]["Enums"]["email_status"]
           subject: string
           updated_at?: string
         }
@@ -548,9 +548,9 @@ export type Database = {
           error_details?: string | null
           id?: string
           message?: string | null
-          operation_type: string
+          operation_type?: string
           repository_id?: string | null
-          status: string
+          status?: string
         }
         Relationships: [
           {
@@ -592,30 +592,6 @@ export type Database = {
         }
         Relationships: []
       }
-      maintenance_history: {
-        Row: {
-          id: string;
-          execution_time: string;
-          status: string;
-          duration_seconds: number;
-          details: Json;
-        };
-        Insert: {
-          id?: string;
-          execution_time?: string;
-          status: string;
-          duration_seconds: number;
-          details?: Json;
-        };
-        Update: {
-          id?: string;
-          execution_time?: string;
-          status?: string;
-          duration_seconds?: number;
-          details?: Json;
-        };
-        Relationships: [];
-      };
       member_notes: {
         Row: {
           created_at: string
@@ -631,12 +607,12 @@ export type Database = {
           member_id: string
           note_text: string
           note_type: string
-          updated_at: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
-          member_id: string
+          member_id?: string
           note_text?: string
           note_type?: string
           updated_at?: string
@@ -1010,7 +986,7 @@ export type Database = {
           token: string
           token_type?: Database["public"]["Enums"]["token_type"]
           used_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Update: {
           attempts?: number
@@ -1022,7 +998,7 @@ export type Database = {
           token?: string
           token_type?: Database["public"]["Enums"]["token_type"]
           used_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1240,7 +1216,7 @@ export type Database = {
         Insert: {
           change_type?: string | null
           changed_by_user_id?: string | null
-          created_at: string
+          created_at?: string
           id?: string
           new_value?: Json | null
           old_value?: Json | null
@@ -1251,7 +1227,7 @@ export type Database = {
         Update: {
           change_type?: string | null
           changed_by_user_id?: string | null
-          created_at: string
+          created_at?: string
           id?: string
           new_value?: Json | null
           old_value?: Json | null
@@ -1346,7 +1322,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string | null
         }
         Relationships: []
@@ -1816,72 +1792,6 @@ export type Database = {
           details: Json
         }[]
       }
-      run_maintenance: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      schedule_maintenance: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_backup_history: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          id: string
-          created_at: string
-          status: string
-          size: string
-        }[]
-      }
-      create_backup: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      restore_backup: {
-        Args: { backup_id: string }
-        Returns: Json
-      }
-      get_error_logs: {
-        Args: {
-          p_severity: string
-          p_search: string
-        }
-        Returns: {
-          timestamp: string
-          severity: string
-          message: string
-          source: string
-        }[]
-      }
-      get_performance_metrics: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          response_times: { timestamp: string; value: number }[]
-          query_times: { timestamp: string; value: number }[]
-          api_performance: { timestamp: string; value: number }[]
-          cache_hits: { timestamp: string; value: number }[]
-        }
-      }
-      get_security_metrics: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          failed_logins: number
-          security_alerts: number
-          ssl_expiry: string
-          ssl_days_remaining: number
-          active_sessions: number
-          vulnerabilities: { description: string }[]
-        }
-      }
-      get_system_resources: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          cpu_usage: number
-          memory_usage: number
-          disk_usage: number
-          network_status: string
-        }
-      }
     }
     Enums: {
       app_role: "admin" | "collector" | "member"
@@ -1930,3 +1840,100 @@ export type Database = {
     }
   }
 }
+
+type PublicSchema = Database[Extract<keyof Database, "public">]
+
+export type Tables<
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
