@@ -226,6 +226,46 @@ export function RoleManagement() {
     }
   };
 
+  const getErrorDetails = (checkType: string, details: any) => {
+    switch (checkType) {
+      case 'Multiple Roles Assigned':
+        return {
+          explanation: "User has conflicting roles that may cause permission issues",
+          impact: "This can lead to unexpected behavior in role-based access control",
+          currentState: `Current roles: ${details.current_roles?.join(', ')}`,
+          recommendation: "Keep only the highest priority role (admin > collector > member)"
+        };
+      case 'Member Without Role':
+        return {
+          explanation: "User exists in the members table but has no assigned role",
+          impact: "User cannot access any role-based features",
+          currentState: "No roles currently assigned",
+          recommendation: "Assign at least the basic member role"
+        };
+      case 'Collector Missing Role':
+        return {
+          explanation: "User marked as collector in members table but missing collector role",
+          impact: "Cannot perform collector-specific functions",
+          currentState: `Current roles: ${details.current_roles?.join(', ') || 'None'}`,
+          recommendation: "Add collector role while maintaining existing roles"
+        };
+      case 'Inconsistent Member Status':
+        return {
+          explanation: "Member status doesn't match assigned roles",
+          impact: "May cause access control issues",
+          currentState: `Status: ${details.member_status}, Roles: ${details.current_roles?.join(', ')}`,
+          recommendation: "Review member profile and update status or roles accordingly"
+        };
+      default:
+        return {
+          explanation: "Unknown error type",
+          impact: "Potential system inconsistency",
+          currentState: "Unknown",
+          recommendation: "Contact system administrator"
+        };
+    }
+  };
+
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
 
   return (
@@ -322,19 +362,20 @@ export function RoleManagement() {
               </AlertTitle>
               <AlertDescription>
                 <div className="mt-2 space-y-2">
-                  <div className="text-sm font-medium">Error Details:</div>
+                  {validation.status !== 'Good' && (
+                    <div className="bg-secondary/50 p-4 rounded-md space-y-3">
+                      {Object.entries(getErrorDetails(validation.check_type, validation.details)).map(([key, value]) => (
+                        <div key={key} className="space-y-1">
+                          <div className="text-sm font-medium capitalize">{key}:</div>
+                          <div className="text-sm text-muted-foreground">{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="text-sm font-medium mt-4">Raw Details:</div>
                   <pre className="bg-secondary/50 p-2 rounded-md text-sm whitespace-pre-wrap">
                     {JSON.stringify(validation.details, null, 2)}
                   </pre>
-                  
-                  {validation.status !== 'Good' && (
-                    <div className="mt-4 space-y-2">
-                      <div className="text-sm font-medium">Issue Description & Fix:</div>
-                      <div className="text-sm text-muted-foreground">
-                        {getErrorFix(validation.check_type)}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </AlertDescription>
             </Alert>
