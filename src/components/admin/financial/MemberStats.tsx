@@ -39,7 +39,7 @@ export function MemberStats() {
             relationship,
             date_of_birth
           ),
-          payment_requests (
+          payment_requests!payment_requests_member_id_fkey (
             id,
             amount,
             status,
@@ -77,14 +77,16 @@ export function MemberStats() {
   // Group members by collector
   const collectorReports = stats?.reduce((acc: any, member) => {
     const collectorId = member.collector_id;
-    const collectorName = member.members_collectors?.name || 'Unassigned';
+    // Access the first element of the members_collectors array if it exists
+    const collector = member.members_collectors?.[0];
+    const collectorName = collector?.name || 'Unassigned';
     
     if (!acc[collectorId]) {
       acc[collectorId] = {
         id: collectorId,
         name: collectorName,
-        email: member.members_collectors?.email,
-        phone: member.members_collectors?.phone,
+        email: collector?.email,
+        phone: collector?.phone,
         members: [],
         totalMembers: 0,
         totalPayments: 0,
