@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
-import { Loader2, Plus, Pencil, Trash2, PauseCircle, PlayCircle } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, PauseCircle, PlayCircle, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface MemberFormData {
@@ -45,7 +45,9 @@ export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any>(null);
+  const [movingMember, setMovingMember] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -198,6 +200,37 @@ export default function Members() {
       toast({
         title: "Error",
         description: "Failed to update member status: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add move member mutation
+  const moveMemberMutation = useMutation({
+    mutationFn: async ({ memberId, newCollectorId }: { memberId: string; newCollectorId: string }) => {
+      const { data, error } = await supabase
+        .from('members')
+        .update({ collector_id: newCollectorId })
+        .eq('id', memberId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members'] });
+      setIsMoveDialogOpen(false);
+      setMovingMember(null);
+      toast({
+        title: "Success",
+        description: "Member moved successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to move member: " + error.message,
         variant: "destructive",
       });
     },
@@ -397,6 +430,16 @@ export default function Members() {
                       )}
                     </Button>
                     <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setMovingMember(member);
+                        setIsMoveDialogOpen(true);
+                      }}
+                    >
+                      <ArrowRightLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
                       variant="destructive"
                       size="icon"
                       onClick={() => {
@@ -496,6 +539,56 @@ export default function Members() {
             </div>
             <DialogFooter>
               <Button type="submit">Update Member</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move Member</DialogTitle>
+            <DialogDescription>
+              Select a new collector for this member
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const newCollectorId = formData.get('new_collector_id') as string;
+            
+            if (movingMember && newCollectorId) {
+              moveMemberMutation.mutate({
+                memberId: movingMember.id,
+                newCollectorId
+              });
+            }
+          }} className="space-y-4">
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="new_collector_id" className="text-right">
+                  New Collector
+                </Label>
+                <Select name="new_collector_id" defaultValue={movingMember?.collector_id}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select a collector" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {collectors?.map((collector) => (
+                      <SelectItem 
+                        key={collector.id} 
+                        value={collector.id}
+                        disabled={collector.id === movingMember?.collector_id}
+                      >
+                        {collector.name || `Collector ${collector.number}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Move Member</Button>
             </DialogFooter>
           </form>
         </DialogContent>
