@@ -21,6 +21,7 @@ import {
 const Profile = () => {
   const [memberData, setMemberData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -29,11 +30,21 @@ const Profile = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    checkSession();
     fetchData();
-  }, [navigate, toast]);
+  }, [navigate]);
+
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/");
+      return;
+    }
+  };
 
   const fetchData = async () => {
     try {
+      setError(null);
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -50,7 +61,15 @@ const Profile = () => {
         .eq("auth_user_id", user.id)
         .single();
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Error fetching member:", memberError);
+        throw new Error("Failed to fetch member data");
+      }
+      
+      if (!member) {
+        throw new Error("Member not found");
+      }
+
       setMemberData(member);
       setEditedData(member);
 
@@ -60,7 +79,10 @@ const Profile = () => {
         .eq("member_number", member.member_number)
         .order("created_at", { ascending: false });
 
-      if (paymentsError) throw paymentsError;
+      if (paymentsError) {
+        console.error("Error fetching payments:", paymentsError);
+        throw paymentsError;
+      }
       setPaymentHistory(payments || []);
 
       const { data: announcements, error: announcementsError } = await supabase
@@ -69,10 +91,14 @@ const Profile = () => {
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
-      if (announcementsError) throw announcementsError;
+      if (announcementsError) {
+        console.error("Error fetching announcements:", announcementsError);
+        throw announcementsError;
+      }
       setAnnouncements(announcements || []);
 
     } catch (error: any) {
+      setError(error.message);
       toast({
         variant: "destructive",
         title: "Error",
@@ -136,7 +162,19 @@ const Profile = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-6 max-w-md">
+          <h2 className="text-xl font-semibold mb-4">Error Loading Profile</h2>
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={fetchData}>Retry</Button>
+        </Card>
       </div>
     );
   }
