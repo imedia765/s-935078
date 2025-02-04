@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import debounce from "lodash/debounce";
 import Fuse from 'fuse.js';
+import { SearchInput } from "@/components/members/SearchInput";
 
 interface MemberFormData {
   full_name: string;
