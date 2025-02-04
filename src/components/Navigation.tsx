@@ -1,12 +1,55 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Home, User, Settings, Users } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 
 export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const { data: userRoles } = useQuery({
+    queryKey: ["userRoles"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+
+      return roles?.map(r => r.role) || []
+    }
+  })
+
   const isActive = (path: string) => location.pathname === path
+  const isAdmin = userRoles?.includes("admin")
+  const isCollector = userRoles?.includes("collector")
+
+  // All users (members) can see Home and Profile
+  const menuItems = [
+    { path: "/", icon: <Home className="mr-2 h-4 w-4" />, label: "Home" },
+    { path: "/profile", icon: <User className="mr-2 h-4 w-4" />, label: "Profile" },
+  ]
+
+  // Collectors and Admins can see Members
+  if (isCollector || isAdmin) {
+    menuItems.push({
+      path: "/members",
+      icon: <Users className="mr-2 h-4 w-4" />,
+      label: "Members"
+    })
+  }
+
+  // Only Admins can see Admin page
+  if (isAdmin) {
+    menuItems.push({
+      path: "/admin",
+      icon: <Settings className="mr-2 h-4 w-4" />,
+      label: "Admin"
+    })
+  }
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
@@ -20,46 +63,18 @@ export const Navigation = () => {
         <div className="flex items-center justify-between p-4">
           <NavigationMenu>
             <NavigationMenuList className="space-x-2">
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                    isActive("/") ? "bg-primary/20 text-primary" : "bg-black/40"
-                  }`}
-                  onClick={() => navigate("/")}
-                >
-                  <Home className="mr-2 h-4 w-4" /> Home
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                    isActive("/profile") ? "bg-primary/20 text-primary" : "bg-black/40"
-                  }`}
-                  onClick={() => navigate("/profile")}
-                >
-                  <User className="mr-2 h-4 w-4" /> Profile
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                    isActive("/members") ? "bg-primary/20 text-primary" : "bg-black/40"
-                  }`}
-                  onClick={() => navigate("/members")}
-                >
-                  <Users className="mr-2 h-4 w-4" /> Members
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                    isActive("/admin") ? "bg-primary/20 text-primary" : "bg-black/40"
-                  }`}
-                  onClick={() => navigate("/admin")}
-                >
-                  <Settings className="mr-2 h-4 w-4" /> Admin
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+              {menuItems.map((item) => (
+                <NavigationMenuItem key={item.path}>
+                  <NavigationMenuLink
+                    className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+                      isActive(item.path) ? "bg-primary/20 text-primary" : "bg-black/40"
+                    }`}
+                    onClick={() => navigate(item.path)}
+                  >
+                    {item.icon} {item.label}
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
             </NavigationMenuList>
           </NavigationMenu>
         </div>
