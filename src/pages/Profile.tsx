@@ -207,6 +207,19 @@ const Profile = () => {
     }));
   };
 
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-[#8B5CF6] text-white';
+      case 'collector':
+        return 'bg-[#F97316] text-white';
+      case 'member':
+        return 'bg-[#0EA5E9] text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -286,7 +299,17 @@ const Profile = () => {
                         ) : (
                           <h2 className="text-2xl font-semibold text-gradient">{memberData?.full_name}</h2>
                         )}
-                        <p className="text-gray-400">Member #{memberData?.member_number}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-gray-400">Member #{memberData?.member_number}</p>
+                          {memberData?.roles?.map((role: string, index: number) => (
+                            <Badge 
+                              key={index} 
+                              className={`${getRoleBadgeColor(role)} capitalize`}
+                            >
+                              {role}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         {isEditing ? (
