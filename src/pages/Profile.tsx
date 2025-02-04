@@ -53,6 +53,15 @@ const Profile = () => {
         return;
       }
 
+      // First get user roles
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      console.log("User roles:", roles);
+
+      // Then fetch member data
       const { data: member, error: memberError } = await supabase
         .from("members")
         .select(`
@@ -60,32 +69,60 @@ const Profile = () => {
           family_members (*)
         `)
         .eq("auth_user_id", user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single()
 
-      if (memberError) {
+      console.log("Member data:", member, "Error:", memberError);
+
+      if (memberError && memberError.code !== 'PGRST116') {
         console.error("Error fetching member:", memberError);
         throw new Error("Failed to fetch member data");
       }
       
-      if (!member) {
-        throw new Error("Member not found");
+      // If no member record exists but user has roles, create a basic member record
+      if (!member && roles && roles.length > 0) {
+        const { data: newMember, error: createError } = await supabase
+          .from("members")
+          .insert([
+            {
+              auth_user_id: user.id,
+              full_name: user.user_metadata?.full_name || user.email,
+              email: user.email,
+              roles: roles.map(r => r.role),
+              status: 'active',
+              member_number: `M${Date.now().toString().slice(-6)}` // Generate a temporary member number
+            }
+          ])
+          .select()
+          .single();
+
+        if (createError) {
+          console.error("Error creating member:", createError);
+          throw new Error("Failed to create member profile");
+        }
+
+        setMemberData(newMember);
+        setEditedData(newMember);
+      } else {
+        setMemberData({ ...member, roles: roles?.map(r => r.role) });
+        setEditedData({ ...member, roles: roles?.map(r => r.role) });
       }
 
-      setMemberData(member);
-      setEditedData(member);
+      // Fetch payment history
+      if (memberData?.member_number) {
+        const { data: payments, error: paymentsError } = await supabase
+          .from("payment_requests")
+          .select("*")
+          .eq("member_number", memberData.member_number)
+          .order("created_at", { ascending: false });
 
-      const { data: payments, error: paymentsError } = await supabase
-        .from("payment_requests")
-        .select("*")
-        .eq("member_number", member.member_number)
-        .order("created_at", { ascending: false });
-
-      if (paymentsError) {
-        console.error("Error fetching payments:", paymentsError);
-        throw paymentsError;
+        if (paymentsError) {
+          console.error("Error fetching payments:", paymentsError);
+          throw paymentsError;
+        }
+        setPaymentHistory(payments || []);
       }
-      setPaymentHistory(payments || []);
 
+      // Fetch announcements
       const { data: announcements, error: announcementsError } = await supabase
         .from("system_announcements")
         .select("*")
