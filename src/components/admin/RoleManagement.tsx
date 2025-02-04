@@ -21,11 +21,12 @@ export function RoleManagement() {
         throw validationError;
       }
 
-      // Also fetch role audit logs
+      // Also fetch role history from audit_logs instead
       const { data: auditLogs, error: auditError } = await supabase
-        .from('role_audit_logs')
+        .from('audit_logs')
         .select('*')
-        .order('created_at', { ascending: false })
+        .eq('table_name', 'user_roles')
+        .order('timestamp', { ascending: false })
         .limit(10);
 
       if (auditError) {
@@ -50,11 +51,12 @@ export function RoleManagement() {
       
       if (error) throw error;
 
-      // Log the role change
-      await supabase.from('role_audit_logs').insert([{
-        user_id: userId,
-        action: 'fix_role_error',
-        details: {
+      // Log the role change using audit_logs
+      await supabase.from('audit_logs').insert([{
+        table_name: 'user_roles',
+        operation: 'UPDATE',
+        record_id: userId,
+        new_values: {
           error_type: errorType,
           resolution: 'automatic_fix'
         }
@@ -78,8 +80,18 @@ export function RoleManagement() {
 
   const generateMagicLink = async (userId: string) => {
     try {
+      // First get the member number for this user
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .select('member_number')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (memberError) throw memberError;
+      if (!memberData?.member_number) throw new Error('Member not found');
+
       const { data, error } = await supabase.rpc('generate_magic_link_token', {
-        p_user_id: userId
+        p_member_number: memberData.member_number
       });
 
       if (error) throw error;
@@ -164,11 +176,11 @@ export function RoleManagement() {
           {roleValidation?.auditLogs?.map((log: any, index: number) => (
             <div key={index} className="mb-2 p-2 border-b last:border-0">
               <div className="flex justify-between text-sm">
-                <span>{new Date(log.created_at).toLocaleString()}</span>
-                <span className="font-medium">{log.action}</span>
+                <span>{new Date(log.timestamp).toLocaleString()}</span>
+                <span className="font-medium">{log.operation}</span>
               </div>
               <div className="text-sm text-muted-foreground">
-                {JSON.stringify(log.details)}
+                {JSON.stringify(log.new_values)}
               </div>
             </div>
           ))}
