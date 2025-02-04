@@ -8,12 +8,19 @@ import { FileSpreadsheet, FileDown, Download } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { exportToCSV, generatePDF } from "@/utils/exportUtils";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function FinancialManagement() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Fetch member statistics
   const { data: memberStats, isLoading: loadingStats } = useQuery({
     queryKey: ["memberStats"],
     queryFn: async () => {
@@ -61,6 +68,57 @@ export function FinancialManagement() {
     }, { '0-17': 0, '18-29': 0, '30-49': 0, '50-69': 0, '70+': 0 })
   } : null;
 
+  // Fetch collectors data
+  const { data: collectorsData, isLoading: loadingCollectors } = useQuery({
+    queryKey: ["collectors"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('members_collectors')
+        .select(`
+          id,
+          name,
+          number,
+          email,
+          phone,
+          active,
+          members:members(
+            id,
+            full_name,
+            payment_amount,
+            payment_date,
+            yearly_payment_amount,
+            yearly_payment_status
+          )
+        `);
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch all payments
+  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+    queryKey: ["payments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_requests')
+        .select(`
+          id,
+          amount,
+          payment_method,
+          payment_type,
+          status,
+          created_at,
+          member:members(full_name),
+          collector:members_collectors(name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const handleExport = (type: 'excel' | 'csv' | 'all') => {
     if (!memberStats) return;
     
@@ -87,6 +145,22 @@ export function FinancialManagement() {
   };
 
   const COLORS = ['#8c5dd3', '#3b82f6', '#22c55e'];
+
+  // Calculate collector statistics
+  const collectorStats = collectorsData ? {
+    totalCollectors: collectorsData.length,
+    activeCollectors: collectorsData.filter(c => c.active).length,
+    totalCollected: collectorsData.reduce((sum, collector) => {
+      return sum + (collector.members?.reduce((memberSum, member) => 
+        memberSum + (member.payment_amount || 0), 0) || 0);
+    }, 0),
+    averageCollection: collectorsData.length ? (
+      collectorsData.reduce((sum, collector) => {
+        return sum + (collector.members?.reduce((memberSum, member) => 
+          memberSum + (member.payment_amount || 0), 0) || 0);
+      }, 0) / collectorsData.length
+    ).toFixed(2) : 0
+  } : null;
 
   return (
     <div className="space-y-6">
@@ -228,14 +302,110 @@ export function FinancialManagement() {
         </TabsContent>
 
         <TabsContent value="collectors">
-          <Card className="p-4 glass-card">
-            <h3 className="font-semibold mb-4">Collector Reports Coming Soon</h3>
-          </Card>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-2">Total Collectors</h3>
+                <span className="text-2xl font-bold">{collectorStats?.totalCollectors || 0}</span>
+              </Card>
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-2">Active Collectors</h3>
+                <span className="text-2xl font-bold">{collectorStats?.activeCollectors || 0}</span>
+              </Card>
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-2">Total Collected</h3>
+                <span className="text-2xl font-bold">£{collectorStats?.totalCollected || 0}</span>
+              </Card>
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-2">Average Collection</h3>
+                <span className="text-2xl font-bold">£{collectorStats?.averageCollection || 0}</span>
+              </Card>
+            </div>
+
+            <Card className="p-4 glass-card">
+              <h3 className="font-semibold mb-4">Collectors List</h3>
+              {loadingCollectors ? (
+                <p>Loading collectors data...</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Number</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Members</TableHead>
+                      <TableHead>Total Collection</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {collectorsData?.map((collector) => (
+                      <TableRow key={collector.id}>
+                        <TableCell>{collector.name}</TableCell>
+                        <TableCell>{collector.number}</TableCell>
+                        <TableCell>{collector.email}</TableCell>
+                        <TableCell>{collector.phone}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded ${
+                            collector.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                          }`}>
+                            {collector.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{collector.members?.length || 0}</TableCell>
+                        <TableCell>£{collector.members?.reduce((sum, member) => 
+                          sum + (member.payment_amount || 0), 0) || 0}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="all-payments">
           <Card className="p-4 glass-card">
-            <h3 className="font-semibold mb-4">All Payments View Coming Soon</h3>
+            <h3 className="font-semibold mb-4">All Payments</h3>
+            {loadingPayments ? (
+              <p>Loading payments data...</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Collector</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paymentsData?.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>{payment.member?.full_name}</TableCell>
+                      <TableCell>{payment.collector?.name}</TableCell>
+                      <TableCell>£{payment.amount}</TableCell>
+                      <TableCell className="capitalize">{payment.payment_method}</TableCell>
+                      <TableCell className="capitalize">{payment.payment_type}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded ${
+                          payment.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                          payment.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>
+                          {payment.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </Card>
         </TabsContent>
 
