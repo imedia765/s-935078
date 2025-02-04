@@ -14,17 +14,16 @@ export function ErrorLogViewer() {
   const { data: logs } = useQuery({
     queryKey: ["errorLogs", severity, searchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_error_logs', {
+      const { data: rpcData, error } = await supabase.rpc('get_error_logs', {
         p_severity: severity,
         p_search: searchTerm
       });
       if (error) throw error;
-      return data as ErrorLog[];
+      return rpcData as ErrorLog[];
     }
   });
 
   const handleExport = async () => {
-    // Implementation for exporting logs
     const csvContent = "data:text/csv;charset=utf-8," + 
       logs?.map((row: any) => Object.values(row).join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);

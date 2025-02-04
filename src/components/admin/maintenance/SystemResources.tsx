@@ -9,11 +9,10 @@ export function SystemResources() {
   const { data: resources } = useQuery({
     queryKey: ["systemResources"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_system_resources');
+      const { data: rpcData, error } = await supabase.rpc('get_system_resources');
       if (error) throw error;
-      return data as SystemResourcesType;
-    },
-    refetchInterval: 30000 // Refresh every 30 seconds
+      return rpcData as SystemResources;
+    }
   });
 
   return (

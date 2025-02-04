@@ -9,11 +9,10 @@ export function SecurityDashboard() {
   const { data: security } = useQuery({
     queryKey: ["securityMetrics"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_security_metrics');
+      const { data: rpcData, error } = await supabase.rpc('get_security_metrics');
       if (error) throw error;
-      return data as SecurityMetrics;
-    },
-    refetchInterval: 300000 // Refresh every 5 minutes
+      return rpcData as SecurityMetrics;
+    }
   });
 
   return (

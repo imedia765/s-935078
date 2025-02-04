@@ -8,11 +8,10 @@ export function PerformanceMetrics() {
   const { data: metrics } = useQuery({
     queryKey: ["performanceMetrics"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_performance_metrics');
+      const { data: rpcData, error } = await supabase.rpc('get_performance_metrics');
       if (error) throw error;
-      return data as PerformanceMetricsType;
-    },
-    refetchInterval: 60000 // Refresh every minute
+      return rpcData as PerformanceMetrics;
+    }
   });
 
   return (
