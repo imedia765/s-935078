@@ -179,6 +179,34 @@ export function FinancialManagement() {
     ).toFixed(2) : 0
   } : null;
 
+  // Add new stats calculations
+  const memberStats = memberStats ? {
+    totalMembers: memberStats.length,
+    genderDistribution: {
+      male: memberStats.filter(m => m.gender?.toLowerCase() === 'male').length,
+      female: memberStats.filter(m => m.gender?.toLowerCase() === 'female').length,
+      other: memberStats.filter(m => !['male', 'female'].includes(m.gender?.toLowerCase() || '')).length
+    },
+    membershipTypes: memberStats.reduce((acc: Record<string, number>, member) => {
+      const type = member.membership_type || 'Standard';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {}),
+    ageGroups: memberStats.reduce((acc: Record<string, number>, member) => {
+      const age = member.date_of_birth ? 
+        Math.floor((new Date().getTime() - new Date(member.date_of_birth).getTime()) / 31557600000) :
+        null;
+      const group = age ? 
+        age < 25 ? '18-24' :
+        age < 35 ? '25-34' :
+        age < 45 ? '35-44' :
+        age < 55 ? '45-54' :
+        '55+' : 'Unknown';
+      acc[group] = (acc[group] || 0) + 1;
+      return acc;
+    }, {})
+  } : null;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -435,10 +463,138 @@ export function FinancialManagement() {
         </TabsContent>
 
         <TabsContent value="stats">
-          <Card className="p-4 glass-card">
-            <h3 className="font-semibold mb-4">Detailed Member Stats Coming Soon</h3>
-          </Card>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-2">Total Members</h3>
+                <span className="text-2xl font-bold">{memberStats?.totalMembers || 0}</span>
+              </Card>
+              
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-2">Active Members</h3>
+                <span className="text-2xl font-bold">
+                  {memberStats?.filter(m => m.status === 'active').length || 0}
+                </span>
+              </Card>
+              
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-2">New Members (This Month)</h3>
+                <span className="text-2xl font-bold">
+                  {memberStats?.filter(m => {
+                    const createdAt = new Date(m.created_at);
+                    const now = new Date();
+                    return createdAt.getMonth() === now.getMonth() && 
+                           createdAt.getFullYear() === now.getFullYear();
+                  }).length || 0}
+                </span>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-4">Gender Distribution</h3>
+                <div className="flex justify-between items-center">
+                  <div className="space-y-2">
+                    <p>Male: {memberStats?.genderDistribution.male || 0}</p>
+                    <p>Female: {memberStats?.genderDistribution.female || 0}</p>
+                    <p>Other/Unspecified: {memberStats?.genderDistribution.other || 0}</p>
+                  </div>
+                  <ResponsiveContainer width={200} height={200}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Male', value: memberStats?.genderDistribution.male || 0 },
+                          { name: 'Female', value: memberStats?.genderDistribution.female || 0 },
+                          { name: 'Other', value: memberStats?.genderDistribution.other || 0 }
+                        ]}
+                        innerRadius={60}
+                        outerRadius={80}
+                        dataKey="value"
+                      >
+                        {COLORS.map((color, index) => (
+                          <Cell key={`cell-${index}`} fill={color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+
+              <Card className="p-4 glass-card">
+                <h3 className="font-semibold mb-4">Age Distribution</h3>
+                <div className="flex justify-between items-center">
+                  <div className="space-y-2">
+                    {Object.entries(memberStats?.ageGroups || {}).map(([group, count]) => (
+                      <p key={group}>{group}: {count}</p>
+                    ))}
+                  </div>
+                  <ResponsiveContainer width={200} height={200}>
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(memberStats?.ageGroups || {}).map(([name, value]) => ({
+                          name,
+                          value
+                        }))}
+                        innerRadius={60}
+                        outerRadius={80}
+                        dataKey="value"
+                      >
+                        {COLORS.map((color, index) => (
+                          <Cell key={`cell-${index}`} fill={color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </div>
+
+            <Card className="p-4 glass-card">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Membership Types</h3>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleExport('excel')}
+                    className="bg-emerald-600/20 hover:bg-emerald-600/30"
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Export Excel
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleExport('csv')}
+                    className="bg-blue-600/20 hover:bg-blue-600/30"
+                  >
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </Button>
+                </div>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Count</TableHead>
+                    <TableHead>Percentage</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(memberStats?.membershipTypes || {}).map(([type, count]) => (
+                    <TableRow key={type}>
+                      <TableCell className="font-medium">{type}</TableCell>
+                      <TableCell>{count}</TableCell>
+                      <TableCell>
+                        {((count / (memberStats?.totalMembers || 1)) * 100).toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
         </TabsContent>
+
       </Tabs>
     </div>
   );
