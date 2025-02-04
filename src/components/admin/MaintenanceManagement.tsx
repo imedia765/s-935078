@@ -21,6 +21,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+interface SystemCheck {
+  check_type: string;
+  status: string;
+  check_details: Record<string, number>;
+}
+
 export function MaintenanceManagement() {
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
@@ -40,13 +46,13 @@ export function MaintenanceManagement() {
     }
   });
 
-  // Query system health
+  // Query system health with updated structure
   const { data: systemHealth } = useQuery({
     queryKey: ["systemHealth"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('run_combined_system_checks');
       if (error) throw error;
-      return data;
+      return data as SystemCheck[];
     }
   });
 
@@ -163,7 +169,7 @@ export function MaintenanceManagement() {
             {/* System Health Status */}
             {systemHealth && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {systemHealth.map((check: any, index: number) => (
+                {systemHealth.map((check: SystemCheck, index: number) => (
                   <div key={index} className="p-4 border rounded-lg bg-background">
                     <h4 className="font-medium">{check.check_type}</h4>
                     <div className={`mt-2 text-sm ${
@@ -171,6 +177,14 @@ export function MaintenanceManagement() {
                       check.status === 'Warning' ? 'text-yellow-500' : 'text-red-500'
                     }`}>
                       {check.status}
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {Object.entries(check.check_details).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span>{key.replace(/_/g, ' ')}:</span>
+                          <span>{value}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
