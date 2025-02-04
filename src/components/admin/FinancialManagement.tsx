@@ -94,6 +94,20 @@ export function FinancialManagement() {
     }
   });
 
+  const payments = paymentStats ? {
+    totalPayments: paymentStats.length,
+    totalAmount: paymentStats.reduce((sum, payment) => sum + (payment.amount || 0), 0),
+    pendingPayments: paymentStats.filter(p => p.status === 'pending').length,
+    approvedPayments: paymentStats.filter(p => p.status === 'approved').length,
+    paymentMethods: {
+      cash: paymentStats.filter(p => p.payment_method === 'cash').length,
+      bankTransfer: paymentStats.filter(p => p.payment_method === 'bank_transfer').length
+    },
+    recentPayments: paymentStats
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5)
+  } : null;
+
   const { data: collectorsData, isLoading: loadingCollectors } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
@@ -349,28 +363,194 @@ export function FinancialManagement() {
         <TabsContent value="overview">
           <Card className="p-6 glass-card">
             <h3 className="text-xl font-semibold mb-4">Payment Overview</h3>
-            {/* Overview content goes here */}
+            {payments && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <h4 className="text-sm font-medium">Total Payments</h4>
+                  <p className="text-2xl font-bold">{payments.totalPayments}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <h4 className="text-sm font-medium">Total Amount</h4>
+                  <p className="text-2xl font-bold">£{payments.totalAmount.toFixed(2)}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <h4 className="text-sm font-medium">Pending Payments</h4>
+                  <p className="text-2xl font-bold">{payments.pendingPayments}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-primary/10">
+                  <h4 className="text-sm font-medium">Approved Payments</h4>
+                  <p className="text-2xl font-bold">{payments.approvedPayments}</p>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
         <TabsContent value="collectors">
           <Card className="p-6 glass-card">
             <h3 className="text-xl font-semibold mb-4">Collectors Overview</h3>
-            {/* Collectors content goes here */}
+            {!loadingCollectors && collectorsData && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Number</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Members</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {collectorsData.map((collector) => (
+                    <TableRow key={collector.id}>
+                      <TableCell>{collector.name}</TableCell>
+                      <TableCell>{collector.number}</TableCell>
+                      <TableCell>{collector.email}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded ${
+                          collector.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {collector.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </TableCell>
+                      <TableCell>{collector.members?.length || 0}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </Card>
         </TabsContent>
 
         <TabsContent value="all-payments">
           <Card className="p-6 glass-card">
             <h3 className="text-xl font-semibold mb-4">All Payments</h3>
-            {/* All payments content goes here */}
+            {!loadingPayments && paymentsData && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Payment #</TableHead>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Collector</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paymentsData.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>{payment.payment_number}</TableCell>
+                      <TableCell>{payment.members?.full_name}</TableCell>
+                      <TableCell>{payment.members_collectors?.name}</TableCell>
+                      <TableCell>£{payment.amount}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded ${
+                          payment.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {payment.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {payment.status === 'pending' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleApprove(payment.id)}
+                              className="h-8 w-8 bg-green-500/20 hover:bg-green-500/30"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(payment.id)}
+                            className="h-8 w-8 bg-red-500/20 hover:bg-red-500/30"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </Card>
         </TabsContent>
 
         <TabsContent value="stats">
           <Card className="p-6 glass-card">
             <h3 className="text-xl font-semibold mb-4">Member Statistics</h3>
-            {/* Stats content goes here */}
+            {!loadingStats && rawMemberStats && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-lg font-medium mb-4">Membership Types</h4>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(
+                          rawMemberStats.reduce((acc: Record<string, number>, member) => {
+                            acc[member.membership_type || 'Unknown'] = (acc[member.membership_type || 'Unknown'] || 0) + 1;
+                            return acc;
+                          }, {})
+                        ).map(([name, value]) => ({ name, value }))}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {Object.entries(
+                          rawMemberStats.reduce((acc: Record<string, number>, member) => {
+                            acc[member.membership_type || 'Unknown'] = (acc[member.membership_type || 'Unknown'] || 0) + 1;
+                            return acc;
+                          }, {})
+                        ).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div>
+                  <h4 className="text-lg font-medium mb-4">Payment Status</h4>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(
+                          rawMemberStats.reduce((acc: Record<string, number>, member) => {
+                            acc[member.yearly_payment_status || 'Unknown'] = (acc[member.yearly_payment_status || 'Unknown'] || 0) + 1;
+                            return acc;
+                          }, {})
+                        ).map(([name, value]) => ({ name, value }))}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {Object.entries(
+                          rawMemberStats.reduce((acc: Record<string, number>, member) => {
+                            acc[member.yearly_payment_status || 'Unknown'] = (acc[member.yearly_payment_status || 'Unknown'] || 0) + 1;
+                            return acc;
+                          }, {})
+                        ).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
