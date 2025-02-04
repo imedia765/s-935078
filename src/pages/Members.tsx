@@ -35,6 +35,7 @@ export default function Members() {
   const { data: userInfo } = useQuery({
     queryKey: ["userInfo"],
     queryFn: async () => {
+      console.log('Fetching user info...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
@@ -44,16 +45,22 @@ export default function Members() {
         .select("role")
         .eq("user_id", user.id);
 
+      console.log('User roles:', roles);
+
       // If user is a collector, get their collector ID
-      const { data: collectorInfo } = await supabase
+      const { data: collectorInfo, error } = await supabase
         .from("members_collectors")
         .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
+        .eq("auth_user_id", user.id);
+
+      console.log('Collector info:', collectorInfo, 'Error:', error);
+
+      // Handle case where collector info might not exist
+      const collectorId = collectorInfo && collectorInfo.length > 0 ? collectorInfo[0].id : null;
 
       return {
         roles: roles?.map(r => r.role) || [],
-        collectorId: collectorInfo?.id
+        collectorId
       };
     }
   });
