@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from "@/integrations/supabase/client";
+import { PerformanceMetrics as PerformanceMetricsType } from "@/types/maintenance";
 
 export function PerformanceMetrics() {
   const { data: metrics } = useQuery({
@@ -9,7 +10,7 @@ export function PerformanceMetrics() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_performance_metrics');
       if (error) throw error;
-      return data;
+      return data as PerformanceMetricsType;
     },
     refetchInterval: 60000 // Refresh every minute
   });

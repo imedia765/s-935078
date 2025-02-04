@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, Upload, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BackupRecord } from "@/types/maintenance";
 
 export function BackupManagement() {
   const { toast } = useToast();
@@ -15,7 +16,7 @@ export function BackupManagement() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_backup_history');
       if (error) throw error;
-      return data;
+      return data as BackupRecord[];
     }
   });
 

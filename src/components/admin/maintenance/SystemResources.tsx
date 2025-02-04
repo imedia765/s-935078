@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Cpu, HardDrive, Network } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SystemResources as SystemResourcesType } from "@/types/maintenance";
 
 export function SystemResources() {
   const { data: resources } = useQuery({
@@ -10,7 +11,7 @@ export function SystemResources() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_system_resources');
       if (error) throw error;
-      return data;
+      return data as SystemResourcesType;
     },
     refetchInterval: 30000 // Refresh every 30 seconds
   });

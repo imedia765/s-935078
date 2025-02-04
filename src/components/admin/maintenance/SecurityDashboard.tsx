@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Shield, AlertTriangle, Lock, Users } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { SecurityMetrics } from "@/types/maintenance";
 
 export function SecurityDashboard() {
   const { data: security } = useQuery({
@@ -10,7 +11,7 @@ export function SecurityDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_security_metrics');
       if (error) throw error;
-      return data;
+      return data as SecurityMetrics;
     },
     refetchInterval: 300000 // Refresh every 5 minutes
   });

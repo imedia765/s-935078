@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ErrorLog } from "@/types/maintenance";
 
 export function ErrorLogViewer() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,7 +19,7 @@ export function ErrorLogViewer() {
         p_search: searchTerm
       });
       if (error) throw error;
-      return data;
+      return data as ErrorLog[];
     }
   });
 

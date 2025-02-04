@@ -12,6 +12,7 @@ import { BackupManagement } from "./maintenance/BackupManagement";
 import { ErrorLogViewer } from "./maintenance/ErrorLogViewer";
 import { PerformanceMetrics } from "./maintenance/PerformanceMetrics";
 import { SecurityDashboard } from "./maintenance/SecurityDashboard";
+import { MaintenanceHistory } from "@/types/maintenance";
 import {
   Table,
   TableBody,
@@ -69,7 +70,7 @@ export function MaintenanceManagement() {
         .select('*')
         .order('execution_time', { ascending: false });
       if (error) throw error;
-      return data;
+      return data as MaintenanceHistory[];
     }
   });
 
