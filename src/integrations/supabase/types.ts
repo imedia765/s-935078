@@ -1341,6 +1341,13 @@ export type Database = {
       }
     }
     Functions: {
+      add_user_role: {
+        Args: {
+          p_user_id: string
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: Json
+      }
       assign_collector_role: {
         Args: {
           member_id: string
@@ -1475,6 +1482,13 @@ export type Database = {
       create_auth_users_for_collectors: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      fix_role_error: {
+        Args: {
+          p_user_id: string
+          p_error_type: string
+        }
+        Returns: Json
       }
       generate_family_member_number: {
         Args: {
@@ -1682,6 +1696,13 @@ export type Database = {
       process_email_queue: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      remove_user_role: {
+        Args: {
+          p_user_id: string
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: Json
       }
       reset_failed_login: {
         Args: {

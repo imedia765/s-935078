@@ -19,13 +19,18 @@ export function RoleManagement() {
 
   const handleFixRoleError = async (userId: string, errorType: string) => {
     try {
-      // Since fix_role_error doesn't exist, we'll use validate_user_roles again
-      // and show a message that the fix functionality needs to be implemented
+      const { data, error } = await supabase.rpc('fix_role_error', {
+        p_user_id: userId,
+        p_error_type: errorType
+      });
+      
+      if (error) throw error;
+
       await refetch();
       
       toast({
-        title: "Note",
-        description: "The fix functionality needs to be implemented in the backend. Please contact your administrator.",
+        title: "Success",
+        description: "Role error fixed successfully",
       });
     } catch (error: any) {
       toast({
