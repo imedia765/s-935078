@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { 
   Loader2, 
   Plus, 
@@ -44,6 +44,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import debounce from "lodash/debounce";
+import Fuse from 'fuse.js';
 
 interface MemberFormData {
   full_name: string;
@@ -57,6 +59,7 @@ interface MemberFormData {
 export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('full_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -66,6 +69,14 @@ export default function Members() {
   const [movingMember, setMovingMember] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Create a debounced search function
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      setDebouncedSearchTerm(term);
+    }, 300),
+    []
+  );
 
   // Query collectors for the filter dropdown
   const { data: collectors, isLoading: loadingCollectors } = useQuery({
@@ -80,9 +91,9 @@ export default function Members() {
     }
   });
 
-  // Updated members query with search and sort
+  // Updated members query with debounced search and fuzzy matching
   const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection],
+    queryKey: ["members", selectedCollector, debouncedSearchTerm, sortField, sortDirection],
     queryFn: async () => {
       let query = supabase
         .from("members")
@@ -99,14 +110,22 @@ export default function Members() {
         query = query.eq('collector_id', selectedCollector);
       }
 
-      if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
-      }
-
-      query = query.order(sortField, { ascending: sortDirection === 'asc' });
-
       const { data, error } = await query;
       if (error) throw error;
+
+      // If there's a search term, use Fuse.js for fuzzy searching
+      if (debouncedSearchTerm) {
+        const fuse = new Fuse(data || [], {
+          keys: ['full_name', 'email', 'member_number'],
+          threshold: 0.3, // Lower threshold means more strict matching
+          distance: 100,  // How far to search for matches
+          includeScore: true
+        });
+
+        const searchResults = fuse.search(debouncedSearchTerm);
+        return searchResults.map(result => result.item);
+      }
+
       return data;
     }
   });
@@ -293,7 +312,10 @@ export default function Members() {
               <Input
                 placeholder="Search members..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  debouncedSearch(e.target.value);
+                }}
                 className="pl-9 w-full bg-card text-card-foreground"
               />
             </div>
@@ -612,10 +634,7 @@ export default function Members() {
                   <Label htmlFor="collector_id" className="text-right">
                     Collector
                   </Label>
-                  <Select 
-                    name="collector_id"
-                    defaultValue={editingMember?.collector_id}
-                  >
+                  <Select name="collector_id" defaultValue={editingMember?.collector_id}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select a collector" />
                     </SelectTrigger>
