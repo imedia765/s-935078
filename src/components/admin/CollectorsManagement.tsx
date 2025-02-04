@@ -11,6 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { 
   Users, 
   UserPlus, 
@@ -21,7 +27,8 @@ import {
   UserCog,
   AlertCircle,
   Clock,
-  PoundSterling
+  PoundSterling,
+  ChevronDown
 } from "lucide-react";
 
 export function CollectorsManagement() {
@@ -214,86 +221,113 @@ export function CollectorsManagement() {
           {isLoadingCollectors ? (
             <p>Loading collectors...</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-primary/5">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Number</TableHead>
-                  <TableHead>Member Number</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Auth Status</TableHead>
-                  <TableHead>Payment Status</TableHead>
-                  <TableHead>Last Payment</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {collectors?.map((collector: any) => {
-                  const lastPayment = collector.payment_requests?.[0];
-                  const paymentStatus = lastPayment?.status || 'no payments';
-                  const statusColor = getPaymentStatusColor(paymentStatus);
-                  const StatusIcon = getPaymentStatusIcon(paymentStatus);
+            <Accordion type="single" collapsible className="w-full">
+              {collectors?.map((collector: any) => {
+                const lastPayment = collector.payment_requests?.[0];
+                const paymentStatus = lastPayment?.status || 'no payments';
+                const statusColor = getPaymentStatusColor(paymentStatus);
+                const StatusIcon = getPaymentStatusIcon(paymentStatus);
 
-                  return (
-                    <TableRow key={collector.id} className="hover:bg-primary/5">
-                      <TableCell>{collector.name}</TableCell>
-                      <TableCell>{collector.number}</TableCell>
-                      <TableCell>{collector.member_number}</TableCell>
-                      <TableCell>{collector.email}</TableCell>
-                      <TableCell>
-                        {collector.active ? (
-                          <span className="flex items-center text-green-500">
-                            <CheckCircle className="mr-1 h-4 w-4" /> Active
-                          </span>
-                        ) : (
-                          <span className="flex items-center text-red-500">
-                            <XCircle className="mr-1 h-4 w-4" /> Inactive
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {collector.auth_user_id ? (
-                          <span className="flex items-center text-green-500">
-                            <CheckCircle className="mr-1 h-4 w-4" /> Connected
-                          </span>
-                        ) : (
-                          <span className="flex items-center text-yellow-500">
-                            <AlertCircle className="mr-1 h-4 w-4" /> Pending
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`flex items-center px-2 py-1 rounded-full ${statusColor}`}>
-                          {StatusIcon}
-                          <span className="ml-1 capitalize">{paymentStatus}</span>
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {lastPayment ? (
-                          <span className="text-muted-foreground">
-                            £{lastPayment.amount?.toFixed(2) || '0.00'}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => collector.auth_user_id && handleFixRoles(collector.auth_user_id)}
-                          disabled={!collector.auth_user_id}
-                        >
-                          <UserCog className="mr-2 h-4 w-4" />
-                          Fix Role
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                return (
+                  <AccordionItem key={collector.id} value={collector.id}>
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex w-full items-center justify-between pr-4">
+                        <Table>
+                          <TableBody>
+                            <TableRow className="hover:bg-primary/5 border-none">
+                              <TableCell>{collector.name}</TableCell>
+                              <TableCell>{collector.number}</TableCell>
+                              <TableCell>{collector.member_number}</TableCell>
+                              <TableCell>{collector.email}</TableCell>
+                              <TableCell>
+                                {collector.active ? (
+                                  <span className="flex items-center text-green-500">
+                                    <CheckCircle className="mr-1 h-4 w-4" /> Active
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center text-red-500">
+                                    <XCircle className="mr-1 h-4 w-4" /> Inactive
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {collector.auth_user_id ? (
+                                  <span className="flex items-center text-green-500">
+                                    <CheckCircle className="mr-1 h-4 w-4" /> Connected
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center text-yellow-500">
+                                    <AlertCircle className="mr-1 h-4 w-4" /> Pending
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`flex items-center px-2 py-1 rounded-full ${statusColor}`}>
+                                  {StatusIcon}
+                                  <span className="ml-1 capitalize">{paymentStatus}</span>
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {lastPayment ? (
+                                  <span className="text-muted-foreground">
+                                    £{lastPayment.amount?.toFixed(2) || '0.00'}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    collector.auth_user_id && handleFixRoles(collector.auth_user_id);
+                                  }}
+                                  disabled={!collector.auth_user_id}
+                                >
+                                  <UserCog className="mr-2 h-4 w-4" />
+                                  Fix Role
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="pl-4 pr-4 pt-4">
+                        <h3 className="text-lg font-semibold mb-2">Associated Members</h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="hover:bg-primary/5">
+                              <TableHead>Member Number</TableHead>
+                              <TableHead>Full Name</TableHead>
+                              <TableHead>Email</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {collector.members ? (
+                              <TableRow className="hover:bg-primary/5">
+                                <TableCell>{collector.members.member_number}</TableCell>
+                                <TableCell>{collector.members.full_name}</TableCell>
+                                <TableCell>{collector.members.email}</TableCell>
+                              </TableRow>
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                  No members associated
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           )}
         </div>
       </Card>
