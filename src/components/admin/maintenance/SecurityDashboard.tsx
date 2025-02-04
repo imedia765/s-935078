@@ -11,14 +11,17 @@ export function SecurityDashboard() {
     queryFn: async () => {
       const { data: rpcData, error } = await supabase.rpc('audit_security_settings');
       if (error) throw error;
-      const details = rpcData?.[0]?.details as SecurityMetrics || {};
+      
+      // First cast to unknown, then to SecurityMetrics to satisfy TypeScript
+      const details = ((rpcData?.[0]?.details as unknown) ?? {}) as SecurityMetrics;
+      
       return {
-        failed_logins: details.failed_logins || 0,
-        security_alerts: details.security_alerts || 0,
-        ssl_expiry: details.ssl_expiry || new Date().toISOString(),
-        ssl_days_remaining: details.ssl_days_remaining || 0,
-        active_sessions: details.active_sessions || 0,
-        vulnerabilities: details.vulnerabilities || []
+        failed_logins: details?.failed_logins ?? 0,
+        security_alerts: details?.security_alerts ?? 0,
+        ssl_expiry: details?.ssl_expiry ?? new Date().toISOString(),
+        ssl_days_remaining: details?.ssl_days_remaining ?? 0,
+        active_sessions: details?.active_sessions ?? 0,
+        vulnerabilities: details?.vulnerabilities ?? []
       } as SecurityMetrics;
     }
   });
