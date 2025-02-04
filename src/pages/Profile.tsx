@@ -83,19 +83,6 @@ const Profile = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate("/");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error signing out",
-        description: error.message
-      });
-    }
-  };
-
   const handleEdit = () => {
     setIsEditing(true);
   };
@@ -162,9 +149,6 @@ const Profile = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gradient">Member Dashboard</h1>
-            <Button onClick={handleLogout} variant="outline" className="bg-black/40 hover:bg-primary/20">
-              Sign Out
-            </Button>
           </div>
 
           {/* Main Content Grid */}

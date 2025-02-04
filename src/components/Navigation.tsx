@@ -1,12 +1,14 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Home, User, Settings, Users } from "lucide-react"
+import { Home, User, Settings, Users, LogOut } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { toast } = useToast()
 
   const { data: userRoles } = useQuery({
     queryKey: ["userRoles"],
@@ -22,6 +24,19 @@ export const Navigation = () => {
       return roles?.map(r => r.role) || []
     }
   })
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      navigate("/")
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error signing out",
+        description: error.message
+      })
+    }
+  }
 
   const isActive = (path: string) => location.pathname === path
   const isAdmin = userRoles?.includes("admin")
@@ -75,6 +90,14 @@ export const Navigation = () => {
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               ))}
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                </NavigationMenuLink>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
