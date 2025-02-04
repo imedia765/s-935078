@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch } from "lucide-react";
+import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ interface User {
   id: string;
   email?: string;
   member_number?: string;
+  full_name?: string;
   user_roles?: { role: string }[];
 }
 
@@ -48,7 +49,7 @@ export function RoleManagement() {
       // Then get member details for these users
       const { data: members, error: membersError } = await supabase
         .from('members')
-        .select('auth_user_id, email, member_number');
+        .select('auth_user_id, email, member_number, full_name');
 
       if (membersError) {
         console.error("Members fetch error:", membersError);
@@ -56,11 +57,12 @@ export function RoleManagement() {
       }
 
       // Create a map of auth_user_id to member details
-      const memberMap = members.reduce((acc: {[key: string]: {email: string, member_number: string}}, member: any) => {
+      const memberMap = members.reduce((acc: {[key: string]: {email: string, member_number: string, full_name: string}}, member: any) => {
         if (member.auth_user_id) {
           acc[member.auth_user_id] = {
             email: member.email,
-            member_number: member.member_number
+            member_number: member.member_number,
+            full_name: member.full_name
           };
         }
         return acc;
@@ -73,6 +75,7 @@ export function RoleManagement() {
             id: role.user_id,
             email: memberMap[role.user_id]?.email,
             member_number: memberMap[role.user_id]?.member_number,
+            full_name: memberMap[role.user_id]?.full_name,
             user_roles: []
           };
         }
@@ -187,8 +190,41 @@ export function RoleManagement() {
   const filteredUsers = userData?.filter(user => 
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.member_number?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.member_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getErrorSeverity = (status: string) => {
+    switch (status) {
+      case 'Critical': return 'destructive';
+      case 'Warning': return 'warning';
+      default: return 'default';
+    }
+  };
+
+  const getErrorIcon = (status: string) => {
+    switch (status) {
+      case 'Critical': return <AlertCircle className="h-4 w-4" />;
+      case 'Warning': return <AlertTriangle className="h-4 w-4" />;
+      case 'Good': return <CheckCircle2 className="h-4 w-4" />;
+      default: return <Info className="h-4 w-4" />;
+    }
+  };
+
+  const getErrorFix = (checkType: string) => {
+    switch (checkType) {
+      case 'Multiple Roles Assigned':
+        return "This user has multiple roles which may cause conflicts. The fix will keep only the highest priority role (admin > collector > member).";
+      case 'Member Without Role':
+        return "This user doesn't have the basic member role. The fix will assign the member role automatically.";
+      case 'Collector Missing Role':
+        return "This collector is missing their collector role. The fix will assign the collector role while maintaining existing roles.";
+      case 'Inconsistent Member Status':
+        return "The member's status is inconsistent with their roles. Please review their profile and update manually.";
+      default:
+        return "Contact system administrator for assistance.";
+    }
+  };
 
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
 
@@ -205,7 +241,7 @@ export function RoleManagement() {
           <div className="flex items-center space-x-2">
             <Search className="w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by email, ID or member number..."
+              placeholder="Search by name, email, ID or member number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
@@ -216,6 +252,7 @@ export function RoleManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Member Number</TableHead>
                   <TableHead>ID</TableHead>
@@ -226,6 +263,7 @@ export function RoleManagement() {
               <TableBody>
                 {filteredUsers?.map((user) => (
                   <TableRow key={user.id}>
+                    <TableCell>{user.full_name || 'N/A'}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.member_number || 'N/A'}</TableCell>
                     <TableCell className="font-mono text-sm">{user.id}</TableCell>
@@ -254,14 +292,10 @@ export function RoleManagement() {
           {roleValidation?.validation?.map((validation: any, index: number) => (
             <Alert
               key={index}
-              variant={validation.status === 'Good' ? 'default' : 'destructive'}
+              variant={getErrorSeverity(validation.status)}
               className="glass-card"
             >
-              {validation.status === 'Good' ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <AlertCircle className="h-4 w-4" />
-              )}
+              {getErrorIcon(validation.status)}
               <AlertTitle className="flex items-center justify-between">
                 <span>{validation.check_type}</span>
                 <div className="flex gap-2">
@@ -295,20 +329,9 @@ export function RoleManagement() {
                   
                   {validation.status !== 'Good' && (
                     <div className="mt-4 space-y-2">
-                      <div className="text-sm font-medium">Recommended Fix:</div>
+                      <div className="text-sm font-medium">Issue Description & Fix:</div>
                       <div className="text-sm text-muted-foreground">
-                        {validation.check_type === 'Multiple Roles Assigned' && 
-                          "This user has multiple roles assigned. Clicking 'Fix Issue' will keep only the highest priority role."
-                        }
-                        {validation.check_type === 'Member Without Role' &&
-                          "This user doesn't have a basic member role. Clicking 'Fix Issue' will assign the member role."
-                        }
-                        {validation.check_type === 'Collector Missing Role' &&
-                          "This collector is missing the collector role. Clicking 'Fix Issue' will assign the collector role."
-                        }
-                        {validation.check_type === 'Inconsistent Member Status' &&
-                          "The member status is inconsistent. Please review member details and update manually if needed."
-                        }
+                        {getErrorFix(validation.check_type)}
                       </div>
                     </div>
                   )}
