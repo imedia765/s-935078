@@ -32,7 +32,6 @@ export default function Members() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query collectors for the filter dropdown
   const { data: collectors, isLoading: loadingCollectors } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
