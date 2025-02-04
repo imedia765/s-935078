@@ -17,19 +17,28 @@ import {
   RefreshCw, 
   CheckCircle, 
   XCircle,
-  Wallet
+  Wallet,
+  UserCog,
+  AlertCircle
 } from "lucide-react";
 
 export function CollectorsManagement() {
   const { toast } = useToast();
 
-  // Query collectors data
+  // Query collectors data with member numbers
   const { data: collectors, isLoading: isLoadingCollectors, refetch } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members_collectors")
-        .select("*");
+        .select(`
+          *,
+          members!members_collectors_member_number_fkey (
+            member_number,
+            full_name,
+            email
+          )
+        `);
       if (error) throw error;
       return data;
     }
@@ -81,6 +90,28 @@ export function CollectorsManagement() {
       toast({
         title: "Success",
         description: "Collector roles maintained",
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Fix collector roles
+  const handleFixRoles = async (userId: string) => {
+    try {
+      const { error } = await supabase.rpc('fix_role_error', {
+        p_user_id: userId,
+        p_error_type: 'collector_role_missing'
+      });
+      if (error) throw error;
+      toast({
+        title: "Success",
+        description: "Collector role fixed",
       });
       refetch();
     } catch (error: any) {
@@ -145,7 +176,7 @@ export function CollectorsManagement() {
           onClick={handleMaintainRoles}
           className="bg-primary/20 hover:bg-primary/30"
         >
-          <Users className="mr-2 h-4 w-4" />
+          <UserCog className="mr-2 h-4 w-4" />
           Maintain Roles
         </Button>
       </div>
@@ -161,9 +192,11 @@ export function CollectorsManagement() {
                 <TableRow className="hover:bg-primary/5">
                   <TableHead>Name</TableHead>
                   <TableHead>Number</TableHead>
+                  <TableHead>Member Number</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Auth Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -171,6 +204,7 @@ export function CollectorsManagement() {
                   <TableRow key={collector.id} className="hover:bg-primary/5">
                     <TableCell>{collector.name}</TableCell>
                     <TableCell>{collector.number}</TableCell>
+                    <TableCell>{collector.member_number}</TableCell>
                     <TableCell>{collector.email}</TableCell>
                     <TableCell>
                       {collector.active ? (
@@ -190,9 +224,20 @@ export function CollectorsManagement() {
                         </span>
                       ) : (
                         <span className="flex items-center text-yellow-500">
-                          <XCircle className="mr-1 h-4 w-4" /> Pending
+                          <AlertCircle className="mr-1 h-4 w-4" /> Pending
                         </span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => collector.auth_user_id && handleFixRoles(collector.auth_user_id)}
+                        disabled={!collector.auth_user_id}
+                      >
+                        <UserCog className="mr-2 h-4 w-4" />
+                        Fix Role
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
