@@ -31,7 +31,7 @@ export const Navigation = () => {
 
       return roles?.map(r => r.role) || []
     },
-    enabled: !!session // Only fetch roles if there's a session
+    enabled: !!session
   })
 
   const handleSignOut = async () => {
@@ -51,12 +51,10 @@ export const Navigation = () => {
   const isAdmin = userRoles?.includes("admin")
   const isCollector = userRoles?.includes("collector")
 
-  // All logged-in users can see Profile
   const menuItems = [
     { path: "/profile", icon: <User className="mr-2 h-4 w-4" />, label: "Profile" },
   ]
 
-  // Collectors and Admins can see Members
   if (isCollector || isAdmin) {
     menuItems.push({
       path: "/members",
@@ -65,7 +63,6 @@ export const Navigation = () => {
     })
   }
 
-  // Only Admins can see Admin page
   if (isAdmin) {
     menuItems.push({
       path: "/admin",
@@ -77,12 +74,10 @@ export const Navigation = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
       <div className="max-w-7xl mx-auto">
-        {/* Bismillah Section - Always visible */}
         <div className="text-center py-2 border-b border-white/10">
           <p className="text-lg font-arabic text-primary">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
         </div>
 
-        {/* Navigation Menu - Only show if logged in */}
         {session && (
           <div className="flex items-center justify-between p-4">
             <NavigationMenu>
@@ -99,14 +94,16 @@ export const Navigation = () => {
                     </NavigationMenuLink>
                   </NavigationMenuItem>
                 ))}
+                <NavigationMenuItem className="ml-auto">
+                  <NavigationMenuLink
+                    className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40 text-red-500"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
-            <NavigationMenuLink
-              className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40 text-red-500 ml-auto"
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4" /> Sign Out
-            </NavigationMenuLink>
           </div>
         )}
       </div>
