@@ -57,8 +57,9 @@ export function PaymentsList({
     );
   };
 
-  // Group payments by collector
+  // Group payments by collector with proper null handling
   const paymentsByCollector = paymentsData.reduce((acc: any, payment: any) => {
+    // Handle cases where collector info might be null
     const collectorId = payment.members_collectors?.id || 'unassigned';
     const collectorName = payment.members_collectors?.name || 'Unassigned';
     
@@ -73,16 +74,24 @@ export function PaymentsList({
       };
     }
     
-    acc[collectorId].payments.push(payment);
-    acc[collectorId].totalAmount += payment.amount || 0;
-    if (payment.status === 'approved') {
-      acc[collectorId].approvedCount += 1;
-    } else if (payment.status === 'pending') {
-      acc[collectorId].pendingCount += 1;
+    // Only add payment if it has valid collector information
+    if (payment.members_collectors || collectorId === 'unassigned') {
+      acc[collectorId].payments.push(payment);
+      acc[collectorId].totalAmount += payment.amount || 0;
+      if (payment.status === 'approved') {
+        acc[collectorId].approvedCount += 1;
+      } else if (payment.status === 'pending') {
+        acc[collectorId].pendingCount += 1;
+      }
     }
     
     return acc;
   }, {});
+
+  // Filter out empty collector groups and sort by name
+  const sortedCollectors = Object.values(paymentsByCollector)
+    .filter((collector: any) => collector.payments.length > 0)
+    .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
   return (
     <Card className="p-6 glass-card">
@@ -112,7 +121,7 @@ export function PaymentsList({
         <p>Loading payments...</p>
       ) : (
         <div className="space-y-4">
-          {Object.values(paymentsByCollector).map((collector: any) => (
+          {sortedCollectors.map((collector: any) => (
             <Collapsible
               key={collector.id}
               open={openCollectors.includes(collector.id)}
