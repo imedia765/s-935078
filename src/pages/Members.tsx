@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { exportToCSV, generatePDF, generateIndividualMemberPDF } from "@/utils/exportUtils";
+import { exportToCSV, generatePDF, generateIndividualMemberPDF, exportToExcel } from "@/utils/exportUtils";
 import { MembersToolbar } from "@/components/members/MembersToolbar";
 import { MembersTable } from "@/components/members/MembersTable";
 import { EditMemberDialog } from "@/components/members/EditMemberDialog";
@@ -293,6 +293,7 @@ export default function Members() {
           onCollectorChange={setSelectedCollector}
           onExportCSV={() => exportToCSV(members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
           onExportPDF={() => generatePDF(members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)}
+          onExportExcel={() => exportToExcel(members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
           onAddMember={(data) => addMemberMutation.mutate(data)}
           collectors={collectors || []}
           isAdmin={isAdmin}

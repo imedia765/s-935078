@@ -117,6 +117,68 @@ export const generatePDF = (data: any[], title: string) => {
   doc.save(`${title}.pdf`);
 };
 
+export const generateIndividualMemberPDF = (member: any) => {
+  const doc = new jsPDF();
+  
+  // Add header
+  doc.setFillColor(155, 135, 245);
+  doc.rect(0, 0, doc.internal.pageSize.width, 30, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.text(`Member Details: ${member.member_number}`, 14, 20);
+  
+  // Reset text color and font size
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+
+  const memberData = [
+    ['Member Information', 'Details'],
+    ['Full Name', member.full_name],
+    ['Email', member.email],
+    ['Phone', member.phone || 'N/A'],
+    ['Status', member.status],
+    ['Registration Date', new Date(member.created_at).toLocaleDateString()],
+    ['Collector', member.members_collectors?.name || 'No Collector'],
+    ['Last Payment Date', member.last_payment_date ? new Date(member.last_payment_date).toLocaleDateString() : 'N/A'],
+    ['Payment Status', member.payment_status || 'N/A'],
+    ['Notes', member.notes || 'N/A']
+  ];
+
+  autoTable(doc, {
+    startY: 40,
+    head: [['Field', 'Value']],
+    body: memberData,
+    theme: 'grid',
+    styles: { fontSize: 10, cellPadding: 5 },
+    columnStyles: {
+      0: { cellWidth: 'auto' },
+      1: { cellWidth: 'auto' }
+    }
+  });
+
+  // Add family members section if available
+  if (member.family_members && member.family_members.length > 0) {
+    const familyY = (doc as any).lastAutoTable.finalY + 10;
+    doc.text('Family Members', 14, familyY);
+    
+    const familyData = member.family_members.map((fm: any) => [
+      fm.full_name,
+      fm.relationship,
+      fm.notes || 'N/A'
+    ]);
+
+    autoTable(doc, {
+      startY: familyY + 5,
+      head: [['Name', 'Relationship', 'Notes']],
+      body: familyData,
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 5 }
+    });
+  }
+
+  doc.save(`member_${member.member_number}.pdf`);
+};
+
 export const exportToExcel = (data: any[], filename: string) => {
   const workbook = XLSX.utils.book_new();
   
