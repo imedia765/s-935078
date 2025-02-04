@@ -22,6 +22,7 @@ interface MembersToolbarProps {
   onCollectorChange: (value: string) => void;
   onExportCSV: () => void;
   onExportPDF: () => void;
+  onExportExcel: () => void;
   onAddMember: (data: any) => void;
   collectors: any[];
   isAdmin?: boolean;
@@ -33,6 +34,7 @@ export function MembersToolbar({
   onCollectorChange,
   onExportCSV,
   onExportPDF,
+  onExportExcel,
   onAddMember,
   collectors,
   isAdmin = false,
@@ -63,29 +65,31 @@ export function MembersToolbar({
           </SelectContent>
         </Select>
 
-        {isAdmin && (
-          <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="glass-card">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={onExportCSV}>
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Export to CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onExportPDF}>
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Export to PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="glass-card">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={onExportCSV}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Export to CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportPDF}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Export to PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onExportExcel}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Export to Excel
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-            <AddMemberDialog onSubmit={onAddMember} collectors={collectors} />
-          </>
+        {isAdmin && (
+          <AddMemberDialog onSubmit={onAddMember} collectors={collectors} />
         )}
       </div>
     </div>

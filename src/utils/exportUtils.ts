@@ -1,8 +1,23 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export const exportToCSV = (data: any[], filename: string) => {
-  const headers = ['Member Number', 'Full Name', 'Email', 'Phone', 'Collector', 'Status'];
+  const headers = [
+    'Member Number',
+    'Full Name',
+    'Email',
+    'Phone',
+    'Address',
+    'Status',
+    'Registration Date',
+    'Last Payment Date',
+    'Total Payments',
+    'Payment Status',
+    'Family Members',
+    'Notes'
+  ];
+
   const csvContent = [
     headers.join(','),
     ...data.map(row => [
@@ -10,8 +25,14 @@ export const exportToCSV = (data: any[], filename: string) => {
       row.full_name,
       row.email,
       row.phone || 'N/A',
-      row.members_collectors?.name || 'No Collector',
-      row.status || 'Unknown'
+      row.address || 'N/A',
+      row.status || 'Unknown',
+      new Date(row.created_at).toLocaleDateString(),
+      row.last_payment_date ? new Date(row.last_payment_date).toLocaleDateString() : 'N/A',
+      row.payment_requests?.length || 0,
+      row.payment_status || 'N/A',
+      (row.family_members || []).map((fm: any) => `${fm.full_name} (${fm.relationship})`).join('; '),
+      row.notes || 'N/A'
     ].join(','))
   ].join('\n');
 
@@ -22,147 +43,99 @@ export const exportToCSV = (data: any[], filename: string) => {
   link.click();
 };
 
-const addPageHeader = (doc: jsPDF, text: string) => {
-  doc.setFillColor(155, 135, 245); // Light purple background
-  doc.rect(0, 0, doc.internal.pageSize.width, 30, 'F');
-  doc.setTextColor(255, 255, 255); // White text
-  doc.setFontSize(20);
-  doc.text(text, 14, 20);
-  doc.setTextColor(0, 0, 0); // Reset text color to black
-  doc.setFontSize(11);
-};
-
-const addCollectorHeader = (doc: jsPDF, collectorName: string, yPosition: number) => {
-  doc.setFillColor(211, 228, 253); // Soft blue background
-  doc.rect(10, yPosition - 6, doc.internal.pageSize.width - 20, 10, 'F');
-  doc.setFontSize(12);
-  doc.setTextColor(34, 34, 34); // Dark gray text
-  doc.text(`Collector: ${collectorName}`, 14, yPosition);
-  doc.setFontSize(11);
-};
-
 export const generatePDF = (data: any[], title: string) => {
   const doc = new jsPDF();
-  addPageHeader(doc, title);
   
-  const groupedMembers = data.reduce((acc: any, member: any) => {
-    const collectorName = member.members_collectors?.name || 'No Collector';
-    if (!acc[collectorName]) {
-      acc[collectorName] = [];
-    }
-    acc[collectorName].push(member);
-    return acc;
-  }, {});
+  // Add header
+  doc.setFillColor(155, 135, 245);
+  doc.rect(0, 0, doc.internal.pageSize.width, 30, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.text(title, 14, 20);
+  
+  // Reset text color and font size
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+
+  const tableData = data.map(member => ({
+    memberInfo: {
+      number: member.member_number,
+      name: member.full_name,
+      contact: `${member.email}\n${member.phone || 'No phone'}\n${member.address || 'No address'}`,
+      status: member.status,
+      registration: new Date(member.created_at).toLocaleDateString()
+    },
+    payments: {
+      total: member.payment_requests?.length || 0,
+      lastPayment: member.last_payment_date ? new Date(member.last_payment_date).toLocaleDateString() : 'N/A',
+      status: member.payment_status || 'N/A'
+    },
+    family: (member.family_members || []).map((fm: any) => 
+      `${fm.full_name} (${fm.relationship})`
+    ).join('\n'),
+    notes: member.notes || 'N/A'
+  }));
 
   let yPosition = 40;
   
-  Object.entries(groupedMembers).forEach(([collectorName, members]: [string, any[]], index) => {
-    if (index > 0) {
+  tableData.forEach((member, index) => {
+    if (index > 0 && yPosition > doc.internal.pageSize.height - 60) {
       doc.addPage();
-      addPageHeader(doc, title);
-      yPosition = 40;
+      yPosition = 20;
     }
 
-    addCollectorHeader(doc, collectorName, yPosition);
-    
     autoTable(doc, {
-      head: [['Member Number', 'Full Name', 'Contact Info', 'Type', 'Status', 'Last Payment']],
-      body: members.map((member: any) => [
-        member.member_number,
-        `${member.full_name}\n${member.date_of_birth || 'DOB: N/A'}`,
-        `${member.email}\n${member.phone || 'No phone'}\n${member.address || 'No address'}`,
-        member.membership_type || 'Standard',
-        member.status || 'Unknown',
-        member.payment_date || 'No payment recorded'
-      ]),
-      startY: yPosition + 10,
+      startY: yPosition,
+      head: [['Member Information', 'Payment Details', 'Family Members', 'Notes']],
+      body: [[
+        `Number: ${member.memberInfo.number}\n` +
+        `Name: ${member.memberInfo.name}\n` +
+        `Contact: ${member.memberInfo.contact}\n` +
+        `Status: ${member.memberInfo.status}\n` +
+        `Registered: ${member.memberInfo.registration}`,
+        
+        `Total Payments: ${member.payments.total}\n` +
+        `Last Payment: ${member.payments.lastPayment}\n` +
+        `Status: ${member.payments.status}`,
+        
+        member.family,
+        member.notes
+      ]],
       theme: 'grid',
-      styles: {
-        fontSize: 10,
-        cellPadding: 3,
-        overflow: 'linebreak',
-        cellWidth: 'wrap'
-      },
-      headStyles: {
-        fillColor: [140, 93, 211],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: [242, 242, 242],
-      },
+      styles: { fontSize: 10, cellPadding: 5 },
+      columnStyles: {
+        0: { cellWidth: 'auto' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 'auto' },
+        3: { cellWidth: 'auto' }
+      }
     });
 
-    yPosition = (doc as any).lastAutoTable.finalY + 20;
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
   });
 
   doc.save(`${title}.pdf`);
 };
 
-export const generateIndividualMemberPDF = (member: any) => {
-  const doc = new jsPDF();
-  addPageHeader(doc, 'Member Details Report');
+export const exportToExcel = (data: any[], filename: string) => {
+  const workbook = XLSX.utils.book_new();
   
-  // Member information box
-  doc.setFillColor(242, 252, 226);
-  doc.rect(14, 40, doc.internal.pageSize.width - 28, 140, 'F');
-  
-  // Member details
-  doc.setFontSize(12);
-  const details = [
-    ['Member Number:', member.member_number],
-    ['Full Name:', member.full_name],
-    ['Email:', member.email],
-    ['Phone:', member.phone || 'N/A'],
-    ['Address:', member.address || 'N/A'],
-    ['Date of Birth:', member.date_of_birth || 'N/A'],
-    ['Membership Type:', member.membership_type || 'Standard'],
-    ['Collector:', member.members_collectors?.name || 'No Collector'],
-    ['Status:', member.status || 'Unknown'],
-    ['Last Payment:', member.payment_date || 'No payment recorded']
-  ];
+  const processedData = data.map(member => ({
+    'Member Number': member.member_number,
+    'Full Name': member.full_name,
+    'Email': member.email,
+    'Phone': member.phone || 'N/A',
+    'Address': member.address || 'N/A',
+    'Status': member.status || 'Unknown',
+    'Registration Date': new Date(member.created_at).toLocaleDateString(),
+    'Last Payment Date': member.last_payment_date ? new Date(member.last_payment_date).toLocaleDateString() : 'N/A',
+    'Total Payments': member.payment_requests?.length || 0,
+    'Payment Status': member.payment_status || 'N/A',
+    'Family Members': (member.family_members || []).map((fm: any) => `${fm.full_name} (${fm.relationship})`).join('; '),
+    'Notes': member.notes || 'N/A'
+  }));
 
-  let yPos = 55;
-  details.forEach(([label, value]) => {
-    doc.setFont(undefined, 'bold');
-    doc.text(label, 20, yPos);
-    doc.setFont(undefined, 'normal');
-    doc.text(value, 100, yPos);
-    yPos += 12;
-  });
-
-  // Add status indicator
-  const statusColor = member.status === 'active' ? [34, 197, 94] : [156, 163, 175];
-  doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-  doc.circle(180, 55, 5, 'F');
-
-  // Add family members section if available
-  if (member.family_members && member.family_members.length > 0) {
-    yPos += 10;
-    doc.setFont(undefined, 'bold');
-    doc.text('Family Members:', 20, yPos);
-    yPos += 10;
-    
-    member.family_members.forEach((familyMember: any) => {
-      doc.setFont(undefined, 'normal');
-      doc.text(`${familyMember.relationship}: ${familyMember.full_name}`, 30, yPos);
-      yPos += 8;
-    });
-  }
-
-  // Add notes section if available
-  if (member.member_notes && member.member_notes.length > 0) {
-    yPos += 10;
-    doc.setFont(undefined, 'bold');
-    doc.text('Notes:', 20, yPos);
-    yPos += 10;
-    
-    member.member_notes.forEach((note: any) => {
-      doc.setFont(undefined, 'normal');
-      doc.text(`${note.note_type}: ${note.note_text}`, 30, yPos);
-      yPos += 8;
-    });
-  }
-
-  doc.save(`member_${member.member_number}_report.pdf`);
+  const worksheet = XLSX.utils.json_to_sheet(processedData);
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+  XLSX.writeFile(workbook, `${filename}.xlsx`);
 };
