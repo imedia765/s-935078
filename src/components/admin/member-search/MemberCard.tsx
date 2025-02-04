@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { MemberActions } from "./MemberActions";
 import { MemberWithRelations } from "../../../types/member";
