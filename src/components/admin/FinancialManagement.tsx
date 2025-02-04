@@ -47,24 +47,39 @@ export function FinancialManagement() {
     }
   });
 
-  const stats = memberStats ? {
-    totalMembers: memberStats.length,
-    directMembers: memberStats.filter(m => !m.members_collectors).length,
-    familyMembers: memberStats.filter(m => m.membership_type === 'family').length,
-    genderDistribution: {
-      men: memberStats.filter(m => m.gender === 'male').length,
-      women: memberStats.filter(m => m.gender === 'female').length
+  // Add new query for payment statistics
+  const { data: paymentStats, isLoading: loadingPaymentStats } = useQuery({
+    queryKey: ["paymentStats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_requests')
+        .select(`
+          id,
+          amount,
+          payment_method,
+          payment_type,
+          status,
+          created_at
+        `);
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Calculate payment statistics
+  const payments = paymentStats ? {
+    totalPayments: paymentStats.length,
+    totalAmount: paymentStats.reduce((sum, payment) => sum + (payment.amount || 0), 0),
+    pendingPayments: paymentStats.filter(p => p.status === 'pending').length,
+    approvedPayments: paymentStats.filter(p => p.status === 'approved').length,
+    paymentMethods: {
+      cash: paymentStats.filter(p => p.payment_method === 'cash').length,
+      bankTransfer: paymentStats.filter(p => p.payment_method === 'bank_transfer').length
     },
-    ageDistribution: memberStats.reduce((acc: any, member) => {
-      if (!member.date_of_birth) return acc;
-      const age = new Date().getFullYear() - new Date(member.date_of_birth).getFullYear();
-      if (age <= 17) acc['0-17']++;
-      else if (age <= 29) acc['18-29']++;
-      else if (age <= 49) acc['30-49']++;
-      else if (age <= 69) acc['50-69']++;
-      else acc['70+']++;
-      return acc;
-    }, { '0-17': 0, '18-29': 0, '30-49': 0, '50-69': 0, '70+': 0 })
+    recentPayments: paymentStats
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5)
   } : null;
 
   const { data: collectorsData, isLoading: loadingCollectors } = useQuery({
@@ -121,14 +136,14 @@ export function FinancialManagement() {
   });
 
   const handleExport = (type: 'excel' | 'csv' | 'all') => {
-    if (!memberStats) return;
+    if (!paymentStats) return;
     
     try {
       if (type === 'csv' || type === 'all') {
-        exportToCSV(memberStats, 'member_statistics');
+        exportToCSV(paymentStats, 'payment_statistics');
       }
       if (type === 'excel' || type === 'all') {
-        generatePDF(memberStats, 'Member Statistics Report');
+        generatePDF(paymentStats, 'Payment Statistics Report');
       }
       
       toast({
@@ -207,13 +222,13 @@ export function FinancialManagement() {
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="p-4 glass-card">
-              <h3 className="font-semibold mb-2">Total Members</h3>
+              <h3 className="font-semibold mb-2">Total Payments</h3>
               <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold">{stats?.totalMembers || 0}</span>
+                <span className="text-2xl font-bold">£{payments?.totalAmount.toFixed(2) || '0.00'}</span>
                 <ResponsiveContainer width={60} height={60}>
                   <PieChart>
                     <Pie
-                      data={[{ value: stats?.totalMembers || 0 }]}
+                      data={[{ value: payments?.totalAmount || 0 }]}
                       innerRadius={20}
                       outerRadius={25}
                       fill="#8c5dd3"
@@ -225,13 +240,13 @@ export function FinancialManagement() {
             </Card>
 
             <Card className="p-4 glass-card">
-              <h3 className="font-semibold mb-2">Direct Members</h3>
+              <h3 className="font-semibold mb-2">Pending Payments</h3>
               <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold">{stats?.directMembers || 0}</span>
+                <span className="text-2xl font-bold">{payments?.pendingPayments || 0}</span>
                 <ResponsiveContainer width={60} height={60}>
                   <PieChart>
                     <Pie
-                      data={[{ value: stats?.directMembers || 0 }]}
+                      data={[{ value: payments?.pendingPayments || 0 }]}
                       innerRadius={20}
                       outerRadius={25}
                       fill="#3b82f6"
@@ -243,13 +258,13 @@ export function FinancialManagement() {
             </Card>
 
             <Card className="p-4 glass-card">
-              <h3 className="font-semibold mb-2">Family Members</h3>
+              <h3 className="font-semibold mb-2">Approved Payments</h3>
               <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold">{stats?.familyMembers || 0}</span>
+                <span className="text-2xl font-bold">{payments?.approvedPayments || 0}</span>
                 <ResponsiveContainer width={60} height={60}>
                   <PieChart>
                     <Pie
-                      data={[{ value: stats?.familyMembers || 0 }]}
+                      data={[{ value: payments?.approvedPayments || 0 }]}
                       innerRadius={20}
                       outerRadius={25}
                       fill="#22c55e"
@@ -263,18 +278,18 @@ export function FinancialManagement() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="p-4 glass-card">
-              <h3 className="font-semibold mb-4">Gender Distribution</h3>
+              <h3 className="font-semibold mb-4">Payment Methods</h3>
               <div className="flex justify-between items-center">
                 <div>
-                  <p>Men: {stats?.genderDistribution.men || 0}</p>
-                  <p>Women: {stats?.genderDistribution.women || 0}</p>
+                  <p>Cash: {payments?.paymentMethods.cash || 0}</p>
+                  <p>Bank Transfer: {payments?.paymentMethods.bankTransfer || 0}</p>
                 </div>
                 <ResponsiveContainer width={120} height={120}>
                   <PieChart>
                     <Pie
                       data={[
-                        { name: 'Men', value: stats?.genderDistribution.men || 0 },
-                        { name: 'Women', value: stats?.genderDistribution.women || 0 }
+                        { name: 'Cash', value: payments?.paymentMethods.cash || 0 },
+                        { name: 'Bank Transfer', value: payments?.paymentMethods.bankTransfer || 0 }
                       ]}
                       innerRadius={35}
                       outerRadius={50}
@@ -290,12 +305,20 @@ export function FinancialManagement() {
             </Card>
 
             <Card className="p-4 glass-card">
-              <h3 className="font-semibold mb-4">Age Distribution</h3>
-              <div className="grid grid-cols-5 gap-2 text-center">
-                {stats && Object.entries(stats.ageDistribution).map(([range, count]) => (
-                  <div key={range} className="bg-primary/10 rounded p-2">
-                    <div className="text-sm text-muted-foreground">{range}</div>
-                    <div className="font-bold">{String(count)}</div>
+              <h3 className="font-semibold mb-4">Recent Payments</h3>
+              <div className="space-y-2">
+                {payments?.recentPayments.map((payment, index) => (
+                  <div key={payment.id} className="flex justify-between items-center p-2 bg-primary/10 rounded">
+                    <span>£{payment.amount}</span>
+                    <span className={`px-2 py-1 rounded ${
+                      payment.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                      'bg-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {payment.status}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(payment.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                 ))}
               </div>
