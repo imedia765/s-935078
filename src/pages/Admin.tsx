@@ -13,13 +13,15 @@ import {
 } from "@/components/ui/table";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Admin() {
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("system");
 
-  // System Checks Query
-  const { data: systemChecks, isLoading: isLoadingChecks } = useQuery({
+  // System Checks Query with error handling
+  const { data: systemChecks, isLoading: isLoadingChecks, error: systemError } = useQuery({
     queryKey: ["systemChecks"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('run_combined_system_checks');
@@ -29,7 +31,7 @@ export default function Admin() {
   });
 
   // Audit Activity Query
-  const { data: auditActivity, isLoading: isLoadingAudit } = useQuery({
+  const { data: auditActivity, isLoading: isLoadingAudit, error: auditError } = useQuery({
     queryKey: ["auditActivity"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_audit_activity_summary');
@@ -39,7 +41,7 @@ export default function Admin() {
   });
 
   // User Roles Query
-  const { data: roleValidation, isLoading: isLoadingRoles } = useQuery({
+  const { data: roleValidation, isLoading: isLoadingRoles, error: rolesError } = useQuery({
     queryKey: ["roleValidation"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('validate_user_roles');
@@ -57,10 +59,10 @@ export default function Admin() {
         title: "Success",
         description: "Expired tokens cleaned up successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to cleanup tokens",
+        description: error.message || "Failed to cleanup tokens",
         variant: "destructive",
       });
     }
@@ -75,13 +77,27 @@ export default function Admin() {
         title: "Success",
         description: "Collector roles maintained successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to maintain collector roles",
+        description: error.message || "Failed to maintain collector roles",
         variant: "destructive",
       });
     }
+  };
+
+  // Error Display Component
+  const ErrorAlert = ({ error }: { error: Error | null }) => {
+    if (!error) return null;
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          {error.message}
+        </AlertDescription>
+      </Alert>
+    );
   };
 
   return (
@@ -99,6 +115,7 @@ export default function Admin() {
         <TabsContent value="system">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">System Health Checks</h2>
+            {systemError && <ErrorAlert error={systemError as Error} />}
             {isLoadingChecks ? (
               <p>Loading system checks...</p>
             ) : (
@@ -124,7 +141,7 @@ export default function Admin() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <pre className="text-sm">
+                        <pre className="text-sm whitespace-pre-wrap">
                           {JSON.stringify(check.details, null, 2)}
                         </pre>
                       </TableCell>
@@ -139,6 +156,7 @@ export default function Admin() {
         <TabsContent value="audit">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Audit Activity</h2>
+            {auditError && <ErrorAlert error={auditError as Error} />}
             {isLoadingAudit ? (
               <p>Loading audit logs...</p>
             ) : (
@@ -167,6 +185,7 @@ export default function Admin() {
         <TabsContent value="roles">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Role Validation</h2>
+            {rolesError && <ErrorAlert error={rolesError as Error} />}
             {isLoadingRoles ? (
               <p>Loading role validation...</p>
             ) : (
@@ -192,7 +211,7 @@ export default function Admin() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <pre className="text-sm">
+                        <pre className="text-sm whitespace-pre-wrap">
                           {JSON.stringify(validation.details, null, 2)}
                         </pre>
                       </TableCell>
