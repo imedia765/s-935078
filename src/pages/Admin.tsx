@@ -82,6 +82,7 @@ export default function Admin() {
           <TabsTrigger value="financial">Financial</TabsTrigger>
         </TabsList>
 
+        {/* System Health Tab */}
         <TabsContent value="system">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">System Health Checks</h2>
@@ -123,6 +124,7 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
+        {/* Audit Logs Tab */}
         <TabsContent value="audit">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">Audit Activity</h2>
@@ -152,6 +154,7 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
+        {/* Role Management Tab */}
         <TabsContent value="roles">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">Role Management</h2>
@@ -159,6 +162,7 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
+        {/* Member Search Tab */}
         <TabsContent value="members">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">Member Search</h2>
@@ -166,6 +170,12 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
+        {/* Collectors Tab */}
+        <TabsContent value="collectors">
+          <CollectorsManagement />
+        </TabsContent>
+
+        {/* Maintenance Tab */}
         <TabsContent value="maintenance">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">System Maintenance</h2>
@@ -173,6 +183,7 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
+        {/* Financial Tab */}
         <TabsContent value="financial">
           <Card className="p-6 glass-card">
             <FinancialManagement />
