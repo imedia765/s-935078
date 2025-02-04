@@ -23,8 +23,12 @@ import {
 
 interface SystemCheck {
   check_type: string;
+  metric_name: string;
+  current_value: number;
+  threshold: number;
   status: string;
-  check_details: Record<string, number>;
+  details: Record<string, any>;
+  test_category: string;
 }
 
 export function MaintenanceManagement() {
@@ -179,7 +183,15 @@ export function MaintenanceManagement() {
                       {check.status}
                     </div>
                     <div className="mt-2 text-sm text-muted-foreground">
-                      {Object.entries(check.check_details).map(([key, value]) => (
+                      <div className="flex justify-between">
+                        <span>{check.metric_name}:</span>
+                        <span>{check.current_value}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Threshold:</span>
+                        <span>{check.threshold}</span>
+                      </div>
+                      {Object.entries(check.details).map(([key, value]) => (
                         <div key={key} className="flex justify-between">
                           <span>{key.replace(/_/g, ' ')}:</span>
                           <span>{value}</span>
