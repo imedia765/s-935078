@@ -58,18 +58,18 @@ export function PaymentsList({
     );
   };
 
-  // Group payments by collector with proper null handling
+  // Group payments by collector
   const paymentsByCollector = paymentsData.reduce((acc: Record<string, any>, payment: Payment) => {
-    const collectorId = payment.members_collectors?.id;
-    const collectorName = payment.members_collectors?.name;
+    const collector = payment.members_collectors;
     
-    // Skip payments without collector information
-    if (!collectorId || !collectorName) return acc;
+    if (!collector?.id || !collector?.name) {
+      return acc;
+    }
     
-    if (!acc[collectorId]) {
-      acc[collectorId] = {
-        id: collectorId,
-        name: collectorName,
+    if (!acc[collector.id]) {
+      acc[collector.id] = {
+        id: collector.id,
+        name: collector.name,
         payments: [],
         totalAmount: 0,
         approvedCount: 0,
@@ -77,20 +77,20 @@ export function PaymentsList({
       };
     }
     
-    acc[collectorId].payments.push(payment);
-    acc[collectorId].totalAmount += payment.amount || 0;
-    if (payment.status === 'approved') {
-      acc[collectorId].approvedCount += 1;
-    } else if (payment.status === 'pending') {
-      acc[collectorId].pendingCount += 1;
-    }
+    acc[collector.id].payments.push(payment);
+    acc[collector.id].totalAmount += payment.amount || 0;
+    acc[collector.id].approvedCount += payment.status === 'approved' ? 1 : 0;
+    acc[collector.id].pendingCount += payment.status === 'pending' ? 1 : 0;
     
     return acc;
   }, {});
 
-  // Sort collectors by name
   const sortedCollectors = Object.values(paymentsByCollector)
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
+
+  console.log('Payments Data:', paymentsData);
+  console.log('Grouped Payments:', paymentsByCollector);
+  console.log('Sorted Collectors:', sortedCollectors);
 
   return (
     <Card className="p-6 glass-card">
