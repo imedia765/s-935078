@@ -14,12 +14,14 @@ export function ErrorLogViewer() {
   const { data: logs } = useQuery({
     queryKey: ["errorLogs", severity, searchTerm],
     queryFn: async () => {
-      const { data: rpcData, error } = await supabase.rpc('get_error_logs', {
-        p_severity: severity,
-        p_search: searchTerm
-      });
+      const { data: rpcData, error } = await supabase.rpc('check_error_rates');
       if (error) throw error;
-      return rpcData as ErrorLog[];
+      return (rpcData as any[]).map(item => ({
+        timestamp: item.timestamp || new Date().toISOString(),
+        severity: item.severity || 'info',
+        message: item.message || '',
+        source: item.source || 'system'
+      })) as ErrorLog[];
     }
   });
 

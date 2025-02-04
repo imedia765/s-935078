@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Cpu, HardDrive, Network } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SystemResources as SystemResourcesType } from "@/types/maintenance";
+import type { SystemResources as SystemResourcesType } from "@/types/maintenance";
 
 export function SystemResources() {
   const { data: resources } = useQuery({
@@ -11,7 +11,13 @@ export function SystemResources() {
     queryFn: async () => {
       const { data: rpcData, error } = await supabase.rpc('check_resource_usage');
       if (error) throw error;
-      return rpcData as SystemResources;
+      const metrics = rpcData as any[];
+      return {
+        cpu_usage: metrics.find(m => m.metric_name === 'CPU Usage')?.current_value || 0,
+        memory_usage: metrics.find(m => m.metric_name === 'Memory Usage')?.current_value || 0,
+        disk_usage: metrics.find(m => m.metric_name === 'Disk Usage')?.current_value || 0,
+        network_status: metrics.find(m => m.metric_name === 'Network Status')?.status || 'Unknown'
+      } as SystemResourcesType;
     }
   });
 

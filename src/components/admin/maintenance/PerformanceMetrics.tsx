@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from "@/integrations/supabase/client";
-import { PerformanceMetrics as PerformanceMetricsType } from "@/types/maintenance";
+import type { PerformanceMetrics as PerformanceMetricsType } from "@/types/maintenance";
 
 export function PerformanceMetrics() {
   const { data: metrics } = useQuery({
@@ -10,7 +10,24 @@ export function PerformanceMetrics() {
     queryFn: async () => {
       const { data: rpcData, error } = await supabase.rpc('check_system_performance');
       if (error) throw error;
-      return rpcData as PerformanceMetrics;
+      return {
+        response_times: (rpcData as any[]).filter(d => d.metric_name === 'response_time').map(d => ({
+          timestamp: d.timestamp,
+          value: d.current_value
+        })),
+        query_times: (rpcData as any[]).filter(d => d.metric_name === 'query_time').map(d => ({
+          timestamp: d.timestamp,
+          value: d.current_value
+        })),
+        api_performance: (rpcData as any[]).filter(d => d.metric_name === 'api_performance').map(d => ({
+          timestamp: d.timestamp,
+          value: d.current_value
+        })),
+        cache_hits: (rpcData as any[]).filter(d => d.metric_name === 'cache_hits').map(d => ({
+          timestamp: d.timestamp,
+          value: d.current_value
+        }))
+      } as PerformanceMetricsType;
     }
   });
 

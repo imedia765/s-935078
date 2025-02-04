@@ -16,7 +16,12 @@ export function BackupManagement() {
     queryFn: async () => {
       const { data: rpcData, error } = await supabase.rpc('generate_full_backup');
       if (error) throw error;
-      return rpcData as BackupRecord[];
+      return (rpcData as any[]).map(item => ({
+        id: item.id || '',
+        created_at: item.timestamp || '',
+        size: item.size || '0 KB',
+        status: item.status || 'completed'
+      })) as BackupRecord[];
     }
   });
 
@@ -44,7 +49,9 @@ export function BackupManagement() {
 
   const handleRestore = async (backupId: string) => {
     try {
-      const { data, error } = await supabase.rpc('restore_from_backup', { backup_id: backupId });
+      const { data, error } = await supabase.rpc('restore_from_backup', { 
+        backup_data: { id: backupId } 
+      });
       if (error) throw error;
       
       toast({

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Shield, AlertTriangle, Lock, Users } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { SecurityMetrics } from "@/types/maintenance";
+import type { SecurityMetrics } from "@/types/maintenance";
 
 export function SecurityDashboard() {
   const { data: security } = useQuery({
@@ -11,7 +11,15 @@ export function SecurityDashboard() {
     queryFn: async () => {
       const { data: rpcData, error } = await supabase.rpc('audit_security_settings');
       if (error) throw error;
-      return rpcData as SecurityMetrics;
+      const details = rpcData?.[0]?.details || {};
+      return {
+        failed_logins: details.failed_logins || 0,
+        security_alerts: details.security_alerts || 0,
+        ssl_expiry: details.ssl_expiry || new Date().toISOString(),
+        ssl_days_remaining: details.ssl_days_remaining || 0,
+        active_sessions: details.active_sessions || 0,
+        vulnerabilities: details.vulnerabilities || []
+      } as SecurityMetrics;
     }
   });
 
