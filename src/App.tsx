@@ -15,8 +15,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
+type UserRole = "admin" | "collector" | "member";
+
 // Protected Route Component
-const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: string }) => {
+const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: UserRole }) => {
   const { data: userRoles, isLoading } = useQuery({
     queryKey: ["userRoles"],
     queryFn: async () => {
@@ -28,7 +30,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode,
         .select("role")
         .eq("user_id", user.id)
 
-      return roles?.map(r => r.role) || []
+      return roles?.map(r => r.role as UserRole) || []
     }
   })
 
