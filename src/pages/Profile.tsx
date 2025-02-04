@@ -69,7 +69,7 @@ const Profile = () => {
           family_members (*)
         `)
         .eq("auth_user_id", user.id)
-        .maybeSingle(); // Use maybeSingle() instead of single()
+        .maybeSingle();
 
       console.log("Member data:", member, "Error:", memberError);
 
@@ -87,7 +87,6 @@ const Profile = () => {
               auth_user_id: user.id,
               full_name: user.user_metadata?.full_name || user.email,
               email: user.email,
-              roles: roles.map(r => r.role),
               status: 'active',
               member_number: `M${Date.now().toString().slice(-6)}` // Generate a temporary member number
             }
@@ -100,19 +99,19 @@ const Profile = () => {
           throw new Error("Failed to create member profile");
         }
 
-        setMemberData(newMember);
-        setEditedData(newMember);
+        setMemberData({ ...newMember, roles: roles?.map(r => r.role) });
+        setEditedData({ ...newMember, roles: roles?.map(r => r.role) });
       } else {
         setMemberData({ ...member, roles: roles?.map(r => r.role) });
         setEditedData({ ...member, roles: roles?.map(r => r.role) });
       }
 
       // Fetch payment history
-      if (memberData?.member_number) {
+      if (member?.member_number) {
         const { data: payments, error: paymentsError } = await supabase
           .from("payment_requests")
           .select("*")
-          .eq("member_number", memberData.member_number)
+          .eq("member_number", member.member_number)
           .order("created_at", { ascending: false });
 
         if (paymentsError) {
