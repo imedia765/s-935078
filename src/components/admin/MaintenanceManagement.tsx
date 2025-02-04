@@ -141,6 +141,5 @@ export function MaintenanceManagement() {
         )}
       </div>
     </div>
-  </div>
   );
 }
