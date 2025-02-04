@@ -629,154 +629,154 @@ export type Database = {
       }
       members: {
         Row: {
-          id: string
-          member_number: string
-          collector_id: string | null
-          full_name: string
-          date_of_birth: string | null
-          gender: string | null
-          marital_status: string | null
-          email: string | null
-          phone: string | null
           address: string | null
-          postcode: string | null
-          town: string | null
-          status: string | null
-          verified: boolean | null
-          created_at: string
-          updated_at: string
-          membership_type: string | null
+          admin_note: string | null
+          auth_user_id: string | null
           collector: string | null
+          collector_id: string | null
           cors_enabled: boolean | null
-          payment_amount: number | null
-          payment_type: string | null
-          payment_date: string | null
-          payment_notes: string | null
-          family_member_name: string | null
-          family_member_relationship: string | null
+          created_at: string
+          created_by: string | null
+          date_of_birth: string | null
+          email: string | null
+          email_verified: boolean | null
+          emergency_collection_amount: number | null
+          emergency_collection_created_at: string | null
+          emergency_collection_due_date: string | null
+          emergency_collection_status: string | null
+          failed_login_attempts: number | null
           family_member_dob: string | null
           family_member_gender: string | null
-          ticket_subject: string | null
+          family_member_name: string | null
+          family_member_relationship: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          last_failed_attempt: string | null
+          locked_until: string | null
+          marital_status: string | null
+          member_number: string
+          membership_type: string | null
+          password_reset_required: boolean | null
+          password_set_at: string | null
+          payment_amount: number | null
+          payment_date: string | null
+          payment_notes: string | null
+          payment_type: string | null
+          phone: string | null
+          photo_url: string | null
+          postcode: string | null
+          status: string | null
           ticket_description: string | null
-          ticket_status: string | null
           ticket_priority: string | null
-          admin_note: string | null
-          created_by: string | null
-          auth_user_id: string | null
+          ticket_status: string | null
+          ticket_subject: string | null
+          town: string | null
+          updated_at: string
+          verified: boolean | null
           yearly_payment_amount: number | null
           yearly_payment_due_date: string | null
           yearly_payment_status: string | null
-          emergency_collection_amount: number | null
-          emergency_collection_due_date: string | null
-          emergency_collection_status: string | null
-          emergency_collection_created_at: string | null
-          password_set_at: string | null
-          password_reset_required: boolean | null
-          failed_login_attempts: number | null
-          last_failed_attempt: string | null
-          locked_until: string | null
-          email_verified: boolean | null
-          photo_url: string | null
         }
         Insert: {
-          id?: string
-          member_number: string
-          collector_id?: string | null
-          full_name: string
-          date_of_birth?: string | null
-          gender?: string | null
-          marital_status?: string | null
-          email?: string | null
-          phone?: string | null
           address?: string | null
-          postcode?: string | null
-          town?: string | null
-          status?: string | null
-          verified?: boolean | null
-          created_at?: string
-          updated_at?: string
-          membership_type?: string | null
+          admin_note?: string | null
+          auth_user_id?: string | null
           collector?: string | null
+          collector_id?: string | null
           cors_enabled?: boolean | null
-          payment_amount?: number | null
-          payment_type?: string | null
-          payment_date?: string | null
-          payment_notes?: string | null
-          family_member_name?: string | null
-          family_member_relationship?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          email_verified?: boolean | null
+          emergency_collection_amount?: number | null
+          emergency_collection_created_at?: string | null
+          emergency_collection_due_date?: string | null
+          emergency_collection_status?: string | null
+          failed_login_attempts?: number | null
           family_member_dob?: string | null
           family_member_gender?: string | null
-          ticket_subject?: string | null
+          family_member_name?: string | null
+          family_member_relationship?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          last_failed_attempt?: string | null
+          locked_until?: string | null
+          marital_status?: string | null
+          member_number: string
+          membership_type?: string | null
+          password_reset_required?: boolean | null
+          password_set_at?: string | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_notes?: string | null
+          payment_type?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          postcode?: string | null
+          status?: string | null
           ticket_description?: string | null
-          ticket_status?: string | null
           ticket_priority?: string | null
-          admin_note?: string | null
-          created_by?: string | null
-          auth_user_id?: string | null
+          ticket_status?: string | null
+          ticket_subject?: string | null
+          town?: string | null
+          updated_at?: string
+          verified?: boolean | null
           yearly_payment_amount?: number | null
           yearly_payment_due_date?: string | null
           yearly_payment_status?: string | null
-          emergency_collection_amount?: number | null
-          emergency_collection_due_date?: string | null
-          emergency_collection_status?: string | null
-          emergency_collection_created_at?: string | null
-          password_set_at?: string | null
-          password_reset_required?: boolean | null
-          failed_login_attempts?: number | null
-          last_failed_attempt?: string | null
-          locked_until?: string | null
-          email_verified?: boolean | null
-          photo_url?: string | null
         }
         Update: {
-          id?: string
-          member_number?: string
-          collector_id?: string | null
-          full_name?: string
-          date_of_birth?: string | null
-          gender?: string | null
-          marital_status?: string | null
-          email?: string | null
-          phone?: string | null
           address?: string | null
-          postcode?: string | null
-          town?: string | null
-          status?: string | null
-          verified?: boolean | null
-          created_at?: string
-          updated_at?: string
-          membership_type?: string | null
+          admin_note?: string | null
+          auth_user_id?: string | null
           collector?: string | null
+          collector_id?: string | null
           cors_enabled?: boolean | null
-          payment_amount?: number | null
-          payment_type?: string | null
-          payment_date?: string | null
-          payment_notes?: string | null
-          family_member_name?: string | null
-          family_member_relationship?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          email_verified?: boolean | null
+          emergency_collection_amount?: number | null
+          emergency_collection_created_at?: string | null
+          emergency_collection_due_date?: string | null
+          emergency_collection_status?: string | null
+          failed_login_attempts?: number | null
           family_member_dob?: string | null
           family_member_gender?: string | null
-          ticket_subject?: string | null
+          family_member_name?: string | null
+          family_member_relationship?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          last_failed_attempt?: string | null
+          locked_until?: string | null
+          marital_status?: string | null
+          member_number?: string
+          membership_type?: string | null
+          password_reset_required?: boolean | null
+          password_set_at?: string | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_notes?: string | null
+          payment_type?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          postcode?: string | null
+          status?: string | null
           ticket_description?: string | null
-          ticket_status?: string | null
           ticket_priority?: string | null
-          admin_note?: string | null
-          created_by?: string | null
-          auth_user_id?: string | null
+          ticket_status?: string | null
+          ticket_subject?: string | null
+          town?: string | null
+          updated_at?: string
+          verified?: boolean | null
           yearly_payment_amount?: number | null
           yearly_payment_due_date?: string | null
           yearly_payment_status?: string | null
-          emergency_collection_amount?: number | null
-          emergency_collection_due_date?: string | null
-          emergency_collection_status?: string | null
-          emergency_collection_created_at?: string | null
-          password_set_at?: string | null
-          password_reset_required?: boolean | null
-          failed_login_attempts?: number | null
-          last_failed_attempt?: string | null
-          locked_until?: string | null
-          email_verified?: boolean | null
-          photo_url?: string | null
         }
         Relationships: []
       }
@@ -1302,10 +1302,10 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean | null
-          message: string
+          message?: string
           priority?: number | null
           severity?: string | null
-          title: string
+          title?: string
         }
         Relationships: []
       }
@@ -1843,3 +1843,100 @@ export type Database = {
     }
   }
 }
+
+type PublicSchema = Database[Extract<keyof Database, "public">]
+
+export type Tables<
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
