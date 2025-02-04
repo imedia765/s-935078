@@ -81,10 +81,10 @@ export function FinancialManagement() {
           status,
           created_at,
           payment_number,
-          members (
+          members!payment_requests_member_id_fkey (
             full_name
           ),
-          members_collectors (
+          members_collectors!payment_requests_collector_id_fkey (
             name
           )
         `);
@@ -120,7 +120,7 @@ export function FinancialManagement() {
           email,
           phone,
           active,
-          members!members_collector_id_fkey (
+          members!members_collectors_member_number_fkey (
             id,
             full_name,
             payment_amount,
