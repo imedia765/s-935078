@@ -74,7 +74,7 @@ export function MaintenanceManagement() {
   const handleRunMaintenance = async () => {
     setIsRunning(true);
     try {
-      const { data, error } = await supabase.rpc('run_maintenance');
+      const { data, error } = await supabase.rpc('perform_system_maintenance');
       if (error) throw error;
       toast({
         title: "Maintenance Complete",
@@ -93,7 +93,7 @@ export function MaintenanceManagement() {
 
   const handleScheduleMaintenance = async () => {
     try {
-      const { data, error } = await supabase.rpc('schedule_maintenance');
+      const { data, error } = await supabase.rpc('schedule_system_maintenance');
       if (error) throw error;
       toast({
         title: "Maintenance Scheduled",

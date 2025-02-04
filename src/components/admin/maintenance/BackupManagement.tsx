@@ -14,7 +14,7 @@ export function BackupManagement() {
   const { data: backups, refetch } = useQuery({
     queryKey: ["backups"],
     queryFn: async () => {
-      const { data: rpcData, error } = await supabase.rpc('get_backup_history');
+      const { data: rpcData, error } = await supabase.rpc('generate_full_backup');
       if (error) throw error;
       return rpcData as BackupRecord[];
     }
@@ -23,7 +23,7 @@ export function BackupManagement() {
   const handleBackup = async () => {
     try {
       setIsBackingUp(true);
-      const { data, error } = await supabase.rpc('create_backup');
+      const { data, error } = await supabase.rpc('generate_full_backup');
       if (error) throw error;
       
       toast({
@@ -44,7 +44,7 @@ export function BackupManagement() {
 
   const handleRestore = async (backupId: string) => {
     try {
-      const { data, error } = await supabase.rpc('restore_backup', { backup_id: backupId });
+      const { data, error } = await supabase.rpc('restore_from_backup', { backup_id: backupId });
       if (error) throw error;
       
       toast({

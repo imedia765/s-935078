@@ -8,7 +8,7 @@ export function PerformanceMetrics() {
   const { data: metrics } = useQuery({
     queryKey: ["performanceMetrics"],
     queryFn: async () => {
-      const { data: rpcData, error } = await supabase.rpc('get_performance_metrics');
+      const { data: rpcData, error } = await supabase.rpc('check_system_performance');
       if (error) throw error;
       return rpcData as PerformanceMetrics;
     }

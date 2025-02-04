@@ -9,7 +9,7 @@ export function SecurityDashboard() {
   const { data: security } = useQuery({
     queryKey: ["securityMetrics"],
     queryFn: async () => {
-      const { data: rpcData, error } = await supabase.rpc('get_security_metrics');
+      const { data: rpcData, error } = await supabase.rpc('audit_security_settings');
       if (error) throw error;
       return rpcData as SecurityMetrics;
     }

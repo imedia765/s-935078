@@ -9,7 +9,7 @@ export function SystemResources() {
   const { data: resources } = useQuery({
     queryKey: ["systemResources"],
     queryFn: async () => {
-      const { data: rpcData, error } = await supabase.rpc('get_system_resources');
+      const { data: rpcData, error } = await supabase.rpc('check_resource_usage');
       if (error) throw error;
       return rpcData as SystemResources;
     }
