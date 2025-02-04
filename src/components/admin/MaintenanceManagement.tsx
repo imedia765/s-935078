@@ -139,8 +139,13 @@ export function MaintenanceManagement() {
     }
   };
 
-  const handleFixRoleError = async (userId: string, errorType: string) => {
+  const handleFixRoleError = async (userId: string | undefined, errorType: string) => {
     try {
+      if (errorType === 'Inconsistent Member Status' && !userId) {
+        const validationDetails = systemHealth?.find(v => v.check_type === errorType);
+        userId = validationDetails?.check_details?.auth_user_id;
+      }
+
       if (!userId) {
         console.error("User ID is undefined");
         throw new Error("User ID is required");

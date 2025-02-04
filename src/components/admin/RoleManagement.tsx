@@ -116,10 +116,16 @@ export function RoleManagement() {
     }
   });
 
-  const handleFixRoleError = async (userId: string, errorType: string) => {
+  const handleFixRoleError = async (userId: string | undefined, errorType: string) => {
     try {
       console.log(`Attempting to fix role error for user ${userId}, type: ${errorType}`);
       
+      // For 'Inconsistent Member Status', we need to extract user ID from auth_user_id in details
+      if (errorType === 'Inconsistent Member Status' && !userId) {
+        const validationDetails = roleValidation?.validation?.find(v => v.check_type === errorType);
+        userId = validationDetails?.details?.auth_user_id;
+      }
+
       if (!userId) {
         console.error("User ID is undefined");
         throw new Error("User ID is required");
