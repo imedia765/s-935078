@@ -223,6 +223,53 @@ export function FinancialManagement() {
     }
   };
 
+  const handleExport = async (type: 'excel' | 'csv' | 'all') => {
+    try {
+      if (!paymentsData) return;
+
+      const data = paymentsData.map(payment => ({
+        payment_number: payment.payment_number || 'N/A',
+        member_name: payment.members?.full_name || 'N/A',
+        collector: payment.members_collectors?.name || 'N/A',
+        amount: payment.amount || 0,
+        payment_method: payment.payment_method || 'N/A',
+        payment_type: payment.payment_type || 'N/A',
+        status: payment.status || 'N/A',
+        created_at: payment.created_at ? new Date(payment.created_at).toLocaleDateString() : 'N/A'
+      }));
+
+      switch (type) {
+        case 'excel':
+          await exportToCSV(data, 'payments_export_excel');
+          toast({
+            title: "Export successful",
+            description: "The Excel file has been downloaded.",
+          });
+          break;
+        case 'csv':
+          await exportToCSV(data, 'payments_export_csv');
+          toast({
+            title: "Export successful",
+            description: "The CSV file has been downloaded.",
+          });
+          break;
+        case 'all':
+          await generatePDF(data, 'All Payments Report');
+          toast({
+            title: "Export successful",
+            description: "The PDF report has been downloaded.",
+          });
+          break;
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "Failed to export data",
+      });
+    }
+  };
+
   const COLORS = ['#8c5dd3', '#3b82f6', '#22c55e'];
 
   const collectorStats = collectorsData ? {

@@ -11,7 +11,7 @@ export function SecurityDashboard() {
     queryFn: async () => {
       const { data: rpcData, error } = await supabase.rpc('audit_security_settings');
       if (error) throw error;
-      const details = rpcData?.[0]?.details || {};
+      const details = rpcData?.[0]?.details as SecurityMetrics || {};
       return {
         failed_logins: details.failed_logins || 0,
         security_alerts: details.security_alerts || 0,
