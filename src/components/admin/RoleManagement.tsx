@@ -33,36 +33,49 @@ export function RoleManagement() {
     queryKey: ["users"],
     queryFn: async () => {
       console.log("Fetching users and roles data...");
-      const { data: users, error: usersError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id,
-          role,
-          members!inner (
-            email,
-            auth_user_id
-          )
-        `);
       
-      if (usersError) {
-        console.error("Users fetch error:", usersError);
-        throw usersError;
+      // First get all users with their roles
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+      
+      if (rolesError) {
+        console.error("User roles fetch error:", rolesError);
+        throw rolesError;
       }
 
-      // Transform the data to match the User interface
-      const transformedUsers = users.reduce((acc: { [key: string]: User }, curr: any) => {
-        if (!acc[curr.user_id]) {
-          acc[curr.user_id] = {
-            id: curr.user_id,
-            email: curr.members?.email,
-            user_roles: []
-          };
+      // Then get member details for these users
+      const { data: members, error: membersError } = await supabase
+        .from('members')
+        .select('auth_user_id, email');
+
+      if (membersError) {
+        console.error("Members fetch error:", membersError);
+        throw membersError;
+      }
+
+      // Create a map of auth_user_id to email
+      const emailMap = members.reduce((acc: {[key: string]: string}, member: any) => {
+        if (member.auth_user_id) {
+          acc[member.auth_user_id] = member.email;
         }
-        acc[curr.user_id].user_roles?.push({ role: curr.role });
         return acc;
       }, {});
 
-      return Object.values(transformedUsers);
+      // Transform the data to match the User interface
+      const userMap = userRoles.reduce((acc: {[key: string]: User}, role: any) => {
+        if (!acc[role.user_id]) {
+          acc[role.user_id] = {
+            id: role.user_id,
+            email: emailMap[role.user_id],
+            user_roles: []
+          };
+        }
+        acc[role.user_id].user_roles?.push({ role: role.role });
+        return acc;
+      }, {});
+
+      return Object.values(userMap);
     }
   });
 
