@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { WhatsAppSupport } from "@/components/WhatsAppSupport";
 
 export const Index = () => {
   const [memberNumber, setMemberNumber] = useState("");
@@ -179,13 +180,17 @@ export const Index = () => {
                 />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-primary hover:bg-primary/90"
-                disabled={isLoading}
-              >
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
+              <div className="flex flex-col space-y-4">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-primary hover:bg-primary/90"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Logging in..." : "Login"}
+                </Button>
+                
+                <WhatsAppSupport />
+              </div>
 
               <div className="text-center space-y-4">
                 <p className="text-sm">
