@@ -47,8 +47,10 @@ export function MemberStats() {
   }
 
   const totalMembers = stats?.length || 0;
-  const directMembers = stats?.filter(m => !m.family_member_of)?.length || 0;
-  const familyMembers = stats?.filter(m => m.family_member_of)?.length || 0;
+  // A direct member is one who has no family members or is not in someone else's family_members array
+  const directMembers = stats?.filter(m => !m.family_members?.length)?.length || 0;
+  // Family members are those who have family_members entries
+  const familyMembers = stats?.reduce((acc, member) => acc + (member.family_members?.length || 0), 0) || 0;
 
   const genderDistribution = {
     men: stats?.filter(m => m.gender === 'male')?.length || 0,
