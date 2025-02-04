@@ -28,12 +28,11 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks', undefined, {
-          count: 'exact',
-          head: false
-        });
-        if (error) throw error;
-        console.log("System checks response:", data);
+        const { data, error } = await supabase.rpc('run_combined_system_checks');
+        if (error) {
+          console.error("System checks error:", error);
+          throw error;
+        }
         return data;
       } catch (error: any) {
         console.error("System checks error:", error);
@@ -42,7 +41,6 @@ export default function Admin() {
     }
   });
 
-  // Audit Activity Query
   const { data: auditActivity, isLoading: isLoadingAudit, error: auditError } = useQuery({
     queryKey: ["auditActivity"],
     queryFn: async () => {
@@ -61,44 +59,6 @@ export default function Admin() {
       return data;
     }
   });
-
-  // Cleanup Tokens
-  const handleCleanupTokens = async () => {
-    try {
-      const { error } = await supabase.rpc('manual_cleanup_expired_tokens');
-      if (error) throw error;
-      toast({
-        title: "Success",
-        description: "Expired tokens cleaned up successfully",
-      });
-    } catch (error: any) {
-      console.error("Cleanup tokens error:", error); // Debug log
-      toast({
-        title: "Error",
-        description: error.message || "Failed to cleanup tokens",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Maintain Collector Roles
-  const handleMaintainCollectorRoles = async () => {
-    try {
-      const { error } = await supabase.rpc('maintain_collector_roles');
-      if (error) throw error;
-      toast({
-        title: "Success",
-        description: "Collector roles maintained successfully",
-      });
-    } catch (error: any) {
-      console.error("Maintain collector roles error:", error); // Debug log
-      toast({
-        title: "Error",
-        description: error.message || "Failed to maintain collector roles",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Error Display Component
   const ErrorAlert = ({ error }: { error: Error | null }) => {
@@ -188,7 +148,7 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                          {JSON.stringify(check.details, null, 2)}
+                          {JSON.stringify(check.check_details, null, 2)}
                         </pre>
                       </TableCell>
                     </TableRow>
