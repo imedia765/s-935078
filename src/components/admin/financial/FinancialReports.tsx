@@ -12,7 +12,55 @@ interface FinancialReportsProps {
 }
 
 export function FinancialReports({ payments, handleExport }: FinancialReportsProps) {
-  const COLORS = ['#8c5dd3', '#3b82f6', '#22c55e'];
+  const COLORS = ['#8c5dd3', '#3b82f6', '#22c55e', '#f59e0b'];
+
+  const { data: memberPayments } = useQuery({
+    queryKey: ["memberPayments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_requests')
+        .select(`
+          amount,
+          status,
+          created_at,
+          members!payment_requests_member_id_fkey (
+            full_name,
+            member_number
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Group payments by member
+      const memberStats = data.reduce((acc: any, payment: any) => {
+        const memberName = payment.members?.full_name || 'Unknown';
+        if (!acc[memberName]) {
+          acc[memberName] = {
+            name: memberName,
+            memberNumber: payment.members?.member_number,
+            totalAmount: 0,
+            approvedAmount: 0,
+            pendingAmount: 0,
+            paymentCount: 0
+          };
+        }
+        
+        acc[memberName].totalAmount += payment.amount || 0;
+        acc[memberName].paymentCount += 1;
+        
+        if (payment.status === 'approved') {
+          acc[memberName].approvedAmount += payment.amount || 0;
+        } else if (payment.status === 'pending') {
+          acc[memberName].pendingAmount += payment.amount || 0;
+        }
+        
+        return acc;
+      }, {});
+      
+      return Object.values(memberStats);
+    }
+  });
 
   const { data: collectorPerformance } = useQuery({
     queryKey: ["collectorPerformance"],
@@ -148,6 +196,29 @@ export function FinancialReports({ payments, handleExport }: FinancialReportsPro
       </div>
 
       <div className="space-y-8">
+        <div>
+          <h4 className="text-lg font-medium mb-4">Payments by Member</h4>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={memberPayments || []}>
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={100}
+                interval={0}
+              />
+              <YAxis />
+              <Tooltip 
+                formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
+                labelFormatter={(label) => `Member: ${label}`}
+              />
+              <Legend />
+              <Bar dataKey="approvedAmount" name="Approved Payments" fill="#22c55e" />
+              <Bar dataKey="pendingAmount" name="Pending Payments" fill="#f59e0b" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
         <div>
           <h4 className="text-lg font-medium mb-4">Monthly Payment Trends</h4>
           <ResponsiveContainer width="100%" height={300}>
