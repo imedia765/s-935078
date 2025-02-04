@@ -139,6 +139,44 @@ export function MaintenanceManagement() {
     }
   };
 
+  const handleFixRoleError = async (userId: string, errorType: string) => {
+    try {
+      console.log(`Fixing role error for user ${userId}, type: ${errorType}`);
+      
+      const { data, error } = await supabase.rpc('fix_role_error', {
+        p_user_id: userId,
+        p_error_type: errorType
+      });
+      
+      if (error) {
+        console.error("Fix role error failed:", error);
+        throw error;
+      }
+
+      await supabase.from('audit_logs').insert([{
+        table_name: 'user_roles',
+        operation: 'UPDATE',
+        record_id: userId,
+        new_values: {
+          error_type: errorType,
+          resolution: 'automatic_fix'
+        }
+      }]);
+
+      toast({
+        title: "Success",
+        description: "Role error fixed successfully",
+      });
+    } catch (error: any) {
+      console.error("Error fixing role:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Maintenance Mode Toggle */}
@@ -201,6 +239,16 @@ export function MaintenanceManagement() {
                           <span>{value}</span>
                         </div>
                       ))}
+                      {check.status !== 'Good' && check.check_details?.user_id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => handleFixRoleError(check.check_details.user_id, check.check_type)}
+                        >
+                          Fix Issue
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
