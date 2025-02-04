@@ -95,7 +95,7 @@ export const Index = () => {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left side - Features */}
           <div className="glass-card p-8 space-y-8">
-            <div>
+            <div className="text-left">
               <h1 className="text-4xl sm:text-5xl font-bold text-gradient mb-4">Member Portal</h1>
               <p className="text-lg text-gray-400">
                 Access your membership information, stay updated with announcements, and manage your payments all in one place.
@@ -104,24 +104,24 @@ export const Index = () => {
 
             <div className="space-y-6">
               <div className="flex items-start gap-4">
-                <Shield className="w-6 h-6 text-primary mt-1" />
-                <div>
+                <Shield className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
+                <div className="text-left">
                   <h3 className="font-semibold mb-1">Secure Access</h3>
                   <p className="text-sm text-gray-400">Your data is protected with industry-standard encryption</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <Bell className="w-6 h-6 text-primary mt-1" />
-                <div>
+                <Bell className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
+                <div className="text-left">
                   <h3 className="font-semibold mb-1">Instant Updates</h3>
                   <p className="text-sm text-gray-400">Stay informed with real-time notifications</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <CreditCard className="w-6 h-6 text-primary mt-1" />
-                <div>
+                <CreditCard className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
+                <div className="text-left">
                   <h3 className="font-semibold mb-1">Easy Payments</h3>
                   <p className="text-sm text-gray-400">Manage your membership fees hassle-free</p>
                 </div>
@@ -141,7 +141,7 @@ export const Index = () => {
 
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <label htmlFor="memberNumber" className="block text-sm">
+                <label htmlFor="memberNumber" className="block text-sm text-left">
                   Member Number
                 </label>
                 <Input
@@ -209,35 +209,35 @@ export const Index = () => {
 
         {/* Announcements Section */}
         <div className="glass-card p-8">
-          <h2 className="text-3xl font-bold text-gradient mb-6">Latest Announcements</h2>
+          <h2 className="text-3xl font-bold text-gradient mb-6 text-left">Latest Announcements</h2>
           <div className="space-y-6">
             <Card className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Bell className="text-primary" />
-                <div>
+              <div className="flex items-start gap-3 mb-4">
+                <Bell className="text-primary flex-shrink-0 mt-1" />
+                <div className="text-left">
                   <h3 className="text-xl font-semibold text-gradient">New Committee as of December 2023</h3>
                   <p className="text-sm text-gray-400">Posted on December 1, 2023</p>
                 </div>
               </div>
-              <div className="space-y-4 text-gray-200">
+              <div className="space-y-4 text-gray-200 text-left">
                 <p>Brother Sajid has resigned and a new Committee was formally created. We would like to thank brother Sajid for his previous efforts, and he will continue helping the Committee where possible in an informal capacity.</p>
-                <div className="pl-4">
-                  <p><strong>Chairperson:</strong> Anjum Riaz & Habib Mushtaq</p>
-                  <p><strong>Secretary:</strong> Tariq Majid</p>
-                  <p><strong>Treasurer:</strong> Faizan Qadiri</p>
-                </div>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li><strong>Chairperson:</strong> Anjum Riaz & Habib Mushtaq</li>
+                  <li><strong>Secretary:</strong> Tariq Majid</li>
+                  <li><strong>Treasurer:</strong> Faizan Qadiri</li>
+                </ul>
               </div>
             </Card>
 
             <Card className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Bell className="text-primary" />
-                <div>
+              <div className="flex items-start gap-3 mb-4">
+                <Bell className="text-primary flex-shrink-0 mt-1" />
+                <div className="text-left">
                   <h3 className="text-xl font-semibold text-gradient">Important Member Information</h3>
                   <p className="text-sm text-gray-400">Posted on December 1, 2023</p>
                 </div>
               </div>
-              <div className="space-y-4 text-gray-200">
+              <div className="space-y-4 text-gray-200 text-left">
                 <p>All members have been given membership numbers. Please contact your collector to find this out.</p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>Please login individually and fill in required data.</li>
@@ -252,12 +252,12 @@ export const Index = () => {
 
         {/* Documents Section */}
         <div className="glass-card p-8">
-          <h2 className="text-3xl font-bold text-gradient mb-6">Important Documents</h2>
+          <h2 className="text-3xl font-bold text-gradient mb-6 text-left">Important Documents</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="glass-card p-6">
               <div className="flex items-center gap-3 mb-4">
-                <FileText className="text-primary" />
-                <div className="flex-1">
+                <FileText className="text-primary flex-shrink-0" />
+                <div className="flex-1 text-left">
                   <h3 className="text-xl font-semibold text-gradient">Member Guidelines</h3>
                   <p className="text-sm text-gray-400">Last updated: December 2023</p>
                 </div>
@@ -265,15 +265,15 @@ export const Index = () => {
                   <FileText className="mr-2 h-4 w-4" /> View
                 </Button>
               </div>
-              <p className="text-gray-200">
+              <p className="text-gray-200 text-left">
                 Complete guide to membership rules, rights, and responsibilities.
               </p>
             </Card>
 
             <Card className="glass-card p-6">
               <div className="flex items-center gap-3 mb-4">
-                <FileText className="text-primary" />
-                <div className="flex-1">
+                <FileText className="text-primary flex-shrink-0" />
+                <div className="flex-1 text-left">
                   <h3 className="text-xl font-semibold text-gradient">Payment Guidelines</h3>
                   <p className="text-sm text-gray-400">Last updated: December 2023</p>
                 </div>
@@ -281,7 +281,7 @@ export const Index = () => {
                   <FileText className="mr-2 h-4 w-4" /> View
                 </Button>
               </div>
-              <p className="text-gray-200">
+              <p className="text-gray-200 text-left">
                 Information about payment methods, deadlines, and policies.
               </p>
             </Card>
