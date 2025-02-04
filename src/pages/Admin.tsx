@@ -50,16 +50,6 @@ export default function Admin() {
     }
   });
 
-  // User Roles Query
-  const { data: roleValidation, isLoading: isLoadingRoles, error: rolesError } = useQuery({
-    queryKey: ["roleValidation"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('validate_user_roles');
-      if (error) throw error;
-      return data;
-    }
-  });
-
   // Error Display Component
   const ErrorAlert = ({ error }: { error: Error | null }) => {
     if (!error) return null;
@@ -148,7 +138,7 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                          {JSON.stringify(check.check_details, null, 2)}
+                          {JSON.stringify(check.details || {}, null, 2)}
                         </pre>
                       </TableCell>
                     </TableRow>
@@ -215,6 +205,7 @@ export default function Admin() {
             <CollectorsManagement />
           </Card>
         </TabsContent>
+
       </Tabs>
     </div>
   );
