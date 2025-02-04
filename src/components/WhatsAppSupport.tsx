@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface WhatsAppSupportProps {
   memberName?: string;
@@ -60,6 +61,24 @@ export function WhatsAppSupport({ memberName = "", memberNumber = "", memberEmai
         <DialogHeader>
           <DialogTitle>Contact Support</DialogTitle>
         </DialogHeader>
+        
+        <Alert className="bg-yellow-50/10 border-yellow-500/50 mb-4">
+          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          <AlertDescription className="text-yellow-500">
+            This support channel is for app-related issues only. For membership or general inquiries, please contact your collector directly.
+          </AlertDescription>
+        </Alert>
+
+        <div className="space-y-4 mb-6">
+          <h3 className="font-medium text-sm">Before submitting:</h3>
+          <ul className="list-disc pl-4 space-y-2 text-sm text-muted-foreground">
+            <li>Check if you're using the latest version of the app</li>
+            <li>Try logging out and logging back in</li>
+            <li>Take screenshots of any error messages you see</li>
+            <li>Include steps to reproduce the issue in your query</li>
+          </ul>
+        </div>
+
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
@@ -95,7 +114,7 @@ export function WhatsAppSupport({ memberName = "", memberNumber = "", memberEmai
               id="query"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter your query"
+              placeholder="Describe your issue in detail, including any error messages"
             />
           </div>
         </div>
