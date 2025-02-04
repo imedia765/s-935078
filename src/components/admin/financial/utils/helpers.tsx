@@ -1,8 +1,20 @@
 
 import React from 'react';
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 
-export const getPaymentStatusColor = (status: string) => {
+interface PaymentStats {
+  totalPayments: number;
+  totalAmount: number;
+  pendingPayments: number;
+  approvedPayments: number;
+  paymentMethods: {
+    cash: number;
+    bankTransfer: number;
+  };
+  recentPayments: any[];
+}
+
+export const getPaymentStatusColor = (status: string): string => {
   switch (status.toLowerCase()) {
     case 'approved':
       return 'bg-green-500/20 text-green-400';
@@ -15,15 +27,22 @@ export const getPaymentStatusColor = (status: string) => {
   }
 };
 
-export const getPaymentStatusIcon = (status: string) => {
-  return <AlertCircle className="mr-1 h-4 w-4" />;
+export const getPaymentStatusIcon = (status: string): JSX.Element => {
+  switch (status.toLowerCase()) {
+    case 'approved':
+      return <CheckCircle className="mr-1 h-4 w-4" />;
+    case 'rejected':
+      return <XCircle className="mr-1 h-4 w-4" />;
+    default:
+      return <AlertCircle className="mr-1 h-4 w-4" />;
+  }
 };
 
-export const formatMemberNumber = (collector: any, index: number) => {
+export const formatMemberNumber = (collector: { members?: { member_number?: string } }, index: number): string => {
   return collector.members?.member_number || `M${String(index + 1).padStart(4, '0')}`;
 };
 
-export const calculatePaymentStats = (paymentsData: any[]) => {
+export const calculatePaymentStats = (paymentsData: any[]): PaymentStats | null => {
   if (!paymentsData) return null;
   
   return {
