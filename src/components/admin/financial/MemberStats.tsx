@@ -24,38 +24,50 @@ export function MemberStats() {
     queryKey: ["memberStats"],
     queryFn: async () => {
       console.log('Fetching member stats...');
-      const { data, error } = await supabase
-        .from('members')
-        .select(`
-          *,
-          family_members (
-            id,
-            full_name,
-            gender,
-            relationship,
-            date_of_birth
-          ),
-          payment_requests (
-            id,
-            amount,
-            status,
-            payment_method,
-            created_at
-          ),
-          members_collectors (
-            id,
-            name,
-            email,
-            phone
-          )
-        `);
+      try {
+        const { data, error } = await supabase
+          .from('members')
+          .select(`
+            *,
+            family_members (
+              id,
+              full_name,
+              gender,
+              relationship,
+              date_of_birth
+            ),
+            payment_requests (
+              id,
+              amount,
+              status,
+              payment_method,
+              created_at
+            ),
+            members_collectors (
+              id,
+              name,
+              email,
+              phone
+            )
+          `);
 
-      if (error) {
-        console.error('Error fetching member stats:', error);
+        if (error) {
+          console.error('Error fetching member stats:', error);
+          throw error;
+        }
+
+        // Ensure we handle the case where members_collectors might be null
+        const processedData = data?.map(member => ({
+          ...member,
+          members_collectors: member.members_collectors || []
+        }));
+
+        console.log('Fetched member stats:', processedData);
+        return processedData;
+      } catch (error) {
+        console.error('Error in memberStats query:', error);
         throw error;
       }
-      console.log('Fetched member stats:', data);
-      return data;
     }
   });
 
