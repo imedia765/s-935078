@@ -99,16 +99,14 @@ export const Navigation = () => {
                     </NavigationMenuLink>
                   </NavigationMenuItem>
                 ))}
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40"
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
+            <NavigationMenuLink
+              className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40 text-red-500 ml-auto"
+              onClick={handleSignOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" /> Sign Out
+            </NavigationMenuLink>
           </div>
         )}
       </div>
