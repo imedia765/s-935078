@@ -28,7 +28,12 @@ interface User {
 interface ValidationDetails {
   auth_user_id?: string;
   user_id?: string;
-  [key: string]: any;
+  status?: string;
+  verified?: boolean;
+  full_name?: string;
+  member_number?: string;
+  current_roles?: string[];
+  member_status?: string;
 }
 
 export function RoleManagement() {
@@ -129,9 +134,10 @@ export function RoleManagement() {
       // For 'Inconsistent Member Status', we need to extract user ID from auth_user_id in details
       if (errorType === 'Inconsistent Member Status' && !userId) {
         const validationDetails = roleValidation?.validation?.find(v => v.check_type === errorType);
-        // Type assertion to ensure we can access the details properly
-        const details = validationDetails?.details as ValidationDetails | undefined;
+        const details = validationDetails?.details as ValidationDetails;
         userId = details?.auth_user_id;
+        
+        console.log('Extracted validation details:', details);
       }
 
       if (!userId) {
