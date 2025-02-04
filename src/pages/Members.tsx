@@ -276,8 +276,8 @@ export default function Members() {
 
   if (loadingCollectors || loadingMembers) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -286,7 +286,7 @@ export default function Members() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl font-bold">Members List</h1>
+          <h1 className="text-2xl font-bold text-gradient">Members List</h1>
           <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
             <div className="relative flex-1 md:flex-initial">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -294,14 +294,14 @@ export default function Members() {
                 placeholder="Search members..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-9 w-full bg-card text-card-foreground"
               />
             </div>
             <Select
               value={selectedCollector}
               onValueChange={(value) => setSelectedCollector(value)}
             >
-              <SelectTrigger className="w-[200px] bg-card text-card-foreground">
+              <SelectTrigger className="w-[200px] glass-card">
                 <SelectValue placeholder="Filter by collector" />
               </SelectTrigger>
               <SelectContent>
@@ -316,7 +316,7 @@ export default function Members() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="bg-card text-card-foreground">
+                <Button variant="outline" className="glass-card">
                   <Download className="mr-2 h-4 w-4" />
                   Export
                 </Button>
@@ -343,7 +343,7 @@ export default function Members() {
                   <Plus className="mr-2 h-4 w-4" /> Add Member
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="glass-card">
                 <DialogHeader>
                   <DialogTitle>Add New Member</DialogTitle>
                   <DialogDescription>
@@ -435,7 +435,7 @@ export default function Members() {
           </div>
         </div>
 
-        <Card className="p-6 bg-card text-card-foreground">
+        <Card className="glass-card p-6">
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-muted/50">
@@ -540,7 +540,7 @@ export default function Members() {
         </Card>
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="glass-card">
             <DialogHeader>
               <DialogTitle>Edit Member</DialogTitle>
               <DialogDescription>
@@ -637,7 +637,7 @@ export default function Members() {
         </Dialog>
 
         <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
-          <DialogContent>
+          <DialogContent className="glass-card">
             <DialogHeader>
               <DialogTitle>Move Member</DialogTitle>
               <DialogDescription>
