@@ -7,6 +7,18 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 
+type MemberWithRelations = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  member_number: string;
+  failed_login_attempts: number;
+  user_roles: { role: string }[];
+  member_notes: { note_text: string; note_type: string }[];
+  payment_requests: { status: string; amount: number; payment_type: string }[];
+}
+
 export function MemberSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<"full_name" | "email" | "phone" | "member_number">("full_name");
@@ -29,7 +41,7 @@ export function MemberSearch() {
         .limit(10);
         
       if (error) throw error;
-      return data;
+      return data as MemberWithRelations[];
     },
     enabled: searchTerm.length > 2
   });
