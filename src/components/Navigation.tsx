@@ -1,6 +1,6 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Home, User, Settings, Users, LogOut } from "lucide-react"
+import { User, Settings, Users, LogOut } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -51,9 +51,8 @@ export const Navigation = () => {
   const isAdmin = userRoles?.includes("admin")
   const isCollector = userRoles?.includes("collector")
 
-  // All users (members) can see Home and Profile
+  // All logged-in users can see Profile
   const menuItems = [
-    { path: "/", icon: <Home className="mr-2 h-4 w-4" />, label: "Home" },
     { path: "/profile", icon: <User className="mr-2 h-4 w-4" />, label: "Profile" },
   ]
 
@@ -78,7 +77,7 @@ export const Navigation = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
       <div className="max-w-7xl mx-auto">
-        {/* Bismillah Section */}
+        {/* Bismillah Section - Always visible */}
         <div className="text-center py-2 border-b border-white/10">
           <p className="text-lg font-arabic text-primary">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
         </div>
