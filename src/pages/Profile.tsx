@@ -289,7 +289,7 @@ const Profile = () => {
                   
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="space-y-2">
                         {isEditing ? (
                           <Input
                             value={editedData?.full_name}
@@ -301,11 +301,15 @@ const Profile = () => {
                         )}
                         <div className="flex items-center gap-2">
                           <p className="text-gray-400">Member #{memberData?.member_number}</p>
+                        </div>
+                        {/* Role Badges - Moved here for better visibility */}
+                        <div className="flex flex-wrap gap-2 mt-2">
                           {memberData?.roles?.map((role: string, index: number) => (
                             <Badge 
                               key={index} 
-                              className={`${getRoleBadgeColor(role)} capitalize`}
+                              className={`${getRoleBadgeColor(role)} capitalize text-sm px-3 py-1`}
                             >
+                              <Shield className="w-3 h-3 mr-1 inline-block" />
                               {role}
                             </Badge>
                           ))}
