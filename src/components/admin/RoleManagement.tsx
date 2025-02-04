@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface User {
   id: string;
   email?: string;
+  member_number?: string;
   user_roles?: { role: string }[];
 }
 
@@ -47,17 +48,20 @@ export function RoleManagement() {
       // Then get member details for these users
       const { data: members, error: membersError } = await supabase
         .from('members')
-        .select('auth_user_id, email');
+        .select('auth_user_id, email, member_number');
 
       if (membersError) {
         console.error("Members fetch error:", membersError);
         throw membersError;
       }
 
-      // Create a map of auth_user_id to email
-      const emailMap = members.reduce((acc: {[key: string]: string}, member: any) => {
+      // Create a map of auth_user_id to member details
+      const memberMap = members.reduce((acc: {[key: string]: {email: string, member_number: string}}, member: any) => {
         if (member.auth_user_id) {
-          acc[member.auth_user_id] = member.email;
+          acc[member.auth_user_id] = {
+            email: member.email,
+            member_number: member.member_number
+          };
         }
         return acc;
       }, {});
@@ -67,7 +71,8 @@ export function RoleManagement() {
         if (!acc[role.user_id]) {
           acc[role.user_id] = {
             id: role.user_id,
-            email: emailMap[role.user_id],
+            email: memberMap[role.user_id]?.email,
+            member_number: memberMap[role.user_id]?.member_number,
             user_roles: []
           };
         }
@@ -181,7 +186,8 @@ export function RoleManagement() {
 
   const filteredUsers = userData?.filter(user => 
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.id?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.member_number?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
@@ -199,7 +205,7 @@ export function RoleManagement() {
           <div className="flex items-center space-x-2">
             <Search className="w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by email or ID..."
+              placeholder="Search by email, ID or member number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
@@ -211,6 +217,7 @@ export function RoleManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Email</TableHead>
+                  <TableHead>Member Number</TableHead>
                   <TableHead>ID</TableHead>
                   <TableHead>Roles</TableHead>
                   <TableHead>Actions</TableHead>
@@ -220,6 +227,7 @@ export function RoleManagement() {
                 {filteredUsers?.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.member_number || 'N/A'}</TableCell>
                     <TableCell className="font-mono text-sm">{user.id}</TableCell>
                     <TableCell>
                       {user.user_roles?.map((role: any) => role.role).join(", ")}
@@ -279,9 +287,32 @@ export function RoleManagement() {
                 </div>
               </AlertTitle>
               <AlertDescription>
-                <pre className="mt-2 text-sm whitespace-pre-wrap">
-                  {JSON.stringify(validation.details, null, 2)}
-                </pre>
+                <div className="mt-2 space-y-2">
+                  <div className="text-sm font-medium">Error Details:</div>
+                  <pre className="bg-secondary/50 p-2 rounded-md text-sm whitespace-pre-wrap">
+                    {JSON.stringify(validation.details, null, 2)}
+                  </pre>
+                  
+                  {validation.status !== 'Good' && (
+                    <div className="mt-4 space-y-2">
+                      <div className="text-sm font-medium">Recommended Fix:</div>
+                      <div className="text-sm text-muted-foreground">
+                        {validation.check_type === 'Multiple Roles Assigned' && 
+                          "This user has multiple roles assigned. Clicking 'Fix Issue' will keep only the highest priority role."
+                        }
+                        {validation.check_type === 'Member Without Role' &&
+                          "This user doesn't have a basic member role. Clicking 'Fix Issue' will assign the member role."
+                        }
+                        {validation.check_type === 'Collector Missing Role' &&
+                          "This collector is missing the collector role. Clicking 'Fix Issue' will assign the collector role."
+                        }
+                        {validation.check_type === 'Inconsistent Member Status' &&
+                          "The member status is inconsistent. Please review member details and update manually if needed."
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
               </AlertDescription>
             </Alert>
           ))}
