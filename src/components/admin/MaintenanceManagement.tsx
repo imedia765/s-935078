@@ -28,7 +28,7 @@ interface SystemCheck {
   current_value: number;
   threshold: number;
   status: string;
-  details: Record<string, any>;
+  check_details: Record<string, any>;  // Changed from details to check_details
   test_category: string;
 }
 
@@ -56,7 +56,10 @@ export function MaintenanceManagement() {
     queryKey: ["systemHealth"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('run_combined_system_checks');
-      if (error) throw error;
+      if (error) {
+        console.error("System health check error:", error);
+        throw error;
+      }
       return data as SystemCheck[];
     }
   });
@@ -189,7 +192,7 @@ export function MaintenanceManagement() {
                         <span>Threshold:</span>
                         <span>{check.threshold}</span>
                       </div>
-                      {Object.entries(check.details).map(([key, value]) => (
+                      {Object.entries(check.check_details || {}).map(([key, value]) => (
                         <div key={key} className="flex justify-between">
                           <span>{key.replace(/_/g, ' ')}:</span>
                           <span>{value}</span>
