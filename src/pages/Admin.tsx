@@ -33,7 +33,11 @@ export default function Admin() {
           console.error("System checks error:", error);
           throw error;
         }
-        return data;
+        // Transform the data to handle the renamed details column
+        return data?.map((check: any) => ({
+          ...check,
+          details: check.check_details || check.details || {}
+        }));
       } catch (error: any) {
         console.error("System checks error:", error);
         throw error;
