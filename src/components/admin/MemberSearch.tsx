@@ -29,19 +29,36 @@ export function MemberSearch() {
     queryFn: async () => {
       if (!searchTerm) return [];
       
-      const { data, error } = await supabase
+      const { data: members, error } = await supabase
         .from('members')
         .select(`
           *,
-          user_roles(role),
           member_notes(note_text, note_type),
           payment_requests(status, amount, payment_type)
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
-        
+
       if (error) throw error;
-      return data as MemberWithRelations[];
+
+      // Fetch user roles separately since we need to join through auth.users
+      const membersWithRoles = await Promise.all((members || []).map(async (member) => {
+        if (!member.auth_user_id) return { ...member, user_roles: [] };
+
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', member.auth_user_id);
+
+        if (rolesError) {
+          console.error('Error fetching roles:', rolesError);
+          return { ...member, user_roles: [] };
+        }
+
+        return { ...member, user_roles: roles || [] };
+      }));
+        
+      return membersWithRoles as MemberWithRelations[];
     },
     enabled: searchTerm.length > 2
   });
