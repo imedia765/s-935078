@@ -18,6 +18,12 @@ type MemberWithRelations = {
   user_roles: Array<{ role: string }>;
   member_notes: Array<{ note_text: string; note_type: string }>;
   payment_requests: Array<{ status: string | null; amount: number; payment_type: string }>;
+  status: string;
+  date_of_birth: string | null;
+  address: string | null;
+  membership_type: string | null;
+  payment_date: string | null;
+  family_members: Array<{ full_name: string; relationship: string; date_of_birth: string | null }>;
 }
 
 export function MemberSearch() {
@@ -166,7 +172,7 @@ export function MemberSearch() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Status</p>
-                  <Badge variant={member.status === 'active' ? 'success' : 'secondary'}>
+                  <Badge variant={member.status === 'active' ? 'secondary' : 'outline'}>
                     {member.status}
                   </Badge>
                 </div>
