@@ -9,16 +9,6 @@ import { MembersToolbar } from "@/components/members/MembersToolbar";
 import { MembersTable } from "@/components/members/MembersTable";
 import { EditMemberDialog } from "@/components/members/EditMemberDialog";
 import { MoveMemberDialog } from "@/components/members/MoveMemberDialog";
-import Fuse from 'fuse.js';
-
-interface MemberFormData {
-  full_name: string;
-  email: string;
-  phone: string;
-  member_number: string;
-  collector_id: string | null;
-  status: string;
-}
 
 export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
@@ -32,21 +22,53 @@ export default function Members() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: collectors, isLoading: loadingCollectors } = useQuery({
+  // First, get the current user's role and collector ID if they are a collector
+  const { data: userInfo } = useQuery({
+    queryKey: ["userInfo"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // Get user roles
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      // If user is a collector, get their collector ID
+      const { data: collectorInfo } = await supabase
+        .from("members_collectors")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .single();
+
+      return {
+        roles: roles?.map(r => r.role) || [],
+        collectorId: collectorInfo?.id
+      };
+    }
+  });
+
+  const isAdmin = userInfo?.roles.includes("admin");
+  const collectorId = !isAdmin ? userInfo?.collectorId : null;
+
+  // Get collectors for the dropdown
+  const { data: collectors } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members_collectors")
         .select("*")
         .eq("active", true);
+      
       if (error) throw error;
       return data;
     }
   });
 
-  // Updated members query with debounced search and fuzzy matching
+  // Get members based on user role and filters
   const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: ["members", selectedCollector, debouncedSearchTerm, sortField, sortDirection],
+    queryKey: ["members", selectedCollector, debouncedSearchTerm, sortField, sortDirection, collectorId],
     queryFn: async () => {
       let query = supabase
         .from("members")
@@ -59,24 +81,31 @@ export default function Members() {
           )
         `);
 
-      if (selectedCollector !== 'all') {
+      // If user is a collector, only show their members
+      if (collectorId) {
+        query = query.eq('collector_id', collectorId);
+      } 
+      // If user is admin and a collector is selected
+      else if (selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
+      }
+
+      // Add sorting
+      if (sortField) {
+        query = query.order(sortField, { ascending: sortDirection === 'asc' });
       }
 
       const { data, error } = await query;
       if (error) throw error;
 
-      // If there's a search term, use Fuse.js for fuzzy searching
+      // If there's a search term, filter the results
       if (debouncedSearchTerm) {
-        const fuse = new Fuse(data || [], {
-          keys: ['full_name', 'email', 'member_number'],
-          threshold: 0.3,
-          distance: 100,
-          includeScore: true
-        });
-
-        const searchResults = fuse.search(debouncedSearchTerm);
-        return searchResults.map(result => result.item);
+        const searchLower = debouncedSearchTerm.toLowerCase();
+        return data.filter((member: any) => 
+          member.full_name?.toLowerCase().includes(searchLower) ||
+          member.email?.toLowerCase().includes(searchLower) ||
+          member.member_number?.toLowerCase().includes(searchLower)
+        );
       }
 
       return data;
@@ -238,7 +267,7 @@ export default function Members() {
     }
   };
 
-  if (loadingCollectors || loadingMembers) {
+  if (loadingMembers) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
