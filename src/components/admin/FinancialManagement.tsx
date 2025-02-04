@@ -413,7 +413,7 @@ export function FinancialManagement() {
                           {collector.active ? 'Active' : 'Inactive'}
                         </span>
                       </TableCell>
-                      <TableCell>{collector.members?.length || 0}</TableCell>
+                      <TableCell>{(collector.members || []).length}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
