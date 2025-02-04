@@ -16,20 +16,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
-import { Loader2, Plus, Pencil, Trash2, PauseCircle, PlayCircle, ArrowRightLeft, Download, FileDown } from "lucide-react";
+import { 
+  Loader2, 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  PauseCircle, 
+  PlayCircle, 
+  ArrowRightLeft, 
+  Download, 
+  FileDown,
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF } from "@/utils/exportUtils";
 import {
@@ -50,6 +56,9 @@ interface MemberFormData {
 
 export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<string>('full_name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
@@ -71,9 +80,9 @@ export default function Members() {
     }
   });
 
-  // Query members with collector information
+  // Updated members query with search and sort
   const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: ["members", selectedCollector],
+    queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection],
     queryFn: async () => {
       let query = supabase
         .from("members")
@@ -89,6 +98,12 @@ export default function Members() {
       if (selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
       }
+
+      if (searchTerm) {
+        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
+      }
+
+      query = query.order(sortField, { ascending: sortDirection === 'asc' });
 
       const { data, error } = await query;
       if (error) throw error;
@@ -243,23 +258,20 @@ export default function Members() {
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const memberData = {
-      full_name: formData.get('full_name') as string,
-      email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      member_number: formData.get('member_number') as string,
-      collector_id: formData.get('collector_id') as string,
-      status: 'active',
-    };
-
-    if (editingMember) {
-      updateMemberMutation.mutate({ id: editingMember.id, data: memberData });
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      addMemberMutation.mutate(memberData);
+      setSortField(field);
+      setSortDirection('asc');
     }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="h-4 w-4" /> : 
+      <ArrowDown className="h-4 w-4" />;
   };
 
   if (loadingCollectors || loadingMembers) {
@@ -273,9 +285,18 @@ export default function Members() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h1 className="text-2xl font-bold">Members List</h1>
-          <div className="flex gap-4">
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-initial">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search members..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-full"
+              />
+            </div>
             <Select
               value={selectedCollector}
               onValueChange={(value) => setSelectedCollector(value)}
@@ -329,7 +350,19 @@ export default function Members() {
                     Fill in the member details below
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const memberData = {
+                    full_name: formData.get('full_name') as string,
+                    email: formData.get('email') as string,
+                    phone: formData.get('phone') as string,
+                    member_number: formData.get('member_number') as string,
+                    collector_id: formData.get('collector_id') as string,
+                    status: 'active',
+                  };
+                  addMemberMutation.mutate(memberData);
+                }} className="space-y-4">
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="full_name" className="text-right">
@@ -406,12 +439,22 @@ export default function Members() {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-muted/50">
-                <TableHead>Member Number</TableHead>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
+                <TableHead onClick={() => handleSort('member_number')} className="cursor-pointer">
+                  Member Number {getSortIcon('member_number')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('full_name')} className="cursor-pointer">
+                  Full Name {getSortIcon('full_name')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('email')} className="cursor-pointer">
+                  Email {getSortIcon('email')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('phone')} className="cursor-pointer">
+                  Phone {getSortIcon('phone')}
+                </TableHead>
                 <TableHead>Collector</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead onClick={() => handleSort('status')} className="cursor-pointer">
+                  Status {getSortIcon('status')}
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -504,7 +547,18 @@ export default function Members() {
                 Update the member details below
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const memberData = {
+                full_name: formData.get('full_name') as string,
+                email: formData.get('email') as string,
+                phone: formData.get('phone') as string,
+                member_number: formData.get('member_number') as string,
+                collector_id: formData.get('collector_id') as string,
+              };
+              updateMemberMutation.mutate({ id: editingMember.id, data: memberData });
+            }} className="space-y-4">
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="full_name" className="text-right">
