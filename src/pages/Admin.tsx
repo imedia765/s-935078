@@ -18,7 +18,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { MemberSearch } from "@/components/admin/MemberSearch";
 import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
-import { CollectorsManagement } from "@/components/admin/CollectorsManagement";
 import { FinancialManagement } from "@/components/admin/FinancialManagement";
 
 export default function Admin() {
@@ -77,7 +76,6 @@ export default function Admin() {
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
           <TabsTrigger value="roles">Role Management</TabsTrigger>
           <TabsTrigger value="members">Member Search</TabsTrigger>
-          <TabsTrigger value="collectors">Collectors</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           <TabsTrigger value="financial">Financial</TabsTrigger>
         </TabsList>
@@ -168,11 +166,6 @@ export default function Admin() {
             <h2 className="text-xl font-semibold mb-4 text-gradient">Member Search</h2>
             <MemberSearch />
           </Card>
-        </TabsContent>
-
-        {/* Collectors Tab */}
-        <TabsContent value="collectors">
-          <CollectorsManagement />
         </TabsContent>
 
         {/* Maintenance Tab */}
