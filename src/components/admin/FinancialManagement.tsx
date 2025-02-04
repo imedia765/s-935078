@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinancialOverview } from "./financial/FinancialOverview";
 import { CollectorsList } from "./financial/CollectorsList";
 import { PaymentsList } from "./financial/PaymentsList";
 import { FinancialReports } from "./financial/FinancialReports";
+import { MemberStats } from "./financial/MemberStats";
 import { useFinancialQueries } from "./financial/hooks/useFinancialQueries";
 import { useFinancialMutations } from "./financial/hooks/useFinancialMutations";
 import { getPaymentStatusColor, getPaymentStatusIcon, formatMemberNumber, calculatePaymentStats } from "./financial/utils/helpers";
@@ -88,6 +88,7 @@ export function FinancialManagement() {
           <TabsTrigger value="collectors">Collectors</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="stats">Member Stats</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -123,6 +124,10 @@ export function FinancialManagement() {
             payments={payments}
             handleExport={handleExport}
           />
+        </TabsContent>
+
+        <TabsContent value="stats" className="mt-4">
+          <MemberStats />
         </TabsContent>
       </Tabs>
     </div>
