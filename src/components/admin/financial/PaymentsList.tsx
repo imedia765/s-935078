@@ -50,6 +50,8 @@ export function PaymentsList({
 }: PaymentsListProps) {
   const [openCollectors, setOpenCollectors] = useState<string[]>([]);
 
+  console.log('Initial paymentsData:', paymentsData);
+
   const toggleCollector = (collectorId: string) => {
     setOpenCollectors(prev => 
       prev.includes(collectorId) 
@@ -60,35 +62,36 @@ export function PaymentsList({
 
   // Group payments by collector
   const paymentsByCollector = paymentsData.reduce((acc: Record<string, any>, payment: Payment) => {
-    const collector = payment.members_collectors;
-    
-    if (!collector?.id || !collector?.name) {
+    if (!payment.members_collectors?.id || !payment.members_collectors?.name) {
+      console.log('Skipping payment due to missing collector info:', payment);
       return acc;
     }
-    
-    if (!acc[collector.id]) {
-      acc[collector.id] = {
-        id: collector.id,
-        name: collector.name,
+
+    const collectorId = payment.members_collectors.id;
+    const collectorName = payment.members_collectors.name;
+
+    if (!acc[collectorId]) {
+      acc[collectorId] = {
+        id: collectorId,
+        name: collectorName,
         payments: [],
         totalAmount: 0,
         approvedCount: 0,
         pendingCount: 0
       };
     }
-    
-    acc[collector.id].payments.push(payment);
-    acc[collector.id].totalAmount += payment.amount || 0;
-    acc[collector.id].approvedCount += payment.status === 'approved' ? 1 : 0;
-    acc[collector.id].pendingCount += payment.status === 'pending' ? 1 : 0;
-    
+
+    acc[collectorId].payments.push(payment);
+    acc[collectorId].totalAmount += payment.amount || 0;
+    acc[collectorId].approvedCount += payment.status === 'approved' ? 1 : 0;
+    acc[collectorId].pendingCount += payment.status === 'pending' ? 1 : 0;
+
     return acc;
   }, {});
 
   const sortedCollectors = Object.values(paymentsByCollector)
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
-  console.log('Payments Data:', paymentsData);
   console.log('Grouped Payments:', paymentsByCollector);
   console.log('Sorted Collectors:', sortedCollectors);
 
@@ -118,8 +121,10 @@ export function PaymentsList({
 
       {loadingPayments ? (
         <p>Loading payments...</p>
-      ) : sortedCollectors.length === 0 ? (
+      ) : paymentsData.length === 0 ? (
         <p className="text-center text-muted-foreground">No payments found</p>
+      ) : sortedCollectors.length === 0 ? (
+        <p className="text-center text-muted-foreground">No collectors with payments found</p>
       ) : (
         <div className="space-y-4">
           {sortedCollectors.map((collector: any) => (
