@@ -151,7 +151,7 @@ export function MemberSearch() {
       {searchResults && searchResults.length > 0 && (
         <div className="space-y-4">
           {searchResults.map((member) => (
-            <Card key={member.id} className="p-6">
+            <Card key={member.id} className="p-6 glass-card">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-xl font-semibold">{member.full_name}</h3>
