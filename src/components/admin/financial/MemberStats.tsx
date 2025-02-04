@@ -1,9 +1,27 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { FileDown, Users, UserPlus, UsersIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend
+} from 'recharts';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
+import { generatePDF } from "@/utils/exportUtils";
 
 export function MemberStats() {
   const { data: stats, isLoading } = useQuery({
@@ -14,167 +32,216 @@ export function MemberStats() {
         .from('members')
         .select(`
           *,
-          family_members (*)
+          family_members (
+            id,
+            full_name,
+            gender,
+            relationship,
+            date_of_birth
+          ),
+          payment_requests (
+            id,
+            amount,
+            status,
+            payment_method,
+            created_at
+          ),
+          members_collectors!members_collector_id_fkey (
+            id,
+            name,
+            email,
+            phone
+          )
         `);
-      
+
       if (error) {
         console.error('Error fetching member stats:', error);
         throw error;
       }
-      
       console.log('Fetched member stats:', data);
       return data;
     }
   });
 
-  const { data: collectors } = useQuery({
-    queryKey: ["collectors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("members_collectors")
-        .select(`
-          *,
-          members!members_collectors_member_number_fkey (count)
-        `);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  if (isLoading) {
-    return <div>Loading statistics...</div>;
-  }
-
   const totalMembers = stats?.length || 0;
-  // A direct member is one who has no family members or is not in someone else's family_members array
   const directMembers = stats?.filter(m => !m.family_members?.length)?.length || 0;
-  // Family members are those who have family_members entries
   const familyMembers = stats?.reduce((acc, member) => acc + (member.family_members?.length || 0), 0) || 0;
 
   const genderDistribution = {
     men: stats?.filter(m => m.gender === 'male')?.length || 0,
-    women: stats?.filter(m => m.gender === 'female')?.length || 0
+    women: stats?.filter(m => m.gender === 'female')?.length || 0,
+    other: stats?.filter(m => m.gender && m.gender !== 'male' && m.gender !== 'female')?.length || 0,
+    unspecified: stats?.filter(m => !m.gender)?.length || 0,
   };
 
-  const ageGroups = [
-    { label: '0-17', count: 0, amount: '£100' },
-    { label: '18-29', count: 0, amount: '£285' },
-    { label: '30-49', count: 0, amount: '£500' },
-    { label: '50-69', count: 0, amount: '£150' },
-    { label: '70+', count: 0, amount: '£20' }
-  ];
+  // Group members by collector
+  const collectorReports = stats?.reduce((acc: any, member) => {
+    const collectorId = member.collector_id;
+    const collectorName = member.members_collectors?.name || 'Unassigned';
+    
+    if (!acc[collectorId]) {
+      acc[collectorId] = {
+        id: collectorId,
+        name: collectorName,
+        email: member.members_collectors?.email,
+        phone: member.members_collectors?.phone,
+        members: [],
+        totalMembers: 0,
+        totalPayments: 0,
+        approvedPayments: 0,
+        pendingPayments: 0,
+        totalAmount: 0
+      };
+    }
+
+    // Calculate payment statistics
+    const memberPayments = member.payment_requests || [];
+    const totalPayments = memberPayments.length;
+    const approvedPayments = memberPayments.filter(p => p.status === 'approved').length;
+    const pendingPayments = memberPayments.filter(p => p.status === 'pending').length;
+    const totalAmount = memberPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    acc[collectorId].members.push({
+      ...member,
+      payments: {
+        total: totalPayments,
+        approved: approvedPayments,
+        pending: pendingPayments,
+        amount: totalAmount
+      }
+    });
+
+    acc[collectorId].totalMembers += 1;
+    acc[collectorId].totalPayments += totalPayments;
+    acc[collectorId].approvedPayments += approvedPayments;
+    acc[collectorId].pendingPayments += pendingPayments;
+    acc[collectorId].totalAmount += totalAmount;
+
+    return acc;
+  }, {});
+
+  const handleExportCollectorReport = (collectorData: any) => {
+    const title = `Collector Report - ${collectorData.name}`;
+    const reportData = collectorData.members.map((member: any) => ({
+      member_number: member.member_number,
+      full_name: member.full_name,
+      email: member.email,
+      phone: member.phone,
+      status: member.status,
+      total_payments: member.payments.total,
+      approved_payments: member.payments.approved,
+      pending_payments: member.payments.pending,
+      total_amount: member.payments.amount
+    }));
+    generatePDF(reportData, title);
+  };
+
+  if (isLoading) return <div>Loading member statistics...</div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Member Statistics</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <FileDown className="mr-2 h-4 w-4" /> Excel
-          </Button>
-          <Button variant="outline" size="sm">
-            <FileDown className="mr-2 h-4 w-4" /> CSV
-          </Button>
-          <Button variant="secondary" size="sm">
-            <FileDown className="mr-2 h-4 w-4" /> Export All Reports
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 glass-card">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Members</p>
-              <h3 className="text-2xl font-bold">{totalMembers}</h3>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <Users className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <Badge variant="secondary">1135% Growth</Badge>
-          </div>
+          <h3 className="text-lg font-semibold">Total Members</h3>
+          <p className="text-3xl font-bold">{totalMembers}</p>
         </Card>
-
         <Card className="p-4 glass-card">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-muted-foreground">Direct Members</p>
-              <h3 className="text-2xl font-bold">{directMembers}</h3>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-              <UserPlus className="h-6 w-6 text-blue-500" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <Badge variant="secondary">1135% Growth</Badge>
-          </div>
+          <h3 className="text-lg font-semibold">Direct Members</h3>
+          <p className="text-3xl font-bold">{directMembers}</p>
         </Card>
-
         <Card className="p-4 glass-card">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-muted-foreground">Family Members</p>
-              <h3 className="text-2xl font-bold">{familyMembers}</h3>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
-              <UsersIcon className="h-6 w-6 text-purple-500" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <Badge variant="secondary">26% Growth</Badge>
-          </div>
+          <h3 className="text-lg font-semibold">Family Members</h3>
+          <p className="text-3xl font-bold">{familyMembers}</p>
+        </Card>
+        <Card className="p-4 glass-card">
+          <h3 className="text-lg font-semibold">Active Collectors</h3>
+          <p className="text-3xl font-bold">{Object.keys(collectorReports || {}).length}</p>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 glass-card">
-          <h3 className="text-lg font-semibold mb-4">Gender Distribution</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-500/10 p-4 rounded-lg">
-              <p className="text-3xl font-bold text-blue-500">{genderDistribution.men}</p>
-              <p className="text-sm text-muted-foreground">Men</p>
-              <p className="text-xs text-muted-foreground">£360 yearly</p>
-            </div>
-            <div className="bg-purple-500/10 p-4 rounded-lg">
-              <p className="text-3xl font-bold text-purple-500">{genderDistribution.women}</p>
-              <p className="text-sm text-muted-foreground">Women</p>
-              <p className="text-xs text-muted-foreground">£880 yearly</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 glass-card">
-          <h3 className="text-lg font-semibold mb-4">Age Distribution</h3>
-          <div className="grid grid-cols-5 gap-2">
-            {ageGroups.map((group, index) => (
-              <div key={index} className="bg-purple-500/10 p-2 rounded-lg text-center">
-                <p className="text-xs text-muted-foreground">{group.label}</p>
-                <p className="text-lg font-bold text-purple-500">{group.count}</p>
-                <p className="text-xs text-muted-foreground">{group.amount}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
+      {/* Collector Reports */}
       <Card className="p-6 glass-card">
-        <h3 className="text-lg font-semibold mb-4">Collector Reports</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {collectors?.map((collector) => (
-            <div key={collector.id} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
-              <div>
-                <p className="font-medium">{collector.name}</p>
-                <p className="text-sm text-muted-foreground">Members: {collector.members?.[0]?.count || 0}</p>
-              </div>
-              <Button variant="ghost" size="icon">
-                <FileDown className="h-4 w-4" />
-              </Button>
-            </div>
+        <h2 className="text-xl font-semibold mb-4 text-gradient">Collector Reports</h2>
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          {Object.values(collectorReports || {}).map((collector: any) => (
+            <AccordionItem key={collector.id} value={collector.id} className="border rounded-lg p-4">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{collector.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {collector.email} | {collector.phone || 'No phone'}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 text-sm">
+                    <span>Members: {collector.totalMembers}</span>
+                    <span>Total: £{collector.totalAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pt-4">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">Member Details</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportCollectorReport(collector)}
+                      className="bg-primary/20 hover:bg-primary/30"
+                    >
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Export Report
+                    </Button>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Member Number</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Payments</TableHead>
+                        <TableHead>Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {collector.members.map((member: any) => (
+                        <TableRow key={member.id}>
+                          <TableCell>{member.member_number}</TableCell>
+                          <TableCell>{member.full_name}</TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>{member.email}</div>
+                              <div>{member.phone || 'No phone'}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              member.status === 'active' 
+                                ? 'bg-green-500/20 text-green-400'
+                                : 'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                              {member.status}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>Total: {member.payments.total}</div>
+                              <div>Approved: {member.payments.approved}</div>
+                              <div>Pending: {member.payments.pending}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>£{member.payments.amount.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </Card>
     </div>
   );
