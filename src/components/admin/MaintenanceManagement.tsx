@@ -141,6 +141,11 @@ export function MaintenanceManagement() {
 
   const handleFixRoleError = async (userId: string, errorType: string) => {
     try {
+      if (!userId) {
+        console.error("User ID is undefined");
+        throw new Error("User ID is required");
+      }
+
       console.log(`Fixing role error for user ${userId}, type: ${errorType}`);
       
       const { data, error } = await supabase.rpc('fix_role_error', {

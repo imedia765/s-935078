@@ -120,6 +120,11 @@ export function RoleManagement() {
     try {
       console.log(`Attempting to fix role error for user ${userId}, type: ${errorType}`);
       
+      if (!userId) {
+        console.error("User ID is undefined");
+        throw new Error("User ID is required");
+      }
+
       const { data, error } = await supabase.rpc('fix_role_error', {
         p_error_type: errorType,
         p_user_id: userId
@@ -158,6 +163,10 @@ export function RoleManagement() {
 
   const generateMagicLink = async (userId: string) => {
     try {
+      if (!userId) {
+        throw new Error("User ID is required");
+      }
+
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('member_number')
