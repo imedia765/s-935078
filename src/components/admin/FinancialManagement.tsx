@@ -1,15 +1,16 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { AlertCircle, Clock, PoundSterling, CheckCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { exportToCSV, generatePDF } from "@/utils/exportUtils";
 import { useState } from "react";
 import { FinancialOverview } from "./financial/FinancialOverview";
 import { CollectorsList } from "./financial/CollectorsList";
 import { PaymentsList } from "./financial/PaymentsList";
 import { FinancialReports } from "./financial/FinancialReports";
-import type { PaymentStats, CollectorPaymentStats } from "./financial/types";
+import type { PaymentStats, CollectorPaymentStats, Payment, Collector } from "./financial/types";
 
 export function FinancialManagement() {
   const { toast } = useToast();
@@ -18,111 +19,7 @@ export function FinancialManagement() {
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: rawMemberStats, isLoading: loadingStats } = useQuery({
-    queryKey: ["memberStats"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('members')
-        .select(`
-          id,
-          full_name,
-          gender,
-          date_of_birth,
-          membership_type,
-          payment_amount,
-          payment_date,
-          yearly_payment_amount,
-          yearly_payment_status,
-          status,
-          created_at,
-          members_collectors (
-            name,
-            number
-          )
-        `);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: paymentStats, isLoading: loadingPaymentStats } = useQuery({
-    queryKey: ["paymentStats"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_requests')
-        .select(`
-          id,
-          amount,
-          payment_method,
-          payment_type,
-          status,
-          created_at,
-          payment_number,
-          members!payment_requests_member_id_fkey (
-            full_name
-          ),
-          members_collectors!payment_requests_collector_id_fkey (
-            name
-          )
-        `);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: collectors, isLoading: isLoadingCollectors, refetch: refetchCollectors } = useQuery({
-    queryKey: ["collectors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("members_collectors")
-        .select(`
-          *,
-          members!members_collectors_member_number_fkey (
-            member_number,
-            full_name,
-            email
-          ),
-          payment_requests (
-            status,
-            amount,
-            created_at
-          )
-        `)
-        .order('created_at', { foreignTable: 'payment_requests', ascending: false });
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: collectorsData, isLoading: loadingCollectors } = useQuery({
-    queryKey: ["collectors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('members_collectors')
-        .select(`
-          id,
-          name,
-          number,
-          email,
-          phone,
-          active,
-          members!members_collectors_member_number_fkey (
-            id,
-            full_name,
-            payment_amount,
-            payment_date,
-            yearly_payment_amount,
-            yearly_payment_status
-          )
-        `);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
+  // Fetch payments data
   const { data: paymentsData, isLoading: loadingPayments } = useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
@@ -146,10 +43,52 @@ export function FinancialManagement() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as Payment[];
     }
   });
 
+  // Fetch collectors data
+  const { data: collectors, isLoading: isLoadingCollectors, refetch: refetchCollectors } = useQuery({
+    queryKey: ["collectors"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members_collectors")
+        .select(`
+          *,
+          members!members_collectors_member_number_fkey (
+            member_number,
+            full_name,
+            email
+          ),
+          payment_requests (
+            status,
+            amount,
+            created_at
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as Collector[];
+    }
+  });
+
+  // Calculate payment statistics
+  const payments = paymentsData ? {
+    totalPayments: paymentsData.length,
+    totalAmount: paymentsData.reduce((sum, payment) => sum + (payment.amount || 0), 0),
+    pendingPayments: paymentsData.filter(p => p.status === 'pending').length,
+    approvedPayments: paymentsData.filter(p => p.status === 'approved').length,
+    paymentMethods: {
+      cash: paymentsData.filter(p => p.payment_method === 'cash').length,
+      bankTransfer: paymentsData.filter(p => p.payment_method === 'bank_transfer').length
+    },
+    recentPayments: paymentsData
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5)
+  } : null;
+
+  // Payment approval mutation
   const approveMutation = useMutation({
     mutationFn: async (paymentId: string) => {
       const { error } = await supabase
@@ -164,7 +103,6 @@ export function FinancialManagement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["paymentStats"] });
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast({
         title: "Payment approved",
@@ -180,6 +118,7 @@ export function FinancialManagement() {
     },
   });
 
+  // Payment deletion mutation
   const deleteMutation = useMutation({
     mutationFn: async (paymentId: string) => {
       const { error } = await supabase
@@ -190,7 +129,6 @@ export function FinancialManagement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["paymentStats"] });
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       setShowDeleteDialog(false);
       toast({
@@ -270,53 +208,9 @@ export function FinancialManagement() {
     }
   };
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return 'text-orange-500 bg-orange-500/20';
-      case 'paid':
-        return 'text-purple-500 bg-purple-500/20';
-      case 'approved':
-        return 'text-green-500 bg-green-500/20';
-      default:
-        return 'text-gray-500 bg-gray-500/20';
-    }
-  };
-
-  const getPaymentStatusIcon = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return <Clock className="h-4 w-4" />;
-      case 'paid':
-        return <PoundSterling className="h-4 w-4" />;
-      case 'approved':
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return <AlertCircle className="h-4 w-4" />;
-    }
-  };
-
-  const formatMemberNumber = (collector: any, index: number) => {
-    const collectorNumber = collector.number?.padStart(2, '0') || '00';
-    return `${collector.id}${collectorNumber}v${index + 1}`;
-  };
-
-  const payments = paymentStats ? {
-    totalPayments: paymentStats.length,
-    totalAmount: paymentStats.reduce((sum, payment) => sum + (payment.amount || 0), 0),
-    pendingPayments: paymentStats.filter(p => p.status === 'pending').length,
-    approvedPayments: paymentStats.filter(p => p.status === 'approved').length,
-    paymentMethods: {
-      cash: paymentStats.filter(p => p.payment_method === 'cash').length,
-      bankTransfer: paymentStats.filter(p => p.payment_method === 'bank_transfer').length
-    },
-    recentPayments: paymentStats
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5)
-  } : null;
-
   return (
     <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gradient">Financial Management</h2>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -325,22 +219,19 @@ export function FinancialManagement() {
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
+        <TabsContent value="overview" className="mt-4">
           <FinancialOverview payments={payments} />
         </TabsContent>
 
-        <TabsContent value="collectors">
+        <TabsContent value="collectors" className="mt-4">
           <CollectorsList
             collectors={collectors || []}
             isLoadingCollectors={isLoadingCollectors}
             refetchCollectors={refetchCollectors}
-            getPaymentStatusColor={getPaymentStatusColor}
-            getPaymentStatusIcon={getPaymentStatusIcon}
-            formatMemberNumber={formatMemberNumber}
           />
         </TabsContent>
 
-        <TabsContent value="payments">
+        <TabsContent value="payments" className="mt-4">
           <PaymentsList
             paymentsData={paymentsData || []}
             loadingPayments={loadingPayments}
@@ -353,7 +244,7 @@ export function FinancialManagement() {
           />
         </TabsContent>
 
-        <TabsContent value="reports">
+        <TabsContent value="reports" className="mt-4">
           <FinancialReports 
             payments={payments}
             handleExport={handleExport}
