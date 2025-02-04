@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Cpu, HardDrive, Network, Ram } from "lucide-react";
+import { Cpu, HardDrive, Network } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function SystemResources() {
@@ -33,7 +33,7 @@ export function SystemResources() {
 
       <Card className="p-4 space-y-2">
         <div className="flex items-center gap-2">
-          <Ram className="h-4 w-4" />
+          <Cpu className="h-4 w-4" />
           <h4 className="font-medium">Memory Usage</h4>
         </div>
         <Progress value={resources?.memory_usage || 0} />
