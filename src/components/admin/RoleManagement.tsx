@@ -25,6 +25,12 @@ interface User {
   user_roles?: { role: string }[];
 }
 
+interface ValidationDetails {
+  auth_user_id?: string;
+  user_id?: string;
+  [key: string]: any;
+}
+
 export function RoleManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -123,7 +129,9 @@ export function RoleManagement() {
       // For 'Inconsistent Member Status', we need to extract user ID from auth_user_id in details
       if (errorType === 'Inconsistent Member Status' && !userId) {
         const validationDetails = roleValidation?.validation?.find(v => v.check_type === errorType);
-        userId = validationDetails?.details?.auth_user_id;
+        // Type assertion to ensure we can access the details properly
+        const details = validationDetails?.details as ValidationDetails | undefined;
+        userId = details?.auth_user_id;
       }
 
       if (!userId) {
