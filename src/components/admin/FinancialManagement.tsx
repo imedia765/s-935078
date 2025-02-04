@@ -80,7 +80,13 @@ export function FinancialManagement() {
           payment_type,
           status,
           created_at,
-          payment_number
+          payment_number,
+          members!payment_requests_member_id_fkey (
+            full_name
+          ),
+          members_collectors!payment_requests_collector_id_fkey (
+            name
+          )
         `);
       
       if (error) throw error;
