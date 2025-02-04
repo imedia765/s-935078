@@ -1532,6 +1532,17 @@ export type Database = {
         }
         Returns: number
       }
+      get_maintenance_history: {
+        Args: {
+          days?: number
+        }
+        Returns: {
+          execution_time: string
+          status: string
+          duration_seconds: number
+          details: Json
+        }[]
+      }
       get_rls_policies: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1660,6 +1671,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      perform_system_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       perform_user_roles_sync: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1703,6 +1718,12 @@ export type Database = {
           details: Json
           test_category: string
         }[]
+      }
+      schedule_system_maintenance: {
+        Args: {
+          schedule?: string
+        }
+        Returns: undefined
       }
       update_collector_profiles: {
         Args: Record<PropertyKey, never>

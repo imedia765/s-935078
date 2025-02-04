@@ -17,12 +17,12 @@ import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { MemberSearch } from "@/components/admin/MemberSearch";
+import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
 
 export default function Admin() {
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("system");
 
-  // System Checks Query with error handling
   const { data: systemChecks, isLoading: isLoadingChecks, error: systemError } = useQuery({
     queryKey: ["systemChecks"],
     queryFn: async () => {
@@ -209,21 +209,8 @@ export default function Admin() {
 
         <TabsContent value="maintenance">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Maintenance Tasks</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium mb-2">Token Management</h3>
-                <Button onClick={handleCleanupTokens}>
-                  Cleanup Expired Tokens
-                </Button>
-              </div>
-              <div>
-                <h3 className="font-medium mb-2">Role Management</h3>
-                <Button onClick={handleMaintainCollectorRoles}>
-                  Maintain Collector Roles
-                </Button>
-              </div>
-            </div>
+            <h2 className="text-xl font-semibold mb-4">System Maintenance</h2>
+            <MaintenanceManagement />
           </Card>
         </TabsContent>
 
