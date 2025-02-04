@@ -28,29 +28,41 @@ export function RoleManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("table");
 
-  // Query for all users and their roles using members table
+  // Query for users and their roles
   const { data: userData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      console.log("Fetching users data from members table...");
-      const { data: members, error: membersError } = await supabase
-        .from('members')
+      console.log("Fetching users and roles data...");
+      const { data: users, error: usersError } = await supabase
+        .from('user_roles')
         .select(`
-          auth_user_id,
-          email,
-          user_roles (role)
+          user_id,
+          role,
+          members!inner (
+            email,
+            auth_user_id
+          )
         `);
       
-      if (membersError) {
-        console.error("Members fetch error:", membersError);
-        throw membersError;
+      if (usersError) {
+        console.error("Users fetch error:", usersError);
+        throw usersError;
       }
 
-      return members.map(member => ({
-        id: member.auth_user_id,
-        email: member.email,
-        user_roles: member.user_roles || []
-      })) as User[];
+      // Transform the data to match the User interface
+      const transformedUsers = users.reduce((acc: { [key: string]: User }, curr: any) => {
+        if (!acc[curr.user_id]) {
+          acc[curr.user_id] = {
+            id: curr.user_id,
+            email: curr.members?.email,
+            user_roles: []
+          };
+        }
+        acc[curr.user_id].user_roles?.push({ role: curr.role });
+        return acc;
+      }, {});
+
+      return Object.values(transformedUsers);
     }
   });
 
@@ -170,37 +182,49 @@ export function RoleManagement() {
       </TabsList>
 
       <TabsContent value="table">
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers?.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell className="font-mono text-sm">{user.id}</TableCell>
-                  <TableCell>
-                    {user.user_roles?.map((role: any) => role.role).join(", ")}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => generateMagicLink(user.id)}
-                    >
-                      Generate Magic Link
-                    </Button>
-                  </TableCell>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by email or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+          
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Roles</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers?.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="font-mono text-sm">{user.id}</TableCell>
+                    <TableCell>
+                      {user.user_roles?.map((role: any) => role.role).join(", ")}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generateMagicLink(user.id)}
+                      >
+                        Generate Magic Link
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </TabsContent>
 
