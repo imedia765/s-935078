@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, CreditCard, Users, Calendar, Receipt, Building2, Edit, Save, X } from "lucide-react";
+import { Shield, CreditCard, Users, Calendar, Receipt, Building2, Edit, Save, X, Upload, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +26,7 @@ const Profile = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -106,6 +107,53 @@ const Profile = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingPhoto(true);
+      
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${memberData.member_number}-${Math.random()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
+      // Update member record with new photo URL
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ photo_url: publicUrl })
+        .eq('id', memberData.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setMemberData(prev => ({ ...prev, photo_url: publicUrl }));
+      
+      toast({
+        title: "Success",
+        description: "Profile photo updated successfully"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -196,9 +244,36 @@ const Profile = () => {
               {/* Profile Card */}
               <Card className="glass-card p-6">
                 <div className="flex items-start gap-6">
-                  <Avatar className="h-20 w-20 bg-primary/20">
-                    <span className="text-2xl">{memberData?.full_name?.[0]}</span>
-                  </Avatar>
+                  <div className="relative group">
+                    <Avatar className="h-20 w-20">
+                      {memberData?.photo_url ? (
+                        <AvatarImage src={memberData.photo_url} alt={memberData?.full_name} />
+                      ) : (
+                        <AvatarFallback className="bg-primary/20">
+                          <span className="text-2xl">{memberData?.full_name?.[0]}</span>
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <label 
+                      htmlFor="photo-upload" 
+                      className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+                    >
+                      {uploadingPhoto ? (
+                        <Loader2 className="h-6 w-6 text-white animate-spin" />
+                      ) : (
+                        <Upload className="h-6 w-6 text-white" />
+                      )}
+                    </label>
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                      disabled={uploadingPhoto}
+                    />
+                  </div>
+                  
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
