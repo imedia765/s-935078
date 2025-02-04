@@ -25,9 +25,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useState } from "react";
+import type { Payment } from "./types";
 
 interface PaymentsListProps {
-  paymentsData: any[];
+  paymentsData: Payment[];
   loadingPayments: boolean;
   handleExport: (type: 'excel' | 'csv' | 'all') => void;
   handleApprove: (paymentId: string) => void;
@@ -58,10 +59,12 @@ export function PaymentsList({
   };
 
   // Group payments by collector with proper null handling
-  const paymentsByCollector = paymentsData.reduce((acc: any, payment: any) => {
-    // Handle cases where collector info might be null
-    const collectorId = payment.members_collectors?.id || 'unassigned';
-    const collectorName = payment.members_collectors?.name || 'Unassigned';
+  const paymentsByCollector = paymentsData.reduce((acc: Record<string, any>, payment: Payment) => {
+    const collectorId = payment.members_collectors?.id;
+    const collectorName = payment.members_collectors?.name;
+    
+    // Skip payments without collector information
+    if (!collectorId || !collectorName) return acc;
     
     if (!acc[collectorId]) {
       acc[collectorId] = {
@@ -74,23 +77,19 @@ export function PaymentsList({
       };
     }
     
-    // Only add payment if it has valid collector information
-    if (payment.members_collectors || collectorId === 'unassigned') {
-      acc[collectorId].payments.push(payment);
-      acc[collectorId].totalAmount += payment.amount || 0;
-      if (payment.status === 'approved') {
-        acc[collectorId].approvedCount += 1;
-      } else if (payment.status === 'pending') {
-        acc[collectorId].pendingCount += 1;
-      }
+    acc[collectorId].payments.push(payment);
+    acc[collectorId].totalAmount += payment.amount || 0;
+    if (payment.status === 'approved') {
+      acc[collectorId].approvedCount += 1;
+    } else if (payment.status === 'pending') {
+      acc[collectorId].pendingCount += 1;
     }
     
     return acc;
   }, {});
 
-  // Filter out empty collector groups and sort by name
+  // Sort collectors by name
   const sortedCollectors = Object.values(paymentsByCollector)
-    .filter((collector: any) => collector.payments.length > 0)
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
   return (
@@ -119,6 +118,8 @@ export function PaymentsList({
 
       {loadingPayments ? (
         <p>Loading payments...</p>
+      ) : sortedCollectors.length === 0 ? (
+        <p className="text-center text-muted-foreground">No payments found</p>
       ) : (
         <div className="space-y-4">
           {sortedCollectors.map((collector: any) => (
@@ -157,7 +158,7 @@ export function PaymentsList({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {collector.payments.map((payment: any) => (
+                    {collector.payments.map((payment: Payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>{payment.payment_number}</TableCell>
