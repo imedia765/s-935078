@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { UserRole } from "@/types/auth"
 
 export const Navigation = () => {
   const navigate = useNavigate()
@@ -30,7 +31,7 @@ export const Navigation = () => {
         .select("role")
         .eq("user_id", user.id)
 
-      return roles?.map(r => r.role) || []
+      return roles?.map(r => r.role as UserRole) || []
     },
     enabled: !!session
   })
@@ -49,9 +50,9 @@ export const Navigation = () => {
   }
 
   const isActive = (path: string) => location.pathname === path
-  const hasAccess = (requiredRole: string) => {
+  const hasAccess = (requiredRole: UserRole) => {
     if (!userRoles) return false
-    return userRoles.includes('admin') || userRoles.includes(requiredRole)
+    return userRoles.includes('admin' as UserRole) || userRoles.includes(requiredRole)
   }
 
   const menuItems = [
@@ -65,13 +66,13 @@ export const Navigation = () => {
       path: "/members", 
       icon: <Users className="mr-2 h-4 w-4" />, 
       label: "Members",
-      show: hasAccess('collector')
+      show: hasAccess('collector' as UserRole)
     },
     { 
       path: "/admin", 
       icon: <Settings className="mr-2 h-4 w-4" />, 
       label: "Admin",
-      show: hasAccess('admin')
+      show: hasAccess('admin' as UserRole)
     }
   ]
 
