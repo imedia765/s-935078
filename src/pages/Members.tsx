@@ -29,8 +29,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
-import { Loader2, Plus, Pencil, Trash2, PauseCircle, PlayCircle, ArrowRightLeft } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, PauseCircle, PlayCircle, ArrowRightLeft, Download, FileDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { exportToCSV, generatePDF, generateIndividualMemberPDF } from "@/utils/exportUtils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MemberFormData {
   full_name: string;
@@ -284,6 +291,29 @@ export default function Members() {
               ))}
             </SelectContent>
           </Select>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => 
+                exportToCSV(members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)
+              }>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export to CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => 
+                generatePDF(members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)
+              }>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
@@ -438,6 +468,13 @@ export default function Members() {
                       }}
                     >
                       <ArrowRightLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => generateIndividualMemberPDF(member)}
+                    >
+                      <FileDown className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="destructive"
