@@ -34,7 +34,7 @@ export function MemberSearch() {
         .select(`
           *,
           member_notes(note_text, note_type),
-          payment_requests(status, amount, payment_type)
+          payment_requests!payment_requests_member_id_fkey(status, amount, payment_type)
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
