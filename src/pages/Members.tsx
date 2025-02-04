@@ -1,14 +1,23 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF } from "@/utils/exportUtils";
-import { useState } from "react";
 import { MembersToolbar } from "@/components/members/MembersToolbar";
 import { MembersTable } from "@/components/members/MembersTable";
 import { EditMemberDialog } from "@/components/members/EditMemberDialog";
 import { MoveMemberDialog } from "@/components/members/MoveMemberDialog";
+
+interface MemberFormData {
+  full_name: string;
+  email: string;
+  phone: string;
+  member_number: string;
+  collector_id: string | null;
+  status: string;
+}
 
 export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
