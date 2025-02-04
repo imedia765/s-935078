@@ -15,6 +15,8 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { RoleManagement } from "@/components/admin/RoleManagement";
+import { MemberSearch } from "@/components/admin/MemberSearch";
 
 export default function Admin() {
   const { toast } = useToast();
@@ -117,6 +119,7 @@ export default function Admin() {
           <TabsTrigger value="system">System Health</TabsTrigger>
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
           <TabsTrigger value="roles">Role Management</TabsTrigger>
+          <TabsTrigger value="members">Member Search</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         </TabsList>
 
@@ -192,42 +195,15 @@ export default function Admin() {
 
         <TabsContent value="roles">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Role Validation</h2>
-            {rolesError && <ErrorAlert error={rolesError as Error} />}
-            {isLoadingRoles ? (
-              <p>Loading role validation...</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Check Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {roleValidation?.map((validation: any, index: number) => (
-                    <TableRow key={index}>
-                      <TableCell>{validation.check_type}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded ${
-                          validation.status === 'Good' ? 'bg-green-100 text-green-800' :
-                          validation.status === 'Warning' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {validation.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <pre className="text-sm whitespace-pre-wrap">
-                          {JSON.stringify(validation.details, null, 2)}
-                        </pre>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <h2 className="text-xl font-semibold mb-4">Role Management</h2>
+            <RoleManagement />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="members">
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Member Search</h2>
+            <MemberSearch />
           </Card>
         </TabsContent>
 
