@@ -627,7 +627,6 @@ export type Database = {
           },
         ]
       }
-
       members: {
         Row: {
           address: string | null
@@ -665,7 +664,6 @@ export type Database = {
           payment_notes: string | null
           payment_type: string | null
           phone: string | null
-          photo_url: string | null
           postcode: string | null
           status: string | null
           ticket_description: string | null
@@ -715,7 +713,6 @@ export type Database = {
           payment_notes?: string | null
           payment_type?: string | null
           phone?: string | null
-          photo_url?: string | null
           postcode?: string | null
           status?: string | null
           ticket_description?: string | null
@@ -765,7 +762,6 @@ export type Database = {
           payment_notes?: string | null
           payment_type?: string | null
           phone?: string | null
-          photo_url?: string | null
           postcode?: string | null
           status?: string | null
           ticket_description?: string | null
@@ -781,7 +777,6 @@ export type Database = {
         }
         Relationships: []
       }
-
       members_collectors: {
         Row: {
           active: boolean | null
@@ -1942,4 +1937,3 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
