@@ -36,6 +36,12 @@ export interface Payment {
   };
 }
 
+export interface CollectorMember {
+  member_number: string;
+  full_name: string;
+  email: string;
+}
+
 export interface Collector {
   id: string;
   name: string;
@@ -43,13 +49,11 @@ export interface Collector {
   email: string;
   phone?: string;
   active: boolean;
-  members?: {
-    id: string;
-    full_name: string;
-    payment_amount?: number;
-    payment_date?: string;
-    yearly_payment_amount?: number;
-    yearly_payment_status?: string;
-  }[];
+  auth_user_id?: string;
+  created_at?: string;
+  member_number?: string;
+  prefix?: string;
+  updated_at?: string;
+  members: CollectorMember;
   payment_requests?: Payment[];
 }

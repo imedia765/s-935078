@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +17,28 @@ export function FinancialManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Helper functions for CollectorsList
+  const getPaymentStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return 'bg-green-500/20 text-green-400';
+      case 'pending':
+        return 'bg-yellow-500/20 text-yellow-400';
+      case 'rejected':
+        return 'bg-red-500/20 text-red-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getPaymentStatusIcon = (status: string) => {
+    return <AlertCircle className="mr-1 h-4 w-4" />;
+  };
+
+  const formatMemberNumber = (collector: any, index: number) => {
+    return collector.members?.member_number || `M${String(index + 1).padStart(4, '0')}`;
+  };
 
   // Fetch payments data
   const { data: paymentsData, isLoading: loadingPayments } = useQuery({
@@ -69,7 +90,7 @@ export function FinancialManagement() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Collector[];
+      return data as unknown as Collector[];
     }
   });
 
@@ -228,6 +249,9 @@ export function FinancialManagement() {
             collectors={collectors || []}
             isLoadingCollectors={isLoadingCollectors}
             refetchCollectors={refetchCollectors}
+            getPaymentStatusColor={getPaymentStatusColor}
+            getPaymentStatusIcon={getPaymentStatusIcon}
+            formatMemberNumber={formatMemberNumber}
           />
         </TabsContent>
 
