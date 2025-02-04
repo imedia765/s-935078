@@ -28,7 +28,7 @@ interface SystemCheck {
   current_value: number;
   threshold: number;
   status: string;
-  check_details: Record<string, any>;  // Changed from details to check_details
+  check_details: Record<string, any>;
   test_category: string;
 }
 
@@ -51,7 +51,7 @@ export function MaintenanceManagement() {
     }
   });
 
-  // Query system health with updated structure
+  // Query system health with mapping from details to check_details
   const { data: systemHealth } = useQuery({
     queryKey: ["systemHealth"],
     queryFn: async () => {
@@ -60,11 +60,14 @@ export function MaintenanceManagement() {
         console.error("System health check error:", error);
         throw error;
       }
-      return data as SystemCheck[];
+      // Map the response data to match our interface
+      return data.map((check: any) => ({
+        ...check,
+        check_details: check.details || {},  // Map details to check_details
+      })) as SystemCheck[];
     }
   });
 
-  // Query maintenance history
   const { data: maintenanceHistory } = useQuery({
     queryKey: ["maintenanceHistory"],
     queryFn: async () => {
@@ -204,7 +207,6 @@ export function MaintenanceManagement() {
               </div>
             )}
 
-            {/* Maintenance Actions */}
             <div className="flex gap-4">
               <Button 
                 onClick={handleRunMaintenance} 
