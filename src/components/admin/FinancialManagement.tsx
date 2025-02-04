@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileSpreadsheet, FileDown, Download } from "lucide-react";
+import { FileSpreadsheet, FileDown, Download, Check, X, Trash2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { exportToCSV, generatePDF } from "@/utils/exportUtils";
 import { useToast } from "@/components/ui/use-toast";
@@ -16,10 +16,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function FinancialManagement() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: rawMemberStats, isLoading: loadingStats } = useQuery({
     queryKey: ["memberStats"],
@@ -60,7 +73,8 @@ export function FinancialManagement() {
           payment_method,
           payment_type,
           status,
-          created_at
+          created_at,
+          payment_number
         `);
       
       if (error) throw error;
@@ -121,6 +135,7 @@ export function FinancialManagement() {
           payment_type,
           status,
           created_at,
+          payment_number,
           members!payment_requests_member_id_fkey (
             full_name
           ),
@@ -135,28 +150,76 @@ export function FinancialManagement() {
     }
   });
 
-  const handleExport = (type: 'excel' | 'csv' | 'all') => {
-    if (!paymentStats) return;
-    
-    try {
-      if (type === 'csv' || type === 'all') {
-        exportToCSV(paymentStats, 'payment_statistics');
-      }
-      if (type === 'excel' || type === 'all') {
-        generatePDF(paymentStats, 'Payment Statistics Report');
-      }
+  const approveMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payment_requests')
+        .update({ 
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          approved_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', paymentId);
       
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["paymentStats"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast({
-        title: "Export successful",
-        description: `Data exported as ${type === 'all' ? 'CSV and PDF' : type.toUpperCase()}`,
+        title: "Payment approved",
+        description: "The payment has been successfully approved.",
       });
-    } catch (error) {
-      console.error('Export error:', error);
+    },
+    onError: (error) => {
       toast({
         variant: "destructive",
-        title: "Export failed",
-        description: "There was an error exporting the data.",
+        title: "Error",
+        description: "Failed to approve payment: " + error.message,
       });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { error } = await supabase
+        .from('payment_requests')
+        .delete()
+        .eq('id', paymentId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["paymentStats"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      setShowDeleteDialog(false);
+      toast({
+        title: "Payment deleted",
+        description: "The payment has been successfully deleted.",
+      });
+    },
+    onError: (error) => {
+      setShowDeleteDialog(false);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete payment: " + error.message,
+      });
+    },
+  });
+
+  const handleApprove = (paymentId: string) => {
+    approveMutation.mutate(paymentId);
+  };
+
+  const handleDelete = (paymentId: string) => {
+    setSelectedPaymentId(paymentId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedPaymentId) {
+      deleteMutation.mutate(selectedPaymentId);
     }
   };
 
@@ -435,18 +498,21 @@ export function FinancialManagement() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead>Payment #</TableHead>
                     <TableHead>Member</TableHead>
                     <TableHead>Collector</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paymentsData?.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>{payment.payment_number || 'N/A'}</TableCell>
                       <TableCell>{payment.members?.full_name}</TableCell>
                       <TableCell>{payment.members_collectors?.name}</TableCell>
                       <TableCell>£{payment.amount}</TableCell>
@@ -460,6 +526,28 @@ export function FinancialManagement() {
                         }`}>
                           {payment.status}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {payment.status === 'pending' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleApprove(payment.id)}
+                              className="h-8 w-8 bg-green-500/20 hover:bg-green-500/30"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(payment.id)}
+                            className="h-8 w-8 bg-red-500/20 hover:bg-red-500/30"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -596,6 +684,21 @@ export function FinancialManagement() {
         </TabsContent>
 
       </Tabs>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the payment record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
