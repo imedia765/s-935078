@@ -219,7 +219,7 @@ export function FinancialManagement() {
                 {stats && Object.entries(stats.ageDistribution).map(([range, count]) => (
                   <div key={range} className="bg-primary/10 rounded p-2">
                     <div className="text-sm text-muted-foreground">{range}</div>
-                    <div className="font-bold">{count}</div>
+                    <div className="font-bold">{String(count)}</div>
                   </div>
                 ))}
               </div>
@@ -227,7 +227,6 @@ export function FinancialManagement() {
           </div>
         </TabsContent>
 
-        {/* Other tab contents will be implemented based on requirements */}
         <TabsContent value="collectors">
           <Card className="p-4 glass-card">
             <h3 className="font-semibold mb-4">Collector Reports Coming Soon</h3>
