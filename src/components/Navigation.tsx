@@ -1,6 +1,6 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Home, User, Settings } from "lucide-react"
+import { Home, User, Settings, Users } from "lucide-react"
 
 export const Navigation = () => {
   const navigate = useNavigate()
@@ -38,6 +38,16 @@ export const Navigation = () => {
                   onClick={() => navigate("/profile")}
                 >
                   <User className="mr-2 h-4 w-4" /> Profile
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+                    isActive("/members") ? "bg-primary/20 text-primary" : "bg-black/40"
+                  }`}
+                  onClick={() => navigate("/members")}
+                >
+                  <Users className="mr-2 h-4 w-4" /> Members
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
