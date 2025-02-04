@@ -2,10 +2,6 @@ import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  PieChart, Pie, Cell, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend
-} from 'recharts';
-import {
   Table,
   TableBody,
   TableCell,
@@ -39,14 +35,14 @@ export function MemberStats() {
             relationship,
             date_of_birth
           ),
-          payment_requests!payment_requests_member_id_fkey (
+          payment_requests (
             id,
             amount,
             status,
             payment_method,
             created_at
           ),
-          members_collectors!members_collector_id_fkey (
+          members_collectors (
             id,
             name,
             email,
@@ -77,7 +73,6 @@ export function MemberStats() {
   // Group members by collector
   const collectorReports = stats?.reduce((acc: any, member) => {
     const collectorId = member.collector_id;
-    // Access the first element of the members_collectors array if it exists
     const collector = member.members_collectors?.[0];
     const collectorName = collector?.name || 'Unassigned';
     
@@ -167,7 +162,7 @@ export function MemberStats() {
         <h2 className="text-xl font-semibold mb-4 text-gradient">Collector Reports</h2>
         <Accordion type="single" collapsible className="w-full space-y-4">
           {Object.values(collectorReports || {}).map((collector: any) => (
-            <AccordionItem key={collector.id} value={collector.id} className="border rounded-lg p-4">
+            <AccordionItem key={collector.id} value={collector.id || 'unassigned'} className="border rounded-lg p-4">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex flex-col items-start">
