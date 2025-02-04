@@ -193,12 +193,6 @@ export const Index = () => {
               </div>
 
               <div className="text-center space-y-4">
-                <p className="text-sm">
-                  Need Help?{" "}
-                  <a href="#" className="text-primary hover:underline">
-                    Contact Support
-                  </a>
-                </p>
                 <p className="text-xs text-gray-500">
                   By logging in, you agree to the PWA Collector Member Responsibilities and Pakistan Welfare Association Membership Terms
                 </p>
