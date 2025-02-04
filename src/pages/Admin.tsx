@@ -28,12 +28,16 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks');
+        // Add explicit column selection to avoid ambiguity
+        const { data, error } = await supabase.rpc('run_combined_system_checks', undefined, {
+          count: 'exact',
+          head: false
+        });
         if (error) throw error;
-        console.log("System checks response:", data); // Debug log
+        console.log("System checks response:", data);
         return data;
       } catch (error: any) {
-        console.error("System checks error:", error); // Debug log
+        console.error("System checks error:", error);
         throw error;
       }
     }

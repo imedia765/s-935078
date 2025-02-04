@@ -63,23 +63,12 @@ export function CollectorsManagement() {
     }
   };
 
-  // Update collector profiles
+  // Since profile functionality isn't ready, we'll skip the update for now
   const handleUpdateProfiles = async () => {
-    try {
-      const { error } = await supabase.rpc('update_collector_profiles');
-      if (error) throw error;
-      toast({
-        title: "Success",
-        description: "Collector profiles updated",
-      });
-      refetch();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Info",
+      description: "Profile update functionality is not available yet",
+    });
   };
 
   // Maintain collector roles
