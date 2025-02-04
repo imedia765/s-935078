@@ -271,365 +271,367 @@ export default function Members() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Members List</h1>
-        <div className="flex gap-4">
-          <Select
-            value={selectedCollector}
-            onValueChange={(value) => setSelectedCollector(value)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by collector" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Collectors</SelectItem>
-              {collectors?.map((collector) => (
-                <SelectItem key={collector.id} value={collector.id}>
-                  {collector.name || `Collector ${collector.number}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Members List</h1>
+          <div className="flex gap-4">
+            <Select
+              value={selectedCollector}
+              onValueChange={(value) => setSelectedCollector(value)}
+            >
+              <SelectTrigger className="w-[200px] bg-card text-card-foreground">
+                <SelectValue placeholder="Filter by collector" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Collectors</SelectItem>
+                {collectors?.map((collector) => (
+                  <SelectItem key={collector.id} value={collector.id}>
+                    {collector.name || `Collector ${collector.number}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => 
-                exportToCSV(members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)
-              }>
-                <FileDown className="mr-2 h-4 w-4" />
-                Export to CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => 
-                generatePDF(members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)
-              }>
-                <FileDown className="mr-2 h-4 w-4" />
-                Export to PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> Add Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Member</DialogTitle>
-                <DialogDescription>
-                  Fill in the member details below
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="full_name" className="text-right">
-                      Full Name
-                    </Label>
-                    <Input
-                      id="full_name"
-                      name="full_name"
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="phone" className="text-right">
-                      Phone
-                    </Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="member_number" className="text-right">
-                      Member Number
-                    </Label>
-                    <Input
-                      id="member_number"
-                      name="member_number"
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="collector_id" className="text-right">
-                      Collector
-                    </Label>
-                    <Select name="collector_id">
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select a collector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {collectors?.map((collector) => (
-                          <SelectItem key={collector.id} value={collector.id}>
-                            {collector.name || `Collector ${collector.number}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Save Member</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      <Card className="p-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member Number</TableHead>
-              <TableHead>Full Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Collector</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members?.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>{member.member_number}</TableCell>
-                <TableCell>{member.full_name}</TableCell>
-                <TableCell>{member.email}</TableCell>
-                <TableCell>{member.phone || 'N/A'}</TableCell>
-                <TableCell>
-                  {member.members_collectors?.name || 'No Collector'}
-                </TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-sm ${
-                    member.status === 'active' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {member.status || 'Unknown'}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        setEditingMember(member);
-                        setIsEditDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => toggleStatusMutation.mutate({
-                        id: member.id,
-                        currentStatus: member.status
-                      })}
-                    >
-                      {member.status === 'active' ? (
-                        <PauseCircle className="h-4 w-4" />
-                      ) : (
-                        <PlayCircle className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        setMovingMember(member);
-                        setIsMoveDialogOpen(true);
-                      }}
-                    >
-                      <ArrowRightLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => generateIndividualMemberPDF(member)}
-                    >
-                      <FileDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this member?')) {
-                          deleteMemberMutation.mutate(member.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Member</DialogTitle>
-            <DialogDescription>
-              Update the member details below
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="full_name" className="text-right">
-                  Full Name
-                </Label>
-                <Input
-                  id="full_name"
-                  name="full_name"
-                  className="col-span-3"
-                  defaultValue={editingMember?.full_name}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  className="col-span-3"
-                  defaultValue={editingMember?.email}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="phone" className="text-right">
-                  Phone
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  className="col-span-3"
-                  defaultValue={editingMember?.phone}
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="member_number" className="text-right">
-                  Member Number
-                </Label>
-                <Input
-                  id="member_number"
-                  name="member_number"
-                  className="col-span-3"
-                  defaultValue={editingMember?.member_number}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="collector_id" className="text-right">
-                  Collector
-                </Label>
-                <Select 
-                  name="collector_id"
-                  defaultValue={editingMember?.collector_id}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select a collector" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {collectors?.map((collector) => (
-                      <SelectItem key={collector.id} value={collector.id}>
-                        {collector.name || `Collector ${collector.number}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">Update Member</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Move Member</DialogTitle>
-            <DialogDescription>
-              Select a new collector for this member
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const newCollectorId = formData.get('new_collector_id') as string;
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="bg-card text-card-foreground">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => 
+                  exportToCSV(members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)
+                }>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export to CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => 
+                  generatePDF(members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)
+                }>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export to PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
-            if (movingMember && newCollectorId) {
-              moveMemberMutation.mutate({
-                memberId: movingMember.id,
-                newCollectorId
-              });
-            }
-          }} className="space-y-4">
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="new_collector_id" className="text-right">
-                  New Collector
-                </Label>
-                <Select name="new_collector_id" defaultValue={movingMember?.collector_id}>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select a collector" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {collectors?.map((collector) => (
-                      <SelectItem 
-                        key={collector.id} 
-                        value={collector.id}
-                        disabled={collector.id === movingMember?.collector_id}
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Plus className="mr-2 h-4 w-4" /> Add Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Member</DialogTitle>
+                  <DialogDescription>
+                    Fill in the member details below
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="full_name" className="text-right">
+                        Full Name
+                      </Label>
+                      <Input
+                        id="full_name"
+                        name="full_name"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="email" className="text-right">
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="phone" className="text-right">
+                        Phone
+                      </Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="member_number" className="text-right">
+                        Member Number
+                      </Label>
+                      <Input
+                        id="member_number"
+                        name="member_number"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="collector_id" className="text-right">
+                        Collector
+                      </Label>
+                      <Select name="collector_id">
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Select a collector" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {collectors?.map((collector) => (
+                            <SelectItem key={collector.id} value={collector.id}>
+                              {collector.name || `Collector ${collector.number}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit">Save Member</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <Card className="p-6 bg-card text-card-foreground">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-muted/50">
+                <TableHead>Member Number</TableHead>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Collector</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members?.map((member) => (
+                <TableRow key={member.id} className="border-border hover:bg-muted/50">
+                  <TableCell>{member.member_number}</TableCell>
+                  <TableCell>{member.full_name}</TableCell>
+                  <TableCell>{member.email}</TableCell>
+                  <TableCell>{member.phone || 'N/A'}</TableCell>
+                  <TableCell>
+                    {member.members_collectors?.name || 'No Collector'}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      member.status === 'active' 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {member.status || 'Unknown'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setEditingMember(member);
+                          setIsEditDialogOpen(true);
+                        }}
                       >
-                        {collector.name || `Collector ${collector.number}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => toggleStatusMutation.mutate({
+                          id: member.id,
+                          currentStatus: member.status
+                        })}
+                      >
+                        {member.status === 'active' ? (
+                          <PauseCircle className="h-4 w-4" />
+                        ) : (
+                          <PlayCircle className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setMovingMember(member);
+                          setIsMoveDialogOpen(true);
+                        }}
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => generateIndividualMemberPDF(member)}
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this member?')) {
+                            deleteMemberMutation.mutate(member.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Member</DialogTitle>
+              <DialogDescription>
+                Update the member details below
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="full_name" className="text-right">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="full_name"
+                    name="full_name"
+                    className="col-span-3"
+                    defaultValue={editingMember?.full_name}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className="col-span-3"
+                    defaultValue={editingMember?.email}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="phone" className="text-right">
+                    Phone
+                  </Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    className="col-span-3"
+                    defaultValue={editingMember?.phone}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="member_number" className="text-right">
+                    Member Number
+                  </Label>
+                  <Input
+                    id="member_number"
+                    name="member_number"
+                    className="col-span-3"
+                    defaultValue={editingMember?.member_number}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="collector_id" className="text-right">
+                    Collector
+                  </Label>
+                  <Select 
+                    name="collector_id"
+                    defaultValue={editingMember?.collector_id}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select a collector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {collectors?.map((collector) => (
+                        <SelectItem key={collector.id} value={collector.id}>
+                          {collector.name || `Collector ${collector.number}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">Move Member</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+              <DialogFooter>
+                <Button type="submit">Update Member</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Move Member</DialogTitle>
+              <DialogDescription>
+                Select a new collector for this member
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const newCollectorId = formData.get('new_collector_id') as string;
+              
+              if (movingMember && newCollectorId) {
+                moveMemberMutation.mutate({
+                  memberId: movingMember.id,
+                  newCollectorId
+                });
+              }
+            }} className="space-y-4">
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="new_collector_id" className="text-right">
+                    New Collector
+                  </Label>
+                  <Select name="new_collector_id" defaultValue={movingMember?.collector_id}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select a collector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {collectors?.map((collector) => (
+                        <SelectItem 
+                          key={collector.id} 
+                          value={collector.id}
+                          disabled={collector.id === movingMember?.collector_id}
+                        >
+                          {collector.name || `Collector ${collector.number}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Move Member</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
