@@ -9,6 +9,7 @@ import { MembersToolbar } from "@/components/members/MembersToolbar";
 import { MembersTable } from "@/components/members/MembersTable";
 import { EditMemberDialog } from "@/components/members/EditMemberDialog";
 import { MoveMemberDialog } from "@/components/members/MoveMemberDialog";
+import Fuse from 'fuse.js';
 
 interface MemberFormData {
   full_name: string;
