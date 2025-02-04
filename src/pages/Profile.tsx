@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, CreditCard, Users, Calendar, Receipt, Building2 } from "lucide-react";
+import { Shield, CreditCard, Users, Calendar, Receipt, Building2, Edit, Save, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -22,65 +23,65 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          navigate("/");
-          return;
-        }
-
-        // Fetch member data with family members
-        const { data: member, error: memberError } = await supabase
-          .from("members")
-          .select(`
-            *,
-            family_members (*)
-          `)
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (memberError) throw memberError;
-        setMemberData(member);
-
-        // Fetch payment history
-        const { data: payments, error: paymentsError } = await supabase
-          .from("payment_requests")
-          .select("*")
-          .eq("member_number", member.member_number)
-          .order("created_at", { ascending: false });
-
-        if (paymentsError) throw paymentsError;
-        setPaymentHistory(payments || []);
-
-        // Fetch announcements
-        const { data: announcements, error: announcementsError } = await supabase
-          .from("system_announcements")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false });
-
-        if (announcementsError) throw announcementsError;
-        setAnnouncements(announcements || []);
-
-      } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [navigate, toast]);
+
+  const fetchData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/");
+        return;
+      }
+
+      const { data: member, error: memberError } = await supabase
+        .from("members")
+        .select(`
+          *,
+          family_members (*)
+        `)
+        .eq("auth_user_id", user.id)
+        .single();
+
+      if (memberError) throw memberError;
+      setMemberData(member);
+      setEditedData(member);
+
+      const { data: payments, error: paymentsError } = await supabase
+        .from("payment_requests")
+        .select("*")
+        .eq("member_number", member.member_number)
+        .order("created_at", { ascending: false });
+
+      if (paymentsError) throw paymentsError;
+      setPaymentHistory(payments || []);
+
+      const { data: announcements, error: announcementsError } = await supabase
+        .from("system_announcements")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (announcementsError) throw announcementsError;
+      setAnnouncements(announcements || []);
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -93,6 +94,56 @@ const Profile = () => {
         description: error.message
       });
     }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setEditedData(memberData);
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from("members")
+        .update({
+          full_name: editedData.full_name,
+          email: editedData.email,
+          phone: editedData.phone,
+          address: editedData.address,
+          postcode: editedData.postcode,
+          town: editedData.town,
+          date_of_birth: editedData.date_of_birth,
+          gender: editedData.gender,
+          marital_status: editedData.marital_status
+        })
+        .eq("id", memberData.id);
+
+      if (error) throw error;
+
+      setMemberData(editedData);
+      setIsEditing(false);
+      toast({
+        title: "Success",
+        description: "Profile updated successfully"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setEditedData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   if (loading) {
@@ -129,25 +180,128 @@ const Profile = () => {
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h2 className="text-2xl font-semibold text-gradient">{memberData?.full_name}</h2>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.full_name}
+                            onChange={(e) => handleInputChange("full_name", e.target.value)}
+                            className="mb-2"
+                          />
+                        ) : (
+                          <h2 className="text-2xl font-semibold text-gradient">{memberData?.full_name}</h2>
+                        )}
                         <p className="text-gray-400">Member #{memberData?.member_number}</p>
                       </div>
-                      <Badge variant={memberData?.status === 'active' ? 'default' : 'destructive'}>
-                        {memberData?.status}
-                      </Badge>
+                      <div className="flex gap-2">
+                        {isEditing ? (
+                          <>
+                            <Button onClick={handleSave} size="sm" className="bg-primary/20">
+                              <Save className="w-4 h-4 mr-1" /> Save
+                            </Button>
+                            <Button onClick={handleCancel} variant="outline" size="sm" className="bg-black/40">
+                              <X className="w-4 h-4 mr-1" /> Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button onClick={handleEdit} variant="outline" size="sm" className="bg-black/40">
+                            <Edit className="w-4 h-4 mr-1" /> Edit
+                          </Button>
+                        )}
+                        <Badge variant={memberData?.status === 'active' ? 'default' : 'destructive'}>
+                          {memberData?.status}
+                        </Badge>
+                      </div>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-400">Email</p>
-                        <p className="text-gray-200">{memberData?.email}</p>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.email}
+                            onChange={(e) => handleInputChange("email", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">{memberData?.email}</p>
+                        )}
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">Phone</p>
-                        <p className="text-gray-200">{memberData?.phone}</p>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.phone}
+                            onChange={(e) => handleInputChange("phone", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">{memberData?.phone}</p>
+                        )}
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">Address</p>
-                        <p className="text-gray-200">{memberData?.address}</p>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.address}
+                            onChange={(e) => handleInputChange("address", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">{memberData?.address}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">Postcode</p>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.postcode}
+                            onChange={(e) => handleInputChange("postcode", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">{memberData?.postcode}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">Town</p>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.town}
+                            onChange={(e) => handleInputChange("town", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">{memberData?.town}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">Date of Birth</p>
+                        {isEditing ? (
+                          <Input
+                            type="date"
+                            value={editedData?.date_of_birth}
+                            onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">
+                            {memberData?.date_of_birth ? new Date(memberData.date_of_birth).toLocaleDateString() : 'Not set'}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">Gender</p>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.gender}
+                            onChange={(e) => handleInputChange("gender", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">{memberData?.gender || 'Not set'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400">Marital Status</p>
+                        {isEditing ? (
+                          <Input
+                            value={editedData?.marital_status}
+                            onChange={(e) => handleInputChange("marital_status", e.target.value)}
+                          />
+                        ) : (
+                          <p className="text-gray-200">{memberData?.marital_status || 'Not set'}</p>
+                        )}
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">Collector</p>
