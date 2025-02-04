@@ -10,6 +10,14 @@ export const Navigation = () => {
   const location = useLocation()
   const { toast } = useToast()
 
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      return session
+    }
+  })
+
   const { data: userRoles } = useQuery({
     queryKey: ["userRoles"],
     queryFn: async () => {
@@ -22,7 +30,8 @@ export const Navigation = () => {
         .eq("user_id", user.id)
 
       return roles?.map(r => r.role) || []
-    }
+    },
+    enabled: !!session // Only fetch roles if there's a session
   })
 
   const handleSignOut = async () => {
@@ -74,33 +83,35 @@ export const Navigation = () => {
           <p className="text-lg font-arabic text-primary">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
         </div>
 
-        {/* Navigation Menu */}
-        <div className="flex items-center justify-between p-4">
-          <NavigationMenu>
-            <NavigationMenuList className="space-x-2">
-              {menuItems.map((item) => (
-                <NavigationMenuItem key={item.path}>
+        {/* Navigation Menu - Only show if logged in */}
+        {session && (
+          <div className="flex items-center justify-between p-4">
+            <NavigationMenu>
+              <NavigationMenuList className="space-x-2">
+                {menuItems.map((item) => (
+                  <NavigationMenuItem key={item.path}>
+                    <NavigationMenuLink
+                      className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+                        isActive(item.path) ? "bg-primary/20 text-primary" : "bg-black/40"
+                      }`}
+                      onClick={() => navigate(item.path)}
+                    >
+                      {item.icon} {item.label}
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                ))}
+                <NavigationMenuItem>
                   <NavigationMenuLink
-                    className={`group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 ${
-                      isActive(item.path) ? "bg-primary/20 text-primary" : "bg-black/40"
-                    }`}
-                    onClick={() => navigate(item.path)}
+                    className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40"
+                    onClick={handleSignOut}
                   >
-                    {item.icon} {item.label}
+                    <LogOut className="mr-2 h-4 w-4" /> Sign Out
                   </NavigationMenuLink>
                 </NavigationMenuItem>
-              ))}
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50 bg-black/40"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        )}
       </div>
     </div>
   )
