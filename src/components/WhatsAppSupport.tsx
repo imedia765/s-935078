@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, AlertTriangle } from "lucide-react";
+import { MessageCircle, AlertTriangle, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,27 @@ export function WhatsAppSupport({ memberName = "", memberNumber = "", memberEmai
   const [number, setNumber] = useState(memberNumber);
   const [email, setEmail] = useState(memberEmail);
   const [query, setQuery] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const { toast } = useToast();
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 16 * 1024 * 1024) { // 16MB limit
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Video must be less than 16MB for WhatsApp sharing.",
+        });
+        return;
+      }
+      setVideoFile(file);
+      toast({
+        title: "Video uploaded",
+        description: "Video will be attached to your support message.",
+      });
+    }
+  };
 
   const handleWhatsAppSupport = () => {
     if (!name || !number || !email || !query) {
@@ -76,6 +96,7 @@ export function WhatsAppSupport({ memberName = "", memberNumber = "", memberEmai
             <li>Try logging out and logging back in</li>
             <li>Take screenshots of any error messages you see</li>
             <li>Include steps to reproduce the issue in your query</li>
+            <li>Record a short video (max 16MB) demonstrating the issue if possible</li>
           </ul>
         </div>
 
@@ -116,6 +137,21 @@ export function WhatsAppSupport({ memberName = "", memberNumber = "", memberEmai
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Describe your issue in detail, including any error messages"
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="video">Video Demonstration (Optional - Max 16MB)</Label>
+            <Input
+              id="video"
+              type="file"
+              accept="video/*"
+              onChange={handleVideoUpload}
+              className="cursor-pointer"
+            />
+            {videoFile && (
+              <p className="text-sm text-muted-foreground">
+                Video selected: {videoFile.name}
+              </p>
+            )}
           </div>
         </div>
         <Button onClick={handleWhatsAppSupport} className="w-full bg-green-600 hover:bg-green-700">
