@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, UserCheck, UserCog, Mail, Phone, Key, AlertCircle, Calendar, Home, CreditCard } from "lucide-react";
+import { Search, UserCheck, UserCog, Mail, Phone, Key, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import debounce from "lodash/debounce";
 
 type MemberWithRelations = {
   id: string;
@@ -28,8 +29,16 @@ type MemberWithRelations = {
 
 export function MemberSearch() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchType, setSearchType] = useState<"full_name" | "email" | "phone" | "member_number">("full_name");
+  const [searchType, setSearchType] = useState<"full_name" | "member_number">("full_name");
   const { toast } = useToast();
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      setSearchTerm(term);
+    }, 500),
+    []
+  );
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ["memberSearch", searchTerm, searchType],
@@ -118,25 +127,26 @@ export function MemberSearch() {
         <select 
           className="bg-background border border-input rounded-md px-3 py-2"
           value={searchType}
-          onChange={(e) => setSearchType(e.target.value as any)}
+          onChange={(e) => setSearchType(e.target.value as "full_name" | "member_number")}
         >
-          <option value="full_name">Name</option>
-          <option value="email">Email</option>
-          <option value="phone">Phone</option>
-          <option value="member_number">Member ID</option>
+          <option value="full_name">Search by Name</option>
+          <option value="member_number">Search by Member ID</option>
         </select>
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={`Search by ${searchType}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={`Search by ${searchType === 'full_name' ? 'name' : 'member ID'}...`}
+            onChange={(e) => debouncedSearch(e.target.value)}
             className="pl-9"
           />
         </div>
       </div>
 
-      {isLoading && <div>Searching...</div>}
+      {isLoading && (
+        <div className="flex items-center justify-center p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
       
       {searchResults && searchResults.length > 0 && (
         <div className="space-y-4">
