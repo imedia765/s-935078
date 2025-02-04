@@ -1,4 +1,3 @@
-
 export interface PaymentStats {
   totalPayments: number;
   totalAmount: number;
@@ -32,6 +31,7 @@ export interface Payment {
     full_name: string;
   };
   members_collectors?: {
+    id: string;
     name: string;
   };
 }
