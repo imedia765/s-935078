@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, UserCheck, UserCog, Mail, Phone, Key, AlertCircle } from "lucide-react";
+import { Search, UserCheck, UserCog, Mail, Phone, Key, AlertCircle, Calendar, Home, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 type MemberWithRelations = {
   id: string;
@@ -34,14 +35,14 @@ export function MemberSearch() {
         .select(`
           *,
           member_notes(note_text, note_type),
-          payment_requests!payment_requests_member_id_fkey(status, amount, payment_type)
+          payment_requests!payment_requests_member_id_fkey(status, amount, payment_type),
+          family_members(full_name, relationship, date_of_birth)
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
 
       if (error) throw error;
 
-      // Fetch user roles separately since we need to join through auth.users
       const membersWithRoles = await Promise.all((members || []).map(async (member) => {
         if (!member.auth_user_id) return { ...member, user_roles: [] };
 
@@ -132,13 +133,22 @@ export function MemberSearch() {
       {isLoading && <div>Searching...</div>}
       
       {searchResults && searchResults.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {searchResults.map((member) => (
-            <div key={member.id} className="flex flex-col p-4 glass-card">
-              <div className="flex items-center justify-between mb-2">
+            <Card key={member.id} className="p-6">
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="font-medium">{member.full_name}</p>
-                  <p className="text-sm text-muted-foreground">{member.email}</p>
+                  <h3 className="text-xl font-semibold">{member.full_name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <Mail className="w-4 h-4" />
+                    <span>{member.email}</span>
+                    {member.phone && (
+                      <>
+                        <Phone className="w-4 h-4 ml-2" />
+                        <span>{member.phone}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   {member.user_roles?.map((role: any) => (
@@ -148,25 +158,74 @@ export function MemberSearch() {
                   ))}
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Member ID:</span> {member.member_number}
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Member ID</p>
+                  <p>{member.member_number}</p>
                 </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Phone:</span> {member.phone || 'N/A'}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <Badge variant={member.status === 'active' ? 'success' : 'secondary'}>
+                    {member.status}
+                  </Badge>
                 </div>
-                {member.failed_login_attempts > 0 && (
-                  <div className="col-span-2">
-                    <Badge variant="destructive" className="mb-2">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {member.failed_login_attempts} failed login attempts
-                    </Badge>
-                  </div>
-                )}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Date of Birth</p>
+                  <p>{member.date_of_birth || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Address</p>
+                  <p>{member.address || 'Not specified'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Membership Type</p>
+                  <p>{member.membership_type || 'Standard'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Last Payment</p>
+                  <p>{member.payment_date || 'No payment recorded'}</p>
+                </div>
               </div>
 
-              <div className="flex gap-2 mt-4">
+              {member.family_members && member.family_members.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Family Members</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {member.family_members.map((familyMember: any, index: number) => (
+                      <div key={index} className="flex items-center gap-2 text-sm">
+                        <Badge variant="outline">{familyMember.relationship}</Badge>
+                        <span>{familyMember.full_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {member.member_notes && member.member_notes.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Notes</h4>
+                  <div className="space-y-2">
+                    {member.member_notes.map((note: any, index: number) => (
+                      <div key={index} className="text-sm bg-muted p-2 rounded">
+                        <Badge variant="outline" className="mb-1">{note.note_type}</Badge>
+                        <p>{note.note_text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {member.failed_login_attempts > 0 && (
+                <div className="mb-4">
+                  <Badge variant="destructive" className="mb-2">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {member.failed_login_attempts} failed login attempts
+                  </Badge>
+                </div>
+              )}
+
+              <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleResetLoginState(member.member_number)}>
                   <Key className="mr-2 h-4 w-4" />
                   Reset Login
@@ -180,7 +239,7 @@ export function MemberSearch() {
                   View Details
                 </Button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

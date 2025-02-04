@@ -45,7 +45,6 @@ export const generatePDF = (data: any[], title: string) => {
   const doc = new jsPDF();
   addPageHeader(doc, title);
   
-  // Group members by collector
   const groupedMembers = data.reduce((acc: any, member: any) => {
     const collectorName = member.members_collectors?.name || 'No Collector';
     if (!acc[collectorName]) {
@@ -67,27 +66,30 @@ export const generatePDF = (data: any[], title: string) => {
     addCollectorHeader(doc, collectorName, yPosition);
     
     autoTable(doc, {
-      head: [['Member Number', 'Full Name', 'Email', 'Phone', 'Status']],
+      head: [['Member Number', 'Full Name', 'Contact Info', 'Type', 'Status', 'Last Payment']],
       body: members.map((member: any) => [
         member.member_number,
-        member.full_name,
-        member.email,
-        member.phone || 'N/A',
-        member.status || 'Unknown'
+        `${member.full_name}\n${member.date_of_birth || 'DOB: N/A'}`,
+        `${member.email}\n${member.phone || 'No phone'}\n${member.address || 'No address'}`,
+        member.membership_type || 'Standard',
+        member.status || 'Unknown',
+        member.payment_date || 'No payment recorded'
       ]),
       startY: yPosition + 10,
       theme: 'grid',
       styles: {
         fontSize: 10,
         cellPadding: 3,
+        overflow: 'linebreak',
+        cellWidth: 'wrap'
       },
       headStyles: {
-        fillColor: [140, 93, 211], // Primary purple
+        fillColor: [140, 93, 211],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
       },
       alternateRowStyles: {
-        fillColor: [242, 242, 242], // Light gray for alternate rows
+        fillColor: [242, 242, 242],
       },
     });
 
@@ -99,13 +101,11 @@ export const generatePDF = (data: any[], title: string) => {
 
 export const generateIndividualMemberPDF = (member: any) => {
   const doc = new jsPDF();
-  
-  // Header
   addPageHeader(doc, 'Member Details Report');
   
   // Member information box
-  doc.setFillColor(242, 252, 226); // Soft green background
-  doc.rect(14, 40, doc.internal.pageSize.width - 28, 100, 'F');
+  doc.setFillColor(242, 252, 226);
+  doc.rect(14, 40, doc.internal.pageSize.width - 28, 140, 'F');
   
   // Member details
   doc.setFontSize(12);
@@ -114,8 +114,12 @@ export const generateIndividualMemberPDF = (member: any) => {
     ['Full Name:', member.full_name],
     ['Email:', member.email],
     ['Phone:', member.phone || 'N/A'],
+    ['Address:', member.address || 'N/A'],
+    ['Date of Birth:', member.date_of_birth || 'N/A'],
+    ['Membership Type:', member.membership_type || 'Standard'],
     ['Collector:', member.members_collectors?.name || 'No Collector'],
     ['Status:', member.status || 'Unknown'],
+    ['Last Payment:', member.payment_date || 'No payment recorded']
   ];
 
   let yPos = 55;
@@ -124,13 +128,41 @@ export const generateIndividualMemberPDF = (member: any) => {
     doc.text(label, 20, yPos);
     doc.setFont(undefined, 'normal');
     doc.text(value, 100, yPos);
-    yPos += 15;
+    yPos += 12;
   });
 
   // Add status indicator
   const statusColor = member.status === 'active' ? [34, 197, 94] : [156, 163, 175];
   doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
   doc.circle(180, 55, 5, 'F');
+
+  // Add family members section if available
+  if (member.family_members && member.family_members.length > 0) {
+    yPos += 10;
+    doc.setFont(undefined, 'bold');
+    doc.text('Family Members:', 20, yPos);
+    yPos += 10;
+    
+    member.family_members.forEach((familyMember: any) => {
+      doc.setFont(undefined, 'normal');
+      doc.text(`${familyMember.relationship}: ${familyMember.full_name}`, 30, yPos);
+      yPos += 8;
+    });
+  }
+
+  // Add notes section if available
+  if (member.member_notes && member.member_notes.length > 0) {
+    yPos += 10;
+    doc.setFont(undefined, 'bold');
+    doc.text('Notes:', 20, yPos);
+    yPos += 10;
+    
+    member.member_notes.forEach((note: any) => {
+      doc.setFont(undefined, 'normal');
+      doc.text(`${note.note_type}: ${note.note_text}`, 30, yPos);
+      yPos += 8;
+    });
+  }
 
   doc.save(`member_${member.member_number}_report.pdf`);
 };
