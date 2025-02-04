@@ -19,13 +19,15 @@ import {
   XCircle,
   Wallet,
   UserCog,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  PoundSterling
 } from "lucide-react";
 
 export function CollectorsManagement() {
   const { toast } = useToast();
 
-  // Query collectors data with member numbers
+  // Query collectors data with member numbers and payment status
   const { data: collectors, isLoading: isLoadingCollectors, refetch } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
@@ -37,8 +39,14 @@ export function CollectorsManagement() {
             member_number,
             full_name,
             email
+          ),
+          payments (
+            status,
+            amount,
+            created_at
           )
-        `);
+        `)
+        .order('created_at', { foreignTable: 'payments', ascending: false });
       if (error) throw error;
       return data;
     }
@@ -112,6 +120,32 @@ export function CollectorsManagement() {
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'text-orange-500 bg-orange-500/20';
+      case 'paid':
+        return 'text-purple-500 bg-purple-500/20';
+      case 'approved':
+        return 'text-green-500 bg-green-500/20';
+      default:
+        return 'text-gray-500 bg-gray-500/20';
+    }
+  };
+
+  const getPaymentStatusIcon = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return <Clock className="h-4 w-4" />;
+      case 'paid':
+        return <PoundSterling className="h-4 w-4" />;
+      case 'approved':
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
@@ -141,7 +175,11 @@ export function CollectorsManagement() {
             <h3 className="text-lg font-semibold">Total Collections</h3>
           </div>
           <p className="text-3xl font-bold text-purple-500 mt-2">
-            £{collectors?.reduce((acc, curr) => acc + 40, 0) || 0}
+            £{collectors?.reduce((acc: number, curr: any) => {
+              const totalPayments = curr.payments?.reduce((sum: number, payment: any) => 
+                payment.status === 'approved' ? sum + (payment.amount || 0) : sum, 0) || 0;
+              return acc + totalPayments;
+            }, 0).toFixed(2) || '0.00'}
           </p>
         </Card>
       </div>
@@ -185,51 +223,75 @@ export function CollectorsManagement() {
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Auth Status</TableHead>
+                  <TableHead>Payment Status</TableHead>
+                  <TableHead>Last Payment</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {collectors?.map((collector) => (
-                  <TableRow key={collector.id} className="hover:bg-primary/5">
-                    <TableCell>{collector.name}</TableCell>
-                    <TableCell>{collector.number}</TableCell>
-                    <TableCell>{collector.member_number}</TableCell>
-                    <TableCell>{collector.email}</TableCell>
-                    <TableCell>
-                      {collector.active ? (
-                        <span className="flex items-center text-green-500">
-                          <CheckCircle className="mr-1 h-4 w-4" /> Active
+                {collectors?.map((collector: any) => {
+                  const lastPayment = collector.payments?.[0];
+                  const paymentStatus = lastPayment?.status || 'no payments';
+                  const statusColor = getPaymentStatusColor(paymentStatus);
+                  const StatusIcon = getPaymentStatusIcon(paymentStatus);
+
+                  return (
+                    <TableRow key={collector.id} className="hover:bg-primary/5">
+                      <TableCell>{collector.name}</TableCell>
+                      <TableCell>{collector.number}</TableCell>
+                      <TableCell>{collector.member_number}</TableCell>
+                      <TableCell>{collector.email}</TableCell>
+                      <TableCell>
+                        {collector.active ? (
+                          <span className="flex items-center text-green-500">
+                            <CheckCircle className="mr-1 h-4 w-4" /> Active
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-red-500">
+                            <XCircle className="mr-1 h-4 w-4" /> Inactive
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {collector.auth_user_id ? (
+                          <span className="flex items-center text-green-500">
+                            <CheckCircle className="mr-1 h-4 w-4" /> Connected
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-yellow-500">
+                            <AlertCircle className="mr-1 h-4 w-4" /> Pending
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`flex items-center px-2 py-1 rounded-full ${statusColor}`}>
+                          {StatusIcon}
+                          <span className="ml-1 capitalize">{paymentStatus}</span>
                         </span>
-                      ) : (
-                        <span className="flex items-center text-red-500">
-                          <XCircle className="mr-1 h-4 w-4" /> Inactive
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {collector.auth_user_id ? (
-                        <span className="flex items-center text-green-500">
-                          <CheckCircle className="mr-1 h-4 w-4" /> Connected
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-yellow-500">
-                          <AlertCircle className="mr-1 h-4 w-4" /> Pending
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => collector.auth_user_id && handleFixRoles(collector.auth_user_id)}
-                        disabled={!collector.auth_user_id}
-                      >
-                        <UserCog className="mr-2 h-4 w-4" />
-                        Fix Role
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        {lastPayment ? (
+                          <span className="text-muted-foreground">
+                            £{lastPayment.amount?.toFixed(2) || '0.00'}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => collector.auth_user_id && handleFixRoles(collector.auth_user_id)}
+                          disabled={!collector.auth_user_id}
+                        >
+                          <UserCog className="mr-2 h-4 w-4" />
+                          Fix Role
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
