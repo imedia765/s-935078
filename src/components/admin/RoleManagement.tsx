@@ -33,22 +33,30 @@ export function RoleManagement() {
     queryKey: ["users"],
     queryFn: async () => {
       console.log("Fetching all users data...");
-      const { data: authUsers, error: authError } = await supabase
-        .from('auth.users')
-        .select(`
-          id,
-          email,
-          user_roles (
-            role
-          )
-        `);
+      const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
       
-      if (authError) {
-        console.error("Users fetch error:", authError);
-        throw authError;
+      if (usersError) {
+        console.error("Users fetch error:", usersError);
+        throw usersError;
       }
 
-      return authUsers as User[];
+      // Get roles for each user
+      const usersWithRoles = await Promise.all(
+        users.users.map(async (user) => {
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+          
+          return {
+            id: user.id,
+            email: user.email,
+            user_roles: roles || []
+          };
+        })
+      );
+
+      return usersWithRoles as User[];
     }
   });
 
@@ -192,7 +200,7 @@ export function RoleManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers?.map((user: any) => (
+                {filteredUsers?.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.email}</TableCell>
                     <TableCell className="font-mono text-sm">{user.id}</TableCell>
