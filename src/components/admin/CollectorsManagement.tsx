@@ -27,8 +27,7 @@ import {
   UserCog,
   AlertCircle,
   Clock,
-  PoundSterling,
-  ChevronDown
+  PoundSterling
 } from "lucide-react";
 
 export function CollectorsManagement() {
@@ -59,7 +58,6 @@ export function CollectorsManagement() {
     }
   });
 
-  // Create auth users for collectors
   const handleCreateAuthUsers = async () => {
     try {
       const { error } = await supabase.rpc('create_auth_users_for_collectors');
@@ -153,10 +151,15 @@ export function CollectorsManagement() {
     }
   };
 
+  const formatMemberNumber = (collector: any, index: number) => {
+    const collectorNumber = collector.number?.padStart(2, '0') || '00';
+    return `${collector.id}${collectorNumber}v${index + 1}`;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-        <Card className="p-4 flex-1 glass-card">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 glass-card">
           <div className="flex items-center space-x-2">
             <Users className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold">Total Collectors</h3>
@@ -166,7 +169,7 @@ export function CollectorsManagement() {
           </p>
         </Card>
         
-        <Card className="p-4 flex-1 glass-card">
+        <Card className="p-4 glass-card">
           <div className="flex items-center space-x-2">
             <CheckCircle className="h-5 w-5 text-green-500" />
             <h3 className="text-lg font-semibold">Active Collectors</h3>
@@ -176,7 +179,7 @@ export function CollectorsManagement() {
           </p>
         </Card>
 
-        <Card className="p-4 flex-1 glass-card">
+        <Card className="p-4 glass-card">
           <div className="flex items-center space-x-2">
             <Wallet className="h-5 w-5 text-purple-500" />
             <h3 className="text-lg font-semibold">Total Collections</h3>
@@ -229,74 +232,34 @@ export function CollectorsManagement() {
                 const StatusIcon = getPaymentStatusIcon(paymentStatus);
 
                 return (
-                  <AccordionItem key={collector.id} value={collector.id}>
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex w-full items-center justify-between pr-4">
-                        <Table>
-                          <TableBody>
-                            <TableRow className="hover:bg-primary/5 border-none">
-                              <TableCell>{collector.name}</TableCell>
-                              <TableCell>{collector.number}</TableCell>
-                              <TableCell>{collector.member_number}</TableCell>
-                              <TableCell>{collector.email}</TableCell>
-                              <TableCell>
-                                {collector.active ? (
-                                  <span className="flex items-center text-green-500">
-                                    <CheckCircle className="mr-1 h-4 w-4" /> Active
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center text-red-500">
-                                    <XCircle className="mr-1 h-4 w-4" /> Inactive
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {collector.auth_user_id ? (
-                                  <span className="flex items-center text-green-500">
-                                    <CheckCircle className="mr-1 h-4 w-4" /> Connected
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center text-yellow-500">
-                                    <AlertCircle className="mr-1 h-4 w-4" /> Pending
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <span className={`flex items-center px-2 py-1 rounded-full ${statusColor}`}>
-                                  {StatusIcon}
-                                  <span className="ml-1 capitalize">{paymentStatus}</span>
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                {lastPayment ? (
-                                  <span className="text-muted-foreground">
-                                    £{lastPayment.amount?.toFixed(2) || '0.00'}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    collector.auth_user_id && handleFixRoles(collector.auth_user_id);
-                                  }}
-                                  disabled={!collector.auth_user_id}
-                                >
-                                  <UserCog className="mr-2 h-4 w-4" />
-                                  Fix Role
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
+                  <AccordionItem key={collector.id} value={collector.id} className="border-b border-white/10">
+                    <AccordionTrigger className="hover:no-underline px-4">
+                      <div className="grid grid-cols-8 w-full gap-4 items-center">
+                        <div className="col-span-2">{collector.name}</div>
+                        <div>{collector.number}</div>
+                        <div>{collector.member_number}</div>
+                        <div className="col-span-2">{collector.email}</div>
+                        <div>
+                          {collector.active ? (
+                            <span className="flex items-center text-green-500">
+                              <CheckCircle className="mr-1 h-4 w-4" /> Active
+                            </span>
+                          ) : (
+                            <span className="flex items-center text-red-500">
+                              <XCircle className="mr-1 h-4 w-4" /> Inactive
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <span className={`flex items-center px-2 py-1 rounded-full ${statusColor}`}>
+                            {StatusIcon}
+                            <span className="ml-1 capitalize">{paymentStatus}</span>
+                          </span>
+                        </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="pl-4 pr-4 pt-4">
+                      <div className="px-4 py-2">
                         <h3 className="text-lg font-semibold mb-2">Associated Members</h3>
                         <Table>
                           <TableHeader>
@@ -309,7 +272,7 @@ export function CollectorsManagement() {
                           <TableBody>
                             {collector.members ? (
                               <TableRow className="hover:bg-primary/5">
-                                <TableCell>{collector.members.member_number}</TableCell>
+                                <TableCell>{formatMemberNumber(collector, 0)}</TableCell>
                                 <TableCell>{collector.members.full_name}</TableCell>
                                 <TableCell>{collector.members.email}</TableCell>
                               </TableRow>
