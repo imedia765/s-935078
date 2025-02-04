@@ -17,6 +17,12 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface User {
+  id: string;
+  email?: string;
+  user_roles?: { role: string }[];
+}
+
 export function RoleManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,25 +33,25 @@ export function RoleManagement() {
     queryKey: ["users"],
     queryFn: async () => {
       console.log("Fetching all users data...");
-      const { data: users, error: usersError } = await supabase
-        .from('users')
+      const { data: authUsers, error: authError } = await supabase
+        .from('auth.users')
         .select(`
-          *,
+          id,
+          email,
           user_roles (
             role
           )
         `);
       
-      if (usersError) {
-        console.error("Users fetch error:", usersError);
-        throw usersError;
+      if (authError) {
+        console.error("Users fetch error:", authError);
+        throw authError;
       }
 
-      return users;
+      return authUsers as User[];
     }
   });
 
-  // Query for role validation status
   const { data: roleValidation, isLoading: isLoadingValidation, refetch } = useQuery({
     queryKey: ["roleValidation"],
     queryFn: async () => {
