@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileSpreadsheet, FileDown, Download, Check, X, Trash2 } from "lucide-react";
+import { FileSpreadsheet, FileDown, Download, Check, X, Trash2, LayoutDashboard, Users, Receipt, ChartBar, UserCog } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { exportToCSV, generatePDF } from "@/utils/exportUtils";
 import { useToast } from "@/components/ui/use-toast";
@@ -93,20 +93,6 @@ export function FinancialManagement() {
       return data;
     }
   });
-
-  const payments = paymentStats ? {
-    totalPayments: paymentStats.length,
-    totalAmount: paymentStats.reduce((sum, payment) => sum + (payment.amount || 0), 0),
-    pendingPayments: paymentStats.filter(p => p.status === 'pending').length,
-    approvedPayments: paymentStats.filter(p => p.status === 'approved').length,
-    paymentMethods: {
-      cash: paymentStats.filter(p => p.payment_method === 'cash').length,
-      bankTransfer: paymentStats.filter(p => p.payment_method === 'bank_transfer').length
-    },
-    recentPayments: paymentStats
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5)
-  } : null;
 
   const { data: collectorsData, isLoading: loadingCollectors } = useQuery({
     queryKey: ["collectors"],
@@ -338,15 +324,58 @@ export function FinancialManagement() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full justify-start bg-black/40 backdrop-blur-xl border border-white/10">
-          <TabsTrigger value="overview">Payment Overview</TabsTrigger>
-          <TabsTrigger value="collectors">Collectors Overview</TabsTrigger>
-          <TabsTrigger value="all-payments">All Payments</TabsTrigger>
-          <TabsTrigger value="stats">Member Stats</TabsTrigger>
-          <TabsTrigger value="collector-payments">Payments by Collector</TabsTrigger>
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            Payment Overview
+          </TabsTrigger>
+          <TabsTrigger value="collectors" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Collectors Overview
+          </TabsTrigger>
+          <TabsTrigger value="all-payments" className="flex items-center gap-2">
+            <Receipt className="h-4 w-4" />
+            All Payments
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="flex items-center gap-2">
+            <ChartBar className="h-4 w-4" />
+            Member Stats
+          </TabsTrigger>
+          <TabsTrigger value="collector-payments" className="flex items-center gap-2">
+            <UserCog className="h-4 w-4" />
+            Payments by Collector
+          </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="overview">
+          <Card className="p-6 glass-card">
+            <h3 className="text-xl font-semibold mb-4">Payment Overview</h3>
+            {/* Overview content goes here */}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="collectors">
+          <Card className="p-6 glass-card">
+            <h3 className="text-xl font-semibold mb-4">Collectors Overview</h3>
+            {/* Collectors content goes here */}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="all-payments">
+          <Card className="p-6 glass-card">
+            <h3 className="text-xl font-semibold mb-4">All Payments</h3>
+            {/* All payments content goes here */}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="stats">
+          <Card className="p-6 glass-card">
+            <h3 className="text-xl font-semibold mb-4">Member Statistics</h3>
+            {/* Stats content goes here */}
+          </Card>
+        </TabsContent>
+
         <TabsContent value="collector-payments">
-          <Card className="p-4 glass-card">
+          <Card className="p-6 glass-card">
             <h3 className="font-semibold mb-4">Payments by Collector</h3>
             <Accordion type="single" collapsible className="w-full space-y-2">
               {Object.entries(collectorPaymentStats).map(([collectorName, stats]: [string, any]) => (
@@ -428,7 +457,6 @@ export function FinancialManagement() {
             </Accordion>
           </Card>
         </TabsContent>
-
       </Tabs>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
