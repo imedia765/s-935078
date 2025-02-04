@@ -120,10 +120,9 @@ export function RoleManagement() {
     try {
       console.log(`Attempting to fix role error for user ${userId}, type: ${errorType}`);
       
-      // Note: Changed the order of parameters to match the function signature
       const { data, error } = await supabase.rpc('fix_role_error', {
-        p_error_type: errorType,
-        p_user_id: userId
+        p_user_id: userId,
+        p_error_type: errorType
       });
       
       if (error) {
