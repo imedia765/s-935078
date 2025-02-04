@@ -295,6 +295,7 @@ export default function Members() {
           onExportPDF={() => generatePDF(members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)}
           onAddMember={(data) => addMemberMutation.mutate(data)}
           collectors={collectors || []}
+          isAdmin={isAdmin}
         />
 
         <Card className="glass-card p-6">

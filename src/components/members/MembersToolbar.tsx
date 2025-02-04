@@ -24,6 +24,7 @@ interface MembersToolbarProps {
   onExportPDF: () => void;
   onAddMember: (data: any) => void;
   collectors: any[];
+  isAdmin?: boolean;
 }
 
 export function MembersToolbar({
@@ -34,6 +35,7 @@ export function MembersToolbar({
   onExportPDF,
   onAddMember,
   collectors,
+  isAdmin = false,
 }: MembersToolbarProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -46,6 +48,7 @@ export function MembersToolbar({
         <Select
           value={selectedCollector}
           onValueChange={onCollectorChange}
+          disabled={!isAdmin}
         >
           <SelectTrigger className="w-[200px] glass-card">
             <SelectValue placeholder="Filter by collector" />
