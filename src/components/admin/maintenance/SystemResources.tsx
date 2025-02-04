@@ -10,12 +10,7 @@ export function SystemResources() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_system_resources');
       if (error) throw error;
-      return data as {
-        cpu_usage: number;
-        memory_usage: number;
-        disk_usage: number;
-        network_status: string;
-      };
+      return data;
     },
     refetchInterval: 30000 // Refresh every 30 seconds
   });

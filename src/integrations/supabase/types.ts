@@ -636,7 +636,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          member_id?: string
+          member_id: string
           note_text?: string
           note_type?: string
           updated_at?: string
@@ -1346,7 +1346,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role: Database["public"]["Enums"]["app_role"]
           user_id?: string | null
         }
         Relationships: []
@@ -1815,6 +1815,72 @@ export type Database = {
           status: string
           details: Json
         }[]
+      }
+      run_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      schedule_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_backup_history: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          created_at: string
+          status: string
+          size: string
+        }[]
+      }
+      create_backup: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      restore_backup: {
+        Args: { backup_id: string }
+        Returns: Json
+      }
+      get_error_logs: {
+        Args: {
+          p_severity: string
+          p_search: string
+        }
+        Returns: {
+          timestamp: string
+          severity: string
+          message: string
+          source: string
+        }[]
+      }
+      get_performance_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          response_times: { timestamp: string; value: number }[]
+          query_times: { timestamp: string; value: number }[]
+          api_performance: { timestamp: string; value: number }[]
+          cache_hits: { timestamp: string; value: number }[]
+        }
+      }
+      get_security_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          failed_logins: number
+          security_alerts: number
+          ssl_expiry: string
+          ssl_days_remaining: number
+          active_sessions: number
+          vulnerabilities: { description: string }[]
+        }
+      }
+      get_system_resources: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cpu_usage: number
+          memory_usage: number
+          disk_usage: number
+          network_status: string
+        }
       }
     }
     Enums: {
