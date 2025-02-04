@@ -24,9 +24,15 @@ export default function Admin() {
   const { data: systemChecks, isLoading: isLoadingChecks, error: systemError } = useQuery({
     queryKey: ["systemChecks"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('run_combined_system_checks');
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase.rpc('run_combined_system_checks');
+        if (error) throw error;
+        console.log("System checks response:", data); // Debug log
+        return data;
+      } catch (error: any) {
+        console.error("System checks error:", error); // Debug log
+        throw error;
+      }
     }
   });
 
@@ -60,6 +66,7 @@ export default function Admin() {
         description: "Expired tokens cleaned up successfully",
       });
     } catch (error: any) {
+      console.error("Cleanup tokens error:", error); // Debug log
       toast({
         title: "Error",
         description: error.message || "Failed to cleanup tokens",
@@ -78,6 +85,7 @@ export default function Admin() {
         description: "Collector roles maintained successfully",
       });
     } catch (error: any) {
+      console.error("Maintain collector roles error:", error); // Debug log
       toast({
         title: "Error",
         description: error.message || "Failed to maintain collector roles",
@@ -242,6 +250,7 @@ export default function Admin() {
             </div>
           </Card>
         </TabsContent>
+
       </Tabs>
     </div>
   );
