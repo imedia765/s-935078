@@ -1488,8 +1488,8 @@ export type Database = {
       }
       fix_role_error: {
         Args: {
-          p_user_id: string
           p_error_type: string
+          p_user_id: string
         }
         Returns: Json
       }

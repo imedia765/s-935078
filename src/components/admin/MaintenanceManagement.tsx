@@ -144,8 +144,8 @@ export function MaintenanceManagement() {
       console.log(`Fixing role error for user ${userId}, type: ${errorType}`);
       
       const { data, error } = await supabase.rpc('fix_role_error', {
-        p_user_id: userId,
-        p_error_type: errorType
+        p_error_type: errorType,
+        p_user_id: userId
       });
       
       if (error) {
