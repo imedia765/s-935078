@@ -63,26 +63,30 @@ export function MembersToolbar({
           </SelectContent>
         </Select>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="glass-card">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={onExportCSV}>
-              <FileDown className="mr-2 h-4 w-4" />
-              Export to CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onExportPDF}>
-              <FileDown className="mr-2 h-4 w-4" />
-              Export to PDF
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isAdmin && (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="glass-card">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={onExportCSV}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export to CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onExportPDF}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Export to PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        <AddMemberDialog onSubmit={onAddMember} collectors={collectors} />
+            <AddMemberDialog onSubmit={onAddMember} collectors={collectors} />
+          </>
+        )}
       </div>
     </div>
   );
