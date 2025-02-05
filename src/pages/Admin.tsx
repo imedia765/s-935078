@@ -19,6 +19,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
+import { DatabaseManagement } from "@/components/admin/database/DatabaseManagement";
 
 interface SystemCheck {
   check_type: string;
@@ -90,6 +91,7 @@ export default function Admin() {
           <TabsTrigger value="members">Member Search</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           <TabsTrigger value="email">Email Server</TabsTrigger>
+          <TabsTrigger value="database">Database</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system">
@@ -163,6 +165,12 @@ export default function Admin() {
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">System Maintenance</h2>
             <MaintenanceManagement />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="database">
+          <Card className="p-6 glass-card">
+            <DatabaseManagement />
           </Card>
         </TabsContent>
 

@@ -90,6 +90,45 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_schedules: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          cron_expression: string
+          id: string
+          last_run: string | null
+          next_run: string | null
+          retention_days: number | null
+          schedule_name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          cron_expression: string
+          id?: string
+          last_run?: string | null
+          next_run?: string | null
+          retention_days?: number | null
+          schedule_name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          cron_expression?: string
+          id?: string
+          last_run?: string | null
+          next_run?: string | null
+          retention_days?: number | null
+          schedule_name?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       collector_role_fix_log: {
         Row: {
           auth_user_id: string | null
@@ -114,6 +153,33 @@ export type Database = {
           id?: string
           member_number?: string
           status?: Database["public"]["Enums"]["collector_role_status"] | null
+        }
+        Relationships: []
+      }
+      database_health_metrics: {
+        Row: {
+          details: Json | null
+          id: string
+          metric_name: string
+          metric_value: number | null
+          recorded_at: string | null
+          status: Database["public"]["Enums"]["health_status"] | null
+        }
+        Insert: {
+          details?: Json | null
+          id?: string
+          metric_name: string
+          metric_value?: number | null
+          recorded_at?: string | null
+          status?: Database["public"]["Enums"]["health_status"] | null
+        }
+        Update: {
+          details?: Json | null
+          id?: string
+          metric_name?: string
+          metric_value?: number | null
+          recorded_at?: string | null
+          status?: Database["public"]["Enums"]["health_status"] | null
         }
         Relationships: []
       }
@@ -1243,6 +1309,39 @@ export type Database = {
         }
         Relationships: []
       }
+      query_performance_logs: {
+        Row: {
+          execution_plan: Json | null
+          execution_time: number | null
+          id: string
+          query_hash: string | null
+          query_stats: Json | null
+          query_text: string | null
+          recorded_at: string | null
+          rows_affected: number | null
+        }
+        Insert: {
+          execution_plan?: Json | null
+          execution_time?: number | null
+          id?: string
+          query_hash?: string | null
+          query_stats?: Json | null
+          query_text?: string | null
+          recorded_at?: string | null
+          rows_affected?: number | null
+        }
+        Update: {
+          execution_plan?: Json | null
+          execution_time?: number | null
+          id?: string
+          query_hash?: string | null
+          query_stats?: Json | null
+          query_text?: string | null
+          recorded_at?: string | null
+          rows_affected?: number | null
+        }
+        Relationships: []
+      }
       role_history: {
         Row: {
           change_type: string | null
@@ -1498,6 +1597,15 @@ export type Database = {
           details: Json
         }[]
       }
+      check_database_health: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          metric_name: string
+          current_value: number
+          status: Database["public"]["Enums"]["health_status"]
+          details: Json
+        }[]
+      }
       check_error_rates: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1585,6 +1693,10 @@ export type Database = {
         Returns: string
       }
       create_auth_users_for_collectors: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      create_performance_recording_job: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -1932,6 +2044,7 @@ export type Database = {
         | "system_announcement"
         | "payment_confirmation"
         | "payment_receipt"
+      health_status: "healthy" | "warning" | "critical"
       monitoring_event_type:
         | "system_performance"
         | "api_latency"
