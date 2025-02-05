@@ -1928,22 +1928,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
-      fix_role_error:
-        | {
-            Args: {
-              p_error_type: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_error_type: string
-              p_user_id: string
-              p_specific_fix?: string
-            }
-            Returns: Json
-          }
+      fix_role_error: {
+        Args: {
+          p_error_type: string
+          p_user_id: string
+          p_specific_fix?: string
+        }
+        Returns: Json
+      }
       generate_family_member_number: {
         Args: {
           p_parent_member_number: string
