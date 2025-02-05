@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,15 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
+interface SystemCheck {
+  check_type: string;
+  status: string;
+  metric_name: string;
+  current_value: number;
+  threshold: number;
+  check_details: Record<string, any>;
+}
+
 export default function Admin() {
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("system");
@@ -34,11 +44,6 @@ export default function Admin() {
 
         if (error) {
           console.error("System checks error:", error);
-          toast({
-            variant: "destructive",
-            title: "Error fetching system checks",
-            description: error.message
-          });
           throw error;
         }
 
@@ -46,7 +51,8 @@ export default function Admin() {
           return [];
         }
 
-        return data.map((check: any) => ({
+        // Ensure we're explicitly handling the check_details property
+        return data.map((check: any): SystemCheck => ({
           check_type: check.check_type || 'Unknown',
           status: check.status || 'Unknown',
           metric_name: check.metric_name || '',
@@ -56,16 +62,20 @@ export default function Admin() {
         }));
       } catch (error: any) {
         console.error("System checks error:", error);
+        const errorMessage = error.message || "Unknown error occurred";
         toast({
           variant: "destructive",
           title: "Error fetching system checks",
-          description: error.message
+          description: errorMessage
         });
         throw error;
       }
     },
-    retry: 3,
-    retryDelay: 1000,
+    retry: (failureCount, error: any) => {
+      // Only retry network errors, not SQL errors
+      return error?.error_type === 'http_server_error' && failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * (2 ** attemptIndex), 30000),
     staleTime: 30000
   });
 
