@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, CreditCard, Users, Calendar, Receipt, Building2, Edit, Save, X, Upload, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Shield, CreditCard, Users, Calendar, Receipt, Building2, Edit, Save, X, Upload, Loader2, Pencil, Trash2, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
@@ -581,6 +581,47 @@ const Profile = () => {
                     <strong>IMPORTANT:</strong> You must use your member number ({memberData?.member_number}) as the payment
                     reference when making bank transfers.
                   </p>
+                </div>
+              </Card>
+
+              {/* Important Documents Card */}
+              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="text-primary" />
+                    <h2 className="text-xl font-semibold text-primary">Important Documents</h2>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-4 bg-black/20 rounded-lg border border-gray-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-200">PWA Collector Member Responsibilities</h3>
+                        <p className="text-sm text-gray-400">Last updated: 14 December 2024</p>
+                      </div>
+                      <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
+                        <FileText className="mr-2 h-4 w-4" /> View
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-400">
+                      Guidelines for collector members regarding their responsibilities and duties.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-black/20 rounded-lg border border-gray-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-200">Pakistan Welfare Association Membership Terms</h3>
+                        <p className="text-sm text-gray-400">Last updated: 14 December 2024</p>
+                      </div>
+                      <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
+                        <FileText className="mr-2 h-4 w-4" /> View
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-400">
+                      Complete terms and conditions for PWA membership.
+                    </p>
+                  </div>
                 </div>
               </Card>
 
