@@ -1,3 +1,4 @@
+
 import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info, UserPlus, UserMinus, CheckCheck, History as HistoryIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { sendEmail } from "@/utils/email";
 
 type AppRole = "admin" | "collector" | "member";
 
@@ -43,6 +45,7 @@ interface ValidationDetails {
   member_number?: string;
   current_roles?: AppRole[];
   member_status?: string;
+  email?: string;
 }
 
 interface FixOption {
@@ -53,10 +56,119 @@ interface FixOption {
   action?: () => Promise<void>;
 }
 
+const getErrorSeverity = (status: string): "default" | "destructive" => {
+  switch (status.toLowerCase()) {
+    case 'critical':
+      return "destructive";
+    default:
+      return "default";
+  }
+};
+
+const getErrorIcon = (status: string): JSX.Element => {
+  switch (status.toLowerCase()) {
+    case 'good':
+      return <CheckCircle2 className="h-4 w-4" />;
+    case 'warning':
+      return <AlertTriangle className="h-4 w-4" />;
+    case 'error':
+      return <XCircle className="h-4 w-4" />;
+    default:
+      return <Info className="h-4 w-4" />;
+  }
+};
+
+const getErrorDetails = (checkType: string, details: ValidationDetails): Record<string, string | undefined> => {
+  const baseDetails: Record<string, string | undefined> = {
+    "User ID": details.auth_user_id,
+    "Full Name": details.full_name,
+    "Member Number": details.member_number,
+    "Current Roles": details.current_roles?.join(", "),
+    "Member Status": details.member_status
+  };
+
+  return baseDetails;
+};
+
 export function RoleManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("table");
+
+  const generateMagicLink = async (userId: string) => {
+    try {
+      const { data: userData } = await supabase
+        .from('members')
+        .select('email')
+        .eq('auth_user_id', userId)
+        .single();
+
+      if (!userData?.email) {
+        throw new Error('No email found for user');
+      }
+
+      const { data, error } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: userData.email,
+      });
+
+      if (error) throw error;
+
+      // Send email with magic link
+      await sendEmail({
+        to: userData.email,
+        subject: 'Your Login Link',
+        html: `<p>Here's your magic login link: ${data.properties.action_link}</p>`,
+      });
+
+      toast({
+        title: "Success",
+        description: "Magic link sent successfully",
+      });
+    } catch (error: any) {
+      console.error('Error generating magic link:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: string) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('fix_role_issue', {
+        p_user_id: userId,
+        p_check_type: checkType,
+        p_fix_type: fixType
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Role issue fixed successfully",
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error('Error fixing role:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
     try {
