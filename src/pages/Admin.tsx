@@ -30,9 +30,7 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks', {}, {
-          count: 'exact'
-        });
+        const { data, error } = await supabase.rpc('run_combined_system_checks');
 
         if (error) {
           console.error("System checks error:", error);
@@ -54,7 +52,7 @@ export default function Admin() {
           metric_name: check.metric_name || '',
           current_value: check.current_value || 0,
           threshold: check.threshold || 0,
-          check_details: typeof check.check_details === 'object' ? check.check_details : {}
+          check_details: check.check_details || {}
         }));
       } catch (error: any) {
         console.error("System checks error:", error);
@@ -68,7 +66,7 @@ export default function Admin() {
     },
     retry: 3,
     retryDelay: 1000,
-    staleTime: 30000 // Cache data for 30 seconds
+    staleTime: 30000
   });
 
   const ErrorAlert = ({ error }: { error: Error | null }) => {
