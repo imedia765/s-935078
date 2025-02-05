@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,9 +36,14 @@ export default function Admin() {
           console.error("System checks error:", error);
           throw error;
         }
+        // Map the response to ensure we handle the details field correctly
         return data?.map((check: any) => ({
-          ...check,
-          details: check.check_details || check.details || {}
+          check_type: check.check_type,
+          status: check.status,
+          metric_name: check.metric_name,
+          current_value: check.current_value,
+          threshold: check.threshold,
+          details: check.check_details || {} // Ensure we use check_details instead of details
         }));
       } catch (error: any) {
         console.error("System checks error:", error);
@@ -105,7 +111,7 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                          {JSON.stringify(check.details || {}, null, 2)}
+                          {JSON.stringify(check.details, null, 2)}
                         </pre>
                       </TableCell>
                     </TableRow>
