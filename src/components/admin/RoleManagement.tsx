@@ -1,4 +1,3 @@
-
 import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info, UserPlus, UserMinus, CheckCheck, History as HistoryIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,8 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { sendEmail } from "@/utils/email";
+import { UserRole } from "@/types/auth";
 
-type AppRole = "admin" | "collector" | "member";
+type AppRole = UserRole;
 
 interface User {
   id: string;
@@ -135,49 +135,49 @@ export function RoleManagement() {
     }
   };
 
-  const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: string) => {
-    if (!userId) {
-      toast({
-        title: "Error",
-        description: "User ID is required",
-        variant: "destructive",
+  const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: 'remove_role' | AppRole) => {
+  if (!userId) {
+    toast({
+      title: "Error",
+      description: "User ID is required",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  try {
+    let response;
+    // Handle different role operations based on the fix type
+    if (fixType === 'remove_role') {
+      response = await supabase.rpc('remove_user_role', {
+        p_user_id: userId,
+        p_role: checkType
       });
-      return;
-    }
-
-    try {
-      let response;
-      // Handle different role operations based on the fix type
-      if (fixType === 'remove_role') {
-        response = await supabase.rpc('remove_user_role', {
-          p_user_id: userId,
-          p_role: checkType
-        });
-      } else {
-        response = await supabase.rpc('add_user_role', {
-          p_user_id: userId,
-          p_role: fixType as "admin" | "collector" | "member"
-        });
-      }
-
-      const { error } = response;
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Role issue fixed successfully",
-      });
-
-      await refetch();
-    } catch (error: any) {
-      console.error('Error fixing role:', error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
+    } else {
+      response = await supabase.rpc('add_user_role', {
+        p_user_id: userId,
+        p_role: fixType
       });
     }
-  };
+
+    const { error } = response;
+    if (error) throw error;
+
+    toast({
+      title: "Success",
+      description: "Role issue fixed successfully",
+    });
+
+    await refetch();
+  } catch (error: any) {
+    console.error('Error fixing role:', error);
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
+};
 
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
     try {
