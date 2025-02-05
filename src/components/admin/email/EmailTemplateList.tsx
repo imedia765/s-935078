@@ -21,25 +21,25 @@ interface EmailTemplateFormData {
 
 const previewStyles = {
   default: {
-    container: "bg-gradient-to-r from-primary to-primary-hover p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
-    header: "bg-white/10 backdrop-blur-sm p-4 rounded-t-lg border-b border-white/20",
-    body: "bg-white/5 backdrop-blur-sm p-6 rounded-b-lg text-white",
-    title: "text-2xl font-bold text-white mb-4",
-    text: "text-white/90 leading-relaxed"
+    container: "bg-gradient-to-r from-gray-100 to-gray-200 p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
+    header: "bg-white/80 backdrop-blur-sm p-6 rounded-t-lg border-b border-gray-200",
+    body: "bg-white/90 backdrop-blur-sm p-6 rounded-b-lg text-gray-800",
+    title: "text-3xl font-arabic mb-4 text-gray-800 font-semibold",
+    text: "text-gray-700 leading-relaxed"
   },
-  modern: {
-    container: "bg-gradient-to-br from-[#8B5CF6] to-[#D946EF] p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
-    header: "bg-white/10 backdrop-blur-sm p-4 rounded-t-lg border-b border-white/20",
-    body: "bg-white/5 backdrop-blur-sm p-6 rounded-b-lg text-white",
-    title: "text-2xl font-bold text-white mb-4",
-    text: "text-white/90 leading-relaxed"
+  formal: {
+    container: "bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
+    header: "bg-white/90 backdrop-blur-sm p-6 rounded-t-lg border-b border-gray-200",
+    body: "bg-white/95 backdrop-blur-sm p-6 rounded-b-lg text-gray-800",
+    title: "text-3xl font-arabic mb-4 text-gray-900 font-semibold",
+    text: "text-gray-800 leading-relaxed"
   },
   professional: {
-    container: "bg-gradient-to-r from-[#0EA5E9] to-[#3B82F6] p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
-    header: "bg-white/10 backdrop-blur-sm p-4 rounded-t-lg border-b border-white/20",
-    body: "bg-white/5 backdrop-blur-sm p-6 rounded-b-lg text-white",
-    title: "text-2xl font-bold text-white mb-4",
-    text: "text-white/90 leading-relaxed"
+    container: "bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
+    header: "bg-white/95 backdrop-blur-sm p-6 rounded-t-lg border-b border-gray-200",
+    body: "bg-white/98 backdrop-blur-sm p-6 rounded-b-lg text-gray-900",
+    title: "text-3xl font-arabic mb-4 text-gray-900 font-semibold",
+    text: "text-gray-800 leading-relaxed"
   }
 };
 

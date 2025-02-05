@@ -55,7 +55,7 @@ export default {
         },
       },
       fontFamily: {
-        arabic: ['Arial'], // You might want to replace this with a proper Arabic font
+        arabic: ['Noto Naskh Arabic', 'serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -78,5 +78,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

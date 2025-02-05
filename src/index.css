@@ -38,6 +38,25 @@
   .glass-card {
     @apply bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg hover:bg-black/50 transition-all duration-200;
   }
+
+  .email-preview {
+    @apply transition-all duration-300;
+    background-image: linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%);
+  }
+
+  .email-preview-header {
+    @apply backdrop-blur-md bg-white/80;
+    border-image: linear-gradient(to right, transparent, rgba(0,0,0,0.1), transparent) 1;
+  }
+
+  .email-preview-body {
+    @apply prose prose-gray max-w-none;
+  }
+
+  .arabic-text {
+    font-family: 'Noto Naskh Arabic', serif;
+    @apply text-right leading-loose;
+  }
 }
 
 .login-container {
