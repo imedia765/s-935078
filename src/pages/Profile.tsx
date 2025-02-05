@@ -3,12 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Loader2, User, Calendar, Phone, Mail, CreditCard, Users } from "lucide-react";
+import {
+  User,
+  Calendar,
+  Phone,
+  Mail,
+  CreditCard,
+  Users,
+  Edit2,
+  FileText,
+  Trash2,
+  Home,
+  MapPin,
+  Building,
+  UserCircle,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
 
 interface Profile {
   id: string;
@@ -17,25 +31,39 @@ interface Profile {
   email: string;
   phone: string;
   address: string;
+  town: string;
+  postcode: string;
   status: string;
   date_of_birth: string | null;
   marital_status: string | null;
   membership_type: string | null;
+  gender: string | null;
   collector: string | null;
-  collector_id: string | null;
   auth_user_id: string | null;
-  created_at: string;
-  updated_at: string;
-  verified: boolean | null;
-  yearly_payment_amount: number | null;
-  yearly_payment_due_date: string | null;
-  yearly_payment_status: string | null;
+  payment_status: string;
+  next_payment_due: string;
+  amount_due: number;
+  bank_name?: string;
+  account_name?: string;
+  sort_code?: string;
+  account_number?: string;
+  family_members?: Array<{
+    full_name: string;
+    relationship: string;
+    date_of_birth: string;
+  }>;
+  payment_history?: Array<{
+    date: string;
+    type: string;
+    amount: number;
+    status: string;
+    reference: string;
+  }>;
 }
 
 const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -52,7 +80,21 @@ const Profile = () => {
         console.log('Fetching profile for auth_user_id:', user.id);
         const { data: memberData, error } = await supabase
           .from("members")
-          .select("*")
+          .select(`
+            *,
+            family_members (
+              full_name,
+              relationship,
+              date_of_birth
+            ),
+            payment_history (
+              date,
+              type,
+              amount,
+              status,
+              reference
+            )
+          `)
           .eq("auth_user_id", user.id)
           .single();
 
@@ -75,221 +117,225 @@ const Profile = () => {
     fetchProfile();
   }, [navigate, toast]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile) return;
+  if (!profile) return null;
 
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from("members")
-        .update({
-          full_name: profile.full_name,
-          email: profile.email,
-          phone: profile.phone,
-          address: profile.address,
-        })
-        .eq("id", profile.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update profile",
-      });
-    } finally {
-      setIsSaving(false);
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'bg-green-500/20 text-green-500';
+      case 'completed':
+        return 'bg-green-500/20 text-green-500';
+      case 'approved':
+        return 'bg-green-500/20 text-green-500';
+      case 'pending':
+        return 'bg-yellow-500/20 text-yellow-500';
+      default:
+        return 'bg-red-500/20 text-red-500';
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="p-6">
-          <p className="text-center text-gray-500">Profile not found</p>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Profile Overview Card */}
-      <Card className="p-8 bg-card">
-        <div className="flex items-start justify-between mb-6">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-primary">Profile Details</h2>
-            <p className="text-muted-foreground">Manage your account information</p>
+      {/* Member Dashboard */}
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-primary">Member Dashboard</h1>
+        
+        <Card className="p-8">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-2xl font-bold text-primary">
+                  {profile.full_name?.[0]?.toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
+                  {profile.full_name}
+                  <Badge className={getStatusColor(profile.status)}>
+                    {profile.status}
+                  </Badge>
+                </h2>
+                <p className="text-muted-foreground">Member #{profile.member_number}</p>
+              </div>
+            </div>
+            <Button variant="outline" className="gap-2">
+              <Edit2 className="h-4 w-4" /> Edit
+            </Button>
           </div>
-          <Badge 
-            variant={profile.status === 'active' ? 'default' : 'destructive'}
-            className="text-sm"
-          >
-            {profile.status.toUpperCase()}
-          </Badge>
-        </div>
 
-        <form onSubmit={handleUpdate} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="memberNumber" className="text-muted-foreground flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Member Number
-              </Label>
-              <Input
-                id="memberNumber"
-                value={profile.member_number}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="membershipType" className="text-muted-foreground flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Membership Type
-              </Label>
-              <Input
-                id="membershipType"
-                value={profile.membership_type || 'N/A'}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Full Name
-              </Label>
-              <Input
-                id="fullName"
-                value={profile.full_name}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                className="hover:border-primary/50 focus:border-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-muted-foreground flex items-center gap-2">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Mail className="h-4 w-4" />
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                className="hover:border-primary/50 focus:border-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-muted-foreground flex items-center gap-2">
+                <span>{profile.email}</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="h-4 w-4" />
-                Phone
-              </Label>
-              <Input
-                id="phone"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className="hover:border-primary/50 focus:border-primary"
-              />
+                <span>{profile.phone}</span>
+              </div>
+              <div className="flex items-start gap-2 text-muted-foreground">
+                <Home className="h-4 w-4 mt-1" />
+                <div>
+                  <div>{profile.address}</div>
+                  <div>{profile.town}</div>
+                  <div>{profile.postcode}</div>
+                </div>
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth" className="text-muted-foreground flex items-center gap-2">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                Date of Birth
-              </Label>
-              <Input
-                id="dateOfBirth"
-                value={profile.date_of_birth ? format(new Date(profile.date_of_birth), 'PPP') : 'N/A'}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="address" className="text-muted-foreground">Address</Label>
-              <Input
-                id="address"
-                value={profile.address}
-                onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                className="hover:border-primary/50 focus:border-primary"
-              />
+                <span>DOB: {profile.date_of_birth && format(new Date(profile.date_of_birth), 'PP')}</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <UserCircle className="h-4 w-4" />
+                <span>Gender: {profile.gender || 'Not set'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>Marital Status: {profile.marital_status || 'Not set'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <User className="h-4 w-4" />
+                <span>Collector: {profile.collector}</span>
+              </div>
             </div>
           </div>
+        </Card>
 
-          <Button 
-            type="submit" 
-            disabled={isSaving}
-            className="bg-primary hover:bg-primary/90"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </Button>
-        </form>
-      </Card>
-      
-      {/* Important Documents Section */}
-      <Card className="p-8 bg-card">
-        <h2 className="text-3xl font-bold text-primary mb-6">Important Documents</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="p-6 hover:bg-accent/5 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <FileText className="text-primary h-5 w-5" />
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-primary">Member Guidelines</h3>
-                <p className="text-sm text-muted-foreground">Last updated: December 2023</p>
-              </div>
-              <Button variant="outline" className="hover:bg-primary/20">
-                <FileText className="mr-2 h-4 w-4" /> View
-              </Button>
+        {/* Membership Details */}
+        <Card className="p-8">
+          <h3 className="text-xl font-semibold text-primary mb-6 flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Membership Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm text-muted-foreground">Type</p>
+              <p className="font-medium">{profile.membership_type || 'Standard'}</p>
             </div>
-            <p className="text-muted-foreground">
-              Complete guide to membership rules, rights, and responsibilities.
-            </p>
-          </Card>
+            <div>
+              <p className="text-sm text-muted-foreground">Payment Status</p>
+              <Badge className={getStatusColor(profile.payment_status)}>
+                {profile.payment_status}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Next Payment Due</p>
+              <p className="font-medium">
+                {profile.next_payment_due && format(new Date(profile.next_payment_due), 'PP')}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Amount Due</p>
+              <p className="font-medium">£{profile.amount_due?.toFixed(2) || '0.00'}</p>
+            </div>
+          </div>
+        </Card>
 
-          <Card className="p-6 hover:bg-accent/5 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <FileText className="text-primary h-5 w-5" />
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-primary">Payment Guidelines</h3>
-                <p className="text-sm text-muted-foreground">Last updated: December 2023</p>
+        {/* Family Members */}
+        <Card className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-primary flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Family Members
+            </h3>
+            <Button variant="outline" size="sm">
+              Add Member
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {profile.family_members?.map((member, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5"
+              >
+                <div>
+                  <p className="font-medium">{member.full_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {member.relationship} • DOB: {format(new Date(member.date_of_birth), 'PP')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon">
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <Button variant="outline" className="hover:bg-primary/20">
-                <FileText className="mr-2 h-4 w-4" /> View
-              </Button>
+            ))}
+          </div>
+        </Card>
+
+        {/* Bank Details */}
+        <Card className="p-8">
+          <h3 className="text-xl font-semibold text-primary mb-6 flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Bank Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm text-muted-foreground">Bank Name</p>
+              <p className="font-medium">{profile.bank_name}</p>
             </div>
-            <p className="text-muted-foreground">
-              Information about payment methods, deadlines, and policies.
+            <div>
+              <p className="text-sm text-muted-foreground">Account Name</p>
+              <p className="font-medium">{profile.account_name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Sort Code</p>
+              <p className="font-medium">{profile.sort_code}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Account Number</p>
+              <p className="font-medium">{profile.account_number}</p>
+            </div>
+          </div>
+          <div className="mt-6 p-4 bg-yellow-500/10 rounded-lg">
+            <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              <strong>IMPORTANT:</strong> You must use your member number ({profile.member_number}) as the payment reference when making bank transfers.
             </p>
-          </Card>
-        </div>
-      </Card>
+          </div>
+        </Card>
+
+        {/* Payment History */}
+        <Card className="p-8">
+          <h3 className="text-xl font-semibold text-primary mb-6 flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Payment History
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="pb-2">Date</th>
+                  <th className="pb-2">Type</th>
+                  <th className="pb-2">Amount</th>
+                  <th className="pb-2">Status</th>
+                  <th className="pb-2">Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {profile.payment_history?.map((payment, index) => (
+                  <tr key={index} className="border-b last:border-0">
+                    <td className="py-4">{format(new Date(payment.date), 'PP')}</td>
+                    <td className="py-4">{payment.type}</td>
+                    <td className="py-4">£{payment.amount.toFixed(2)}</td>
+                    <td className="py-4">
+                      <Badge className={getStatusColor(payment.status)}>
+                        {payment.status}
+                      </Badge>
+                    </td>
+                    <td className="py-4">{payment.reference}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };
