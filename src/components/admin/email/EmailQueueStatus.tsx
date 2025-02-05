@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Filter, Clock, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ArrowUpDown, RotateCw } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -23,75 +23,68 @@ export function EmailQueueStatus() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data: queuedEmails, isLoading, refetch } = useQuery({
-    queryKey: ['emailQueue', statusFilter, sortOrder],
+    queryKey: ["emailQueue", statusFilter, sortOrder],
     queryFn: async () => {
-      const query = supabase
-        .from('email_logs')
-        .select('*, members!inner(full_name)')
-        .order('created_at', { ascending: sortOrder === 'asc' });
+      let query = supabase
+        .from("email_logs")
+        .select(`
+          *,
+          members!inner (
+            full_name
+          )
+        `);
 
       if (statusFilter !== "all") {
-        query.eq('status', statusFilter);
-      } else {
-        query.in('status', ['pending', 'failed']);
+        query = query.eq("status", statusFilter);
       }
 
-      const { data, error } = await query.limit(50);
+      const { data, error } = await query.order("created_at", { ascending: sortOrder === "asc" });
 
       if (error) throw error;
       return data;
-    }
+    },
   });
 
-  const retryMutation = useMutation({
-    mutationFn: async (emailId: string) => {
-      const { data, error } = await supabase
-        .from('email_logs')
-        .update({ 
-          status: 'pending',
-          error_message: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', emailId)
-        .select();
+  const handleRetry = async (emailId: string) => {
+    try {
+      const { error } = await supabase
+        .from("email_logs")
+        .update({ status: "pending" })
+        .eq("id", emailId);
 
       if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['emailQueue'] });
+
       toast({
-        title: "Email Queued",
-        description: "Email has been queued for retry",
-        variant: "default"
+        title: "Email queued for retry",
+        description: "The email will be processed again shortly.",
       });
-    },
-    onError: (error) => {
+
+      queryClient.invalidateQueries({ queryKey: ["emailQueue"] });
+    } catch (error) {
+      console.error("Error retrying email:", error);
       toast({
         title: "Error",
-        description: "Failed to retry email: " + error.message,
-        variant: "destructive"
+        description: "Failed to retry sending email. Please try again.",
+        variant: "destructive",
       });
-    }
-  });
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-500/20 text-yellow-400';
-      case 'failed':
-        return 'bg-red-500/20 text-red-400';
-      default:
-        return 'bg-gray-500/20 text-gray-400';
     }
   };
 
-  const getTimeAgo = (date: string) => {
-    const minutes = Math.floor((new Date().getTime() - new Date(date).getTime()) / 60000);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
+  const getStatusColor = (status: EmailStatus) => {
+    switch (status) {
+      case "sent":
+        return "bg-green-500/20 text-green-400";
+      case "failed":
+        return "bg-red-500/20 text-red-400";
+      case "pending":
+        return "bg-yellow-500/20 text-yellow-400";
+      case "delivered":
+        return "bg-blue-500/20 text-blue-400";
+      case "bounced":
+        return "bg-purple-500/20 text-purple-400";
+      default:
+        return "bg-gray-500/20 text-gray-400";
+    }
   };
 
   return (
@@ -106,91 +99,75 @@ export function EmailQueueStatus() {
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="bounced">Bounced</SelectItem>
             </SelectContent>
           </Select>
-          <Button 
-            variant="outline" 
-            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
           >
-            <Clock className="mr-2 h-4 w-4" />
-            {sortOrder === 'asc' ? 'Newest First' : 'Oldest First'}
+            <ArrowUpDown className="h-4 w-4" />
           </Button>
-          <Button onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+          <Button variant="outline" size="icon" onClick={() => refetch()}>
+            <RotateCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Recipient</TableHead>
-            <TableHead>Subject</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Time</TableHead>
-            <TableHead>Error</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center">Loading...</TableCell>
-            </TableRow>
-          ) : queuedEmails?.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center">No emails in queue</TableCell>
-            </TableRow>
-          ) : (
-            queuedEmails?.map((email) => (
-              <TableRow key={email.id}>
-                <TableCell>
-                  <div>
-                    <div>{email.recipient_email}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {email.members?.full_name}
-                    </div>
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : !queuedEmails?.length ? (
+        <div>No emails in queue</div>
+      ) : (
+        <div className="grid gap-4">
+          {queuedEmails.map((email) => (
+            <div
+              key={email.id}
+              className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-medium">{email.subject}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    To: {email.recipient_email}
+                    {email.members?.full_name && ` (${email.members.full_name})`}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${getStatusColor(
+                        email.status
+                      )}`}
+                    >
+                      {email.status}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(email.created_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
                   </div>
-                </TableCell>
-                <TableCell>{email.subject}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded ${getStatusBadgeClass(email.status)}`}>
-                    {email.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    {getTimeAgo(email.created_at)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {email.error_message && (
-                    <div className="flex items-center gap-2 text-red-400">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm truncate max-w-[200px]" title={email.error_message}>
-                        {email.error_message}
-                      </span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Button 
-                    variant="ghost" 
+                </div>
+                {email.status === "failed" && (
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => retryMutation.mutate(email.id)}
-                    disabled={email.status === 'pending' || retryMutation.isPending}
+                    onClick={() => handleRetry(email.id)}
                   >
                     Retry
                   </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+                )}
+              </div>
+              {email.error_message && (
+                <p className="mt-2 text-sm text-red-400">{email.error_message}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
