@@ -23,7 +23,7 @@ export const Index = () => {
     try {
       console.log("Attempting login for member:", memberNumber);
       
-      // First check if member exists and is active - removed user_roles join
+      // First check if member exists and is active
       const { data: member, error: memberError } = await supabase
         .from("members")
         .select("*")
