@@ -135,49 +135,48 @@ export function RoleManagement() {
     }
   };
 
-  const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: 'remove_role' | AppRole) => {
-  if (!userId) {
-    toast({
-      title: "Error",
-      description: "User ID is required",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  try {
-    let response;
-    // Handle different role operations based on the fix type
-    if (fixType === 'remove_role') {
-      response = await supabase.rpc('remove_user_role', {
-        p_user_id: userId,
-        p_role: checkType
+  const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: 'remove_role' | UserRole) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is required",
+        variant: "destructive",
       });
-    } else {
-      response = await supabase.rpc('add_user_role', {
-        p_user_id: userId,
-        p_role: fixType
-      });
+      return;
     }
 
-    const { error } = response;
-    if (error) throw error;
+    try {
+      let response;
+      if (fixType === 'remove_role') {
+        response = await supabase.rpc('remove_user_role', {
+          p_user_id: userId,
+          p_role: checkType
+        });
+      } else {
+        response = await supabase.rpc('add_user_role', {
+          p_user_id: userId,
+          p_role: fixType
+        });
+      }
 
-    toast({
-      title: "Success",
-      description: "Role issue fixed successfully",
-    });
+      const { error } = response;
+      if (error) throw error;
 
-    await refetch();
-  } catch (error: any) {
-    console.error('Error fixing role:', error);
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: "destructive",
-    });
-  }
-};
+      toast({
+        title: "Success",
+        description: "Role issue fixed successfully",
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error('Error fixing role:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
     try {
@@ -315,21 +314,21 @@ export function RoleManagement() {
     const baseOptions: FixOption[] = [
       {
         label: "Change to Member",
-        value: "change_to_member",
+        value: "member",
         description: "Set role to basic member",
         icon: <UserMinus className="h-4 w-4" />,
         action: () => details?.auth_user_id ? handleRoleChange(details.auth_user_id, 'member') : Promise.resolve()
       },
       {
         label: "Change to Collector",
-        value: "change_to_collector",
+        value: "collector",
         description: "Set role to collector",
         icon: <UserSearch className="h-4 w-4" />,
         action: () => details?.auth_user_id ? handleRoleChange(details.auth_user_id, 'collector') : Promise.resolve()
       },
       {
         label: "Change to Admin",
-        value: "change_to_admin",
+        value: "admin",
         description: "Set role to admin",
         icon: <UserPlus className="h-4 w-4" />,
         action: () => details?.auth_user_id ? handleRoleChange(details.auth_user_id, 'admin') : Promise.resolve()
@@ -339,45 +338,45 @@ export function RoleManagement() {
     const additionalOptions: Record<string, FixOption[]> = {
       'Multiple Roles Assigned': [
         {
-          label: "Keep highest priority role only",
-          value: "keep_highest",
-          description: "Removes all roles except the highest priority one",
+          label: "Remove Extra Roles",
+          value: "remove_role",
+          description: "Removes duplicate roles",
           icon: <CheckCircle2 className="h-4 w-4" />,
-          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "keep_highest") : Promise.resolve()
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, 'remove_role') : Promise.resolve()
         }
       ],
       'Member Without Role': [
         {
           label: "Add member role",
-          value: "add_member",
+          value: "member",
           description: "Assigns the basic member role",
           icon: <UserPlus className="h-4 w-4" />,
-          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "add_member") : Promise.resolve()
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, 'member') : Promise.resolve()
         }
       ],
       'Collector Missing Role': [
         {
           label: "Add collector role",
-          value: "add_collector",
-          description: "Adds collector role while keeping existing roles",
+          value: "collector",
+          description: "Adds collector role",
           icon: <UserSearch className="h-4 w-4" />,
-          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "add_collector") : Promise.resolve()
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, 'collector') : Promise.resolve()
         }
       ],
       'Inconsistent Member Status': [
         {
-          label: "Verify and add member role",
-          value: "verify_and_add_member",
-          description: "Verifies the user and ensures they have the member role",
+          label: "Add Member Role",
+          value: "member",
+          description: "Add member role",
           icon: <CheckCheck className="h-4 w-4" />,
-          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "verify_and_add_member") : Promise.resolve()
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, 'member') : Promise.resolve()
         },
         {
-          label: "Update roles to match status",
-          value: "update_roles",
-          description: "Updates roles to match current member status",
+          label: "Remove Current Role",
+          value: "remove_role",
+          description: "Remove current role",
           icon: <HistoryIcon className="h-4 w-4" />,
-          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "update_roles") : Promise.resolve()
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, 'remove_role') : Promise.resolve()
         }
       ]
     };
