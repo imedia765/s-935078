@@ -5,14 +5,14 @@
 @layer base {
   :root {
     /* Light mode variables - adjusted for better readability */
-    --background: 0 0% 100%;
+    --background: 0 0% 98%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 248 53% 60%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
@@ -23,7 +23,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: 248 53% 60%;
     --radius: 0.75rem;
   }
 
@@ -40,75 +40,85 @@
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
 
+  /* Glass card styles with improved light mode */
   .glass-card {
-    @apply bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg hover:bg-black/50 transition-all duration-200;
+    @apply transition-all duration-200;
   }
 
-  .email-preview {
-    @apply transition-all duration-300;
-    background-image: linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%);
-  }
+  /* Light mode specific overrides */
+  @media (prefers-color-scheme: light) {
+    .glass-card {
+      @apply bg-white/90 backdrop-blur-xl border border-gray-200 text-gray-800 shadow-sm;
+    }
 
-  .email-preview-header {
-    @apply backdrop-blur-md bg-white/80;
-    border-image: linear-gradient(to right, transparent, rgba(0,0,0,0.1), transparent) 1;
-  }
+    .nav-gradient {
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+      @apply border-b border-gray-200;
+    }
 
-  .email-preview-body {
-    @apply prose prose-gray max-w-none;
-  }
+    .member-info {
+      @apply text-gray-700;
+    }
 
-  .arabic-text {
-    font-family: 'Noto Naskh Arabic', serif;
-    @apply text-right leading-loose;
-  }
-}
+    .member-label {
+      @apply text-gray-600 font-medium;
+    }
 
-.login-container {
-  background: radial-gradient(circle at center, rgba(108, 93, 211, 0.15) 0%, transparent 70%);
-}
+    .member-value {
+      @apply text-gray-900;
+    }
 
-.text-gradient {
-  @apply bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent;
-}
+    .status-badge {
+      @apply bg-opacity-20 text-opacity-90;
+    }
 
-.nav-gradient {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
-}
+    .announcement-card {
+      @apply bg-white text-gray-800 border-gray-200;
+    }
 
-/* Add specific light mode text color overrides */
-@media (prefers-color-scheme: light) {
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-xl border border-gray-200 text-gray-800;
-  }
+    .text-gradient {
+      @apply text-primary font-semibold;
+    }
 
-  .email-preview {
-    background-image: linear-gradient(to top, #f3f3f3 0%, #ffffff 100%);
-  }
+    /* Form elements */
+    input, select, textarea {
+      @apply bg-white border-gray-300 text-gray-900;
+    }
 
-  .email-preview-header {
-    @apply backdrop-blur-md bg-white/90 text-gray-800;
-    border-image: linear-gradient(to right, transparent, rgba(0,0,0,0.1), transparent) 1;
-  }
+    /* Table styles */
+    th {
+      @apply text-gray-700 bg-gray-50/80;
+    }
 
-  /* Additional light mode specific styles for member dashboard */
-  .member-info {
-    @apply text-gray-700;
-  }
+    td {
+      @apply text-gray-800;
+    }
 
-  .member-label {
-    @apply text-gray-600;
-  }
+    /* Button styles */
+    .btn-primary {
+      @apply bg-primary text-white hover:bg-primary-hover;
+    }
 
-  .member-value {
-    @apply text-gray-900;
-  }
+    .btn-secondary {
+      @apply bg-gray-100 text-gray-800 hover:bg-gray-200;
+    }
 
-  .status-badge {
-    @apply bg-opacity-20 text-opacity-90;
-  }
+    /* Card content */
+    .card-title {
+      @apply text-gray-900 font-semibold;
+    }
 
-  .announcement-card {
-    @apply bg-white/90 text-gray-800 border-gray-200;
+    .card-subtitle {
+      @apply text-gray-600;
+    }
+
+    /* Navigation */
+    .nav-link {
+      @apply text-gray-700 hover:text-primary;
+    }
+
+    .nav-link.active {
+      @apply text-primary bg-primary/10;
+    }
   }
 }
