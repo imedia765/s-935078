@@ -1,6 +1,7 @@
 
 import { UserRole } from "@/types/auth";
 
+export { UserRole };
 export type AppRole = UserRole;
 export type FixType = UserRole | 'remove_role';
 
