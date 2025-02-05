@@ -84,12 +84,12 @@ export const Navigation = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center py-4 border-b border-white/10">
+        <div className="text-center py-3 border-b border-white/10">
           <p className="text-xl font-arabic text-primary tracking-wider">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
         </div>
 
         {session && (
-          <div className="flex items-center justify-between p-6">
+          <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
             {isLoading ? (
               <div className="flex items-center space-x-4">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -97,12 +97,12 @@ export const Navigation = () => {
               </div>
             ) : (
               <NavigationMenu>
-                <NavigationMenuList className="flex items-center space-x-6">
+                <NavigationMenuList className="flex items-center gap-2 lg:gap-4">
                   {menuItems.filter(item => item.show).map((item) => (
                     <NavigationMenuItem key={item.path}>
                       <NavigationMenuLink
                         className={cn(
-                          "group inline-flex h-10 w-max items-center justify-center rounded-md px-6 py-2 text-sm font-medium transition-all duration-200",
+                          "group inline-flex h-9 items-center justify-center rounded-md px-3 lg:px-4 py-1 text-sm font-medium transition-all duration-200",
                           "hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                           isActive(item.path) ? 
                             "bg-primary/20 text-primary shadow-sm" : 
@@ -118,7 +118,7 @@ export const Navigation = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-black/40 text-gray-200 hover:bg-primary/20 hover:text-primary"
+                      className="h-9 w-9 bg-black/40 text-gray-200 hover:bg-primary/20 hover:text-primary"
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                     >
                       {theme === "dark" ? (
@@ -132,7 +132,7 @@ export const Navigation = () => {
                   <NavigationMenuItem className="ml-auto">
                     <NavigationMenuLink
                       className={cn(
-                        "group inline-flex h-10 w-max items-center justify-center rounded-md px-6 py-2 text-sm font-medium transition-all duration-200",
+                        "group inline-flex h-9 items-center justify-center rounded-md px-3 lg:px-4 py-1 text-sm font-medium transition-all duration-200",
                         "hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none",
                         "bg-black/40 text-red-500"
                       )}
