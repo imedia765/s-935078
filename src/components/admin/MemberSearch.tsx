@@ -48,32 +48,25 @@ export function MemberSearch() {
         .from('members')
         .select(`
           *,
-          member_notes(note_text, note_type),
+          member_notes (
+            note_text,
+            note_type
+          ),
           payment_requests!payment_requests_member_id_fkey(status, amount, payment_type),
-          family_members(full_name, relationship, date_of_birth)
+          family_members(full_name, relationship, date_of_birth),
+          user_roles!user_roles_member_fkey(role)
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching members:', error);
+        throw error;
+      }
 
-      const membersWithRoles = await Promise.all((members || []).map(async (member) => {
-        if (!member.auth_user_id) return { ...member, user_roles: [] };
+      console.log('Fetched members data:', members); // Debug log
 
-        const { data: roles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', member.auth_user_id);
-
-        if (rolesError) {
-          console.error('Error fetching roles:', rolesError);
-          return { ...member, user_roles: [] };
-        }
-
-        return { ...member, user_roles: roles || [] };
-      }));
-        
-      return membersWithRoles as MemberWithRelations[];
+      return members as MemberWithRelations[];
     },
     enabled: searchTerm.length > 2
   });
@@ -166,8 +159,8 @@ export function MemberSearch() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {member.user_roles?.map((role: any) => (
-                    <Badge key={role.role} variant="secondary">
+                  {member.user_roles?.map((role: any, index: number) => (
+                    <Badge key={`${role.role}-${index}`} variant="secondary">
                       {role.role}
                     </Badge>
                   ))}
