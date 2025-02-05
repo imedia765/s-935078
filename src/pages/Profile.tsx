@@ -139,6 +139,91 @@ const Profile = () => {
     }
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || !event.target.files[0]) return;
+
+    const file = event.target.files[0];
+    setUploadingPhoto(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${memberData.member_number}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ photo_url: publicUrl })
+        .eq('id', memberData.id);
+
+      if (updateError) throw updateError;
+
+      setMemberData({ ...memberData, photo_url: publicUrl });
+      toast({
+        title: "Success",
+        description: "Profile photo updated successfully"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setEditedData((prev: any) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update(editedData)
+        .eq('id', memberData.id);
+
+      if (error) throw error;
+
+      setMemberData(editedData);
+      setIsEditing(false);
+      toast({
+        title: "Success",
+        description: "Profile updated successfully"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedData(memberData);
+    setIsEditing(false);
+  };
+
+  const handleEdit = () => {
+    setEditedData(memberData);
+    setIsEditing(true);
+  };
+
   const handleAddFamilyMember = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -148,10 +233,10 @@ const Profile = () => {
         .from('family_members')
         .insert({
           member_id: memberData.id,
-          full_name: formData.get('full_name'),
-          relationship: formData.get('relationship'),
-          date_of_birth: formData.get('date_of_birth') || null,
-          gender: formData.get('gender') || null
+          full_name: formData.get('full_name')?.toString() || '',
+          relationship: formData.get('relationship')?.toString() || '',
+          date_of_birth: formData.get('date_of_birth')?.toString() || null,
+          gender: formData.get('gender')?.toString() || null
         });
 
       if (error) throw error;
@@ -180,10 +265,10 @@ const Profile = () => {
       const { error } = await supabase
         .from('family_members')
         .update({
-          full_name: formData.get('full_name'),
-          relationship: formData.get('relationship'),
-          date_of_birth: formData.get('date_of_birth') || null,
-          gender: formData.get('gender') || null
+          full_name: formData.get('full_name')?.toString() || '',
+          relationship: formData.get('relationship')?.toString() || '',
+          date_of_birth: formData.get('date_of_birth')?.toString() || null,
+          gender: formData.get('gender')?.toString() || null
         })
         .eq('id', selectedFamilyMember.id);
 
