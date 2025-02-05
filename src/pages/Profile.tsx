@@ -11,12 +11,23 @@ import { useNavigate } from "react-router-dom";
 interface Profile {
   id: string;
   member_number: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   email: string;
   phone: string;
   address: string;
   status: string;
+  date_of_birth: string | null;
+  marital_status: string | null;
+  membership_type: string | null;
+  collector: string | null;
+  collector_id: string | null;
+  auth_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  verified: boolean | null;
+  yearly_payment_amount: number | null;
+  yearly_payment_due_date: string | null;
+  yearly_payment_status: string | null;
 }
 
 const Profile = () => {
@@ -36,13 +47,16 @@ const Profile = () => {
           return;
         }
 
+        console.log('Fetching profile for auth_user_id:', user.id);
         const { data: memberData, error } = await supabase
           .from("members")
           .select("*")
-          .eq("id", user.id)
+          .eq("auth_user_id", user.id)
           .single();
 
         if (error) throw error;
+
+        console.log('Fetched member data:', memberData);
         setProfile(memberData);
       } catch (error: any) {
         console.error("Error fetching profile:", error);
@@ -68,8 +82,7 @@ const Profile = () => {
       const { error } = await supabase
         .from("members")
         .update({
-          first_name: profile.first_name,
-          last_name: profile.last_name,
+          full_name: profile.full_name,
           email: profile.email,
           phone: profile.phone,
           address: profile.address,
@@ -115,11 +128,11 @@ const Profile = () => {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <Card className="p-8">
-        <h2 className="text-3xl font-bold mb-6">Profile Details</h2>
+        <h2 className="text-3xl font-bold mb-6 text-gradient">Profile Details</h2>
         <form onSubmit={handleUpdate} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="memberNumber">Member Number</Label>
+              <Label htmlFor="memberNumber" className="text-muted-foreground">Member Number</Label>
               <Input
                 id="memberNumber"
                 value={profile.member_number}
@@ -129,7 +142,7 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status" className="text-muted-foreground">Status</Label>
               <Input
                 id="status"
                 value={profile.status}
@@ -139,54 +152,70 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
+              <Label htmlFor="fullName" className="text-muted-foreground">Full Name</Label>
               <Input
-                id="firstName"
-                value={profile.first_name}
-                onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                id="fullName"
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                className="hover:border-primary/50 focus:border-primary"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                value={profile.last_name}
-                onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={profile.email}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                className="hover:border-primary/50 focus:border-primary"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone" className="text-muted-foreground">Phone</Label>
               <Input
                 id="phone"
                 value={profile.phone}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="hover:border-primary/50 focus:border-primary"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="membershipType" className="text-muted-foreground">Membership Type</Label>
+              <Input
+                id="membershipType"
+                value={profile.membership_type || 'N/A'}
+                disabled
+                className="bg-muted"
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address" className="text-muted-foreground">Address</Label>
               <Input
                 id="address"
                 value={profile.address}
                 onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                className="hover:border-primary/50 focus:border-primary"
               />
             </div>
           </div>
 
-          <Button type="submit" disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
+          <Button 
+            type="submit" 
+            disabled={isSaving}
+            className="bg-primary hover:bg-primary/90"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </Button>
         </form>
       </Card>
@@ -195,12 +224,12 @@ const Profile = () => {
       <div className="glass-card p-8">
         <h2 className="text-3xl font-bold text-gradient mb-6 text-left">Important Documents</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="glass-card p-6">
+          <Card className="glass-card p-6 hover:bg-primary/5 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <FileText className="text-primary flex-shrink-0" />
               <div className="flex-1 text-left">
                 <h3 className="text-xl font-semibold text-gradient">Member Guidelines</h3>
-                <p className="text-sm text-gray-400">Last updated: December 2023</p>
+                <p className="text-sm text-muted-foreground">Last updated: December 2023</p>
               </div>
               <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
                 <FileText className="mr-2 h-4 w-4" /> View
@@ -211,12 +240,12 @@ const Profile = () => {
             </p>
           </Card>
 
-          <Card className="glass-card p-6">
+          <Card className="glass-card p-6 hover:bg-primary/5 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <FileText className="text-primary flex-shrink-0" />
               <div className="flex-1 text-left">
                 <h3 className="text-xl font-semibold text-gradient">Payment Guidelines</h3>
-                <p className="text-sm text-gray-400">Last updated: December 2023</p>
+                <p className="text-sm text-muted-foreground">Last updated: December 2023</p>
               </div>
               <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
                 <FileText className="mr-2 h-4 w-4" /> View
