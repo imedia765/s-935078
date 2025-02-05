@@ -12,11 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Database } from "@/integrations/supabase/types";
+
+type EmailStatus = Database["public"]["Enums"]["email_status"];
 
 export function EmailQueueStatus() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<EmailStatus | "all">("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const { data: queuedEmails, isLoading, refetch } = useQuery({
@@ -96,7 +99,7 @@ export function EmailQueueStatus() {
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Email Queue</h3>
         <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(value: EmailStatus | "all") => setStatusFilter(value)}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
