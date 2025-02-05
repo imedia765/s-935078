@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Light mode variables - adjusted for better readability */
+    /* Light mode variables */
     --background: 0 0% 98%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -28,9 +28,29 @@
   }
 
   .dark {
-    /* ... keep existing code (dark mode variables) */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 248 53% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 248 53% 60%;
   }
+}
 
+@layer base {
   * {
     @apply border-border selection:bg-primary/10 selection:text-primary;
   }
@@ -40,85 +60,95 @@
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
 
-  /* Glass card styles with improved light mode */
   .glass-card {
     @apply transition-all duration-200;
   }
 
-  /* Light mode specific overrides */
-  @media (prefers-color-scheme: light) {
+  /* Light mode */
+  :root {
     .glass-card {
-      @apply bg-white/90 backdrop-blur-xl border border-gray-200 text-gray-800 shadow-sm;
+      @apply bg-white/90 backdrop-blur-xl border border-gray-200 text-foreground shadow-sm;
     }
 
     .nav-gradient {
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
-      @apply border-b border-gray-200;
+      @apply bg-white/95 border-b border-gray-200;
+    }
+  }
+
+  /* Dark mode */
+  .dark {
+    .glass-card {
+      @apply bg-black/40 backdrop-blur-xl border border-white/10 text-foreground;
     }
 
-    .member-info {
-      @apply text-gray-700;
+    .nav-gradient {
+      @apply bg-black/80 border-b border-white/10;
     }
+  }
 
-    .member-label {
-      @apply text-gray-600 font-medium;
-    }
+  /* Shared styles */
+  .member-info {
+    @apply text-foreground/80;
+  }
 
-    .member-value {
-      @apply text-gray-900;
-    }
+  .member-label {
+    @apply text-foreground/70 font-medium;
+  }
 
-    .status-badge {
-      @apply bg-opacity-20 text-opacity-90;
-    }
+  .member-value {
+    @apply text-foreground;
+  }
 
-    .announcement-card {
-      @apply bg-white text-gray-800 border-gray-200;
-    }
+  .status-badge {
+    @apply bg-opacity-20 text-opacity-90;
+  }
 
-    .text-gradient {
-      @apply text-primary font-semibold;
-    }
+  .announcement-card {
+    @apply bg-card text-card-foreground border-border;
+  }
 
-    /* Form elements */
-    input, select, textarea {
-      @apply bg-white border-gray-300 text-gray-900;
-    }
+  .text-gradient {
+    @apply text-primary font-semibold;
+  }
 
-    /* Table styles */
-    th {
-      @apply text-gray-700 bg-gray-50/80;
-    }
+  /* Form elements */
+  input, select, textarea {
+    @apply bg-background border-input text-foreground;
+  }
 
-    td {
-      @apply text-gray-800;
-    }
+  /* Table styles */
+  th {
+    @apply text-foreground/70 bg-muted/50;
+  }
 
-    /* Button styles */
-    .btn-primary {
-      @apply bg-primary text-white hover:bg-primary-hover;
-    }
+  td {
+    @apply text-foreground;
+  }
 
-    .btn-secondary {
-      @apply bg-gray-100 text-gray-800 hover:bg-gray-200;
-    }
+  /* Button styles */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
 
-    /* Card content */
-    .card-title {
-      @apply text-gray-900 font-semibold;
-    }
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
 
-    .card-subtitle {
-      @apply text-gray-600;
-    }
+  /* Card content */
+  .card-title {
+    @apply text-foreground font-semibold;
+  }
 
-    /* Navigation */
-    .nav-link {
-      @apply text-gray-700 hover:text-primary;
-    }
+  .card-subtitle {
+    @apply text-muted-foreground;
+  }
 
-    .nav-link.active {
-      @apply text-primary bg-primary/10;
-    }
+  /* Navigation */
+  .nav-link {
+    @apply text-foreground/70 hover:text-primary;
+  }
+
+  .nav-link.active {
+    @apply text-primary bg-primary/10;
   }
 }
