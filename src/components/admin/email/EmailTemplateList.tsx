@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -19,11 +19,37 @@ interface EmailTemplateFormData {
   is_active: boolean;
 }
 
+const previewStyles = {
+  default: {
+    container: "bg-gradient-to-r from-primary to-primary-hover p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
+    header: "bg-white/10 backdrop-blur-sm p-4 rounded-t-lg border-b border-white/20",
+    body: "bg-white/5 backdrop-blur-sm p-6 rounded-b-lg text-white",
+    title: "text-2xl font-bold text-white mb-4",
+    text: "text-white/90 leading-relaxed"
+  },
+  modern: {
+    container: "bg-gradient-to-br from-[#8B5CF6] to-[#D946EF] p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
+    header: "bg-white/10 backdrop-blur-sm p-4 rounded-t-lg border-b border-white/20",
+    body: "bg-white/5 backdrop-blur-sm p-6 rounded-b-lg text-white",
+    title: "text-2xl font-bold text-white mb-4",
+    text: "text-white/90 leading-relaxed"
+  },
+  professional: {
+    container: "bg-gradient-to-r from-[#0EA5E9] to-[#3B82F6] p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
+    header: "bg-white/10 backdrop-blur-sm p-4 rounded-t-lg border-b border-white/20",
+    body: "bg-white/5 backdrop-blur-sm p-6 rounded-b-lg text-white",
+    title: "text-2xl font-bold text-white mb-4",
+    text: "text-white/90 leading-relaxed"
+  }
+};
+
 export function EmailTemplateList() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState<keyof typeof previewStyles>("default");
 
   const form = useForm<EmailTemplateFormData>({
     defaultValues: {
@@ -148,6 +174,11 @@ export function EmailTemplateList() {
     }
   };
 
+  const handlePreview = (template: any) => {
+    setSelectedTemplate(template);
+    setPreviewDialogOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -242,6 +273,39 @@ export function EmailTemplateList() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Dialog */}
+        <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Email Template Preview</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex gap-2 mb-4">
+                {Object.keys(previewStyles).map((style) => (
+                  <Button
+                    key={style}
+                    variant={selectedStyle === style ? "default" : "outline"}
+                    onClick={() => setSelectedStyle(style as keyof typeof previewStyles)}
+                  >
+                    {style.charAt(0).toUpperCase() + style.slice(1)}
+                  </Button>
+                ))}
+              </div>
+              {selectedTemplate && (
+                <div className={previewStyles[selectedStyle].container}>
+                  <div className={previewStyles[selectedStyle].header}>
+                    <h2 className={previewStyles[selectedStyle].title}>{selectedTemplate.subject}</h2>
+                  </div>
+                  <div 
+                    className={previewStyles[selectedStyle].body}
+                    dangerouslySetInnerHTML={{ __html: selectedTemplate.body }}
+                  />
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Table>
@@ -278,6 +342,13 @@ export function EmailTemplateList() {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handlePreview(template)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
