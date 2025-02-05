@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,13 +65,15 @@ export default function Admin() {
     },
     retryDelay: (attemptIndex) => Math.min(1000 * (2 ** attemptIndex), 30000),
     staleTime: 30000,
-    onError: (error: any) => {
-      const errorMessage = error.message || "Unknown error occurred";
-      toast({
-        variant: "destructive",
-        title: "Error fetching system checks",
-        description: errorMessage
-      });
+    meta: {
+      errorHandler: (error: any) => {
+        const errorMessage = error.message || "Unknown error occurred";
+        toast({
+          variant: "destructive",
+          title: "Error fetching system checks",
+          description: errorMessage
+        });
+      }
     }
   });
 
