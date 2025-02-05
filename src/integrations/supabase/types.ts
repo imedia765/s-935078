@@ -1536,6 +1536,18 @@ export type Database = {
           details: Json
         }[]
       }
+      check_smtp_dns: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          smtp_host: string
+          mx_records_exist: boolean
+          spf_record_exists: boolean
+          dkim_configured: boolean
+          dmarc_configured: boolean
+          last_checked: string
+          details: Json
+        }[]
+      }
       check_system_performance: {
         Args: Record<PropertyKey, never>
         Returns: {
