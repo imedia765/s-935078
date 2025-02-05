@@ -6,13 +6,20 @@ import { QueryAnalysis } from "./QueryAnalysis";
 import { BackupScheduler } from "./BackupScheduler";
 import { supabase } from "@/integrations/supabase/client";
 
+interface HealthMetric {
+  metric_name: string;
+  current_value: number;
+  status: 'healthy' | 'warning' | 'critical';
+  details: Record<string, any>;
+}
+
 export function DatabaseManagement() {
   const { data: healthMetrics } = useQuery({
     queryKey: ["databaseHealth"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('check_database_health');
       if (error) throw error;
-      return data;
+      return data as HealthMetric[];
     },
     refetchInterval: 30000 // Refresh every 30 seconds
   });
