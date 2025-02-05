@@ -83,7 +83,7 @@ export function AuditLogViewer() {
       Timestamp: new Date(log.hour_bucket).toLocaleString(),
       Operation: log.operation,
       'Table Name': log.table_name,
-      Severity: log.severity,
+      Severity: log.severity || 'N/A',
       Count: log.count,
       'User ID': log.user_id || 'N/A'
     }));
