@@ -1,4 +1,3 @@
-
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,6 +5,8 @@ import { useRoleManagement } from "./hooks/useRoleManagement";
 import { UserTable } from "./components/UserTable";
 import { ErrorView } from "./components/ErrorView";
 import { AuditView } from "./components/AuditView";
+import { RoleChangeRequests } from "./components/RoleChangeRequests";
+import { RolePermissionsMatrix } from "./components/RolePermissionsMatrix";
 
 export function RoleManagement() {
   const {
@@ -50,6 +51,8 @@ export function RoleManagement() {
             placeholder={
               activeTab === "table" ? "Search by name, email, ID or member number..." :
               activeTab === "errors" ? "Search errors by type or details..." :
+              activeTab === "requests" ? "Search role change requests..." :
+              activeTab === "permissions" ? "Search permissions..." :
               "Search audit logs..."
             }
             value={searchTerm}
@@ -61,6 +64,8 @@ export function RoleManagement() {
         <TabsList>
           <TabsTrigger value="table">Table View</TabsTrigger>
           <TabsTrigger value="errors">Error View</TabsTrigger>
+          <TabsTrigger value="requests">Change Requests</TabsTrigger>
+          <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
         </TabsList>
 
@@ -78,6 +83,14 @@ export function RoleManagement() {
             users={filteredUsers ?? []} 
             generateMagicLink={generateMagicLink}
           />
+        </TabsContent>
+
+        <TabsContent value="requests">
+          <RoleChangeRequests />
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <RolePermissionsMatrix />
         </TabsContent>
 
         <TabsContent value="audit">

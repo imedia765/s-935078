@@ -1378,6 +1378,48 @@ export type Database = {
         }
         Relationships: []
       }
+      role_change_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          existing_role: Database["public"]["Enums"]["app_role"] | null
+          id: string
+          reason: string | null
+          requested_by: string | null
+          requested_role: Database["public"]["Enums"]["app_role"] | null
+          status: Database["public"]["Enums"]["approval_status"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          existing_role?: Database["public"]["Enums"]["app_role"] | null
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          requested_role?: Database["public"]["Enums"]["app_role"] | null
+          status?: Database["public"]["Enums"]["approval_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          existing_role?: Database["public"]["Enums"]["app_role"] | null
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          requested_role?: Database["public"]["Enums"]["app_role"] | null
+          status?: Database["public"]["Enums"]["approval_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       role_history: {
         Row: {
           change_type: string | null
@@ -1411,6 +1453,33 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"] | null
           role_id?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          permission_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          permission_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          permission_name?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1686,6 +1755,14 @@ export type Database = {
           bloat_percentage: number
           recommendations: Json
         }[]
+      }
+      approve_role_change: {
+        Args: {
+          request_id: string
+          new_status: Database["public"]["Enums"]["approval_status"]
+          admin_id: string
+        }
+        Returns: Json
       }
       assign_collector_role: {
         Args: {
@@ -2168,6 +2245,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "collector" | "member"
+      approval_status: "pending" | "approved" | "rejected"
       audit_operation:
         | "create"
         | "update"
