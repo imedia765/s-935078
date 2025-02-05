@@ -146,13 +146,21 @@ export function RoleManagement() {
     }
 
     try {
-      // Using update_user_role instead of fix_role_issue
-      const { data, error } = await supabase.rpc('update_user_role', {
-        p_user_id: userId,
-        p_role_type: fixType,
-        p_action: checkType
-      });
+      let response;
+      // Handle different role operations based on the fix type
+      if (fixType === 'remove_role') {
+        response = await supabase.rpc('remove_user_role', {
+          p_user_id: userId,
+          p_role: checkType
+        });
+      } else {
+        response = await supabase.rpc('add_user_role', {
+          p_user_id: userId,
+          p_role: fixType as "admin" | "collector" | "member"
+        });
+      }
 
+      const { error } = response;
       if (error) throw error;
 
       toast({
