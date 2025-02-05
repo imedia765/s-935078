@@ -31,24 +31,47 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks');
+        const { data, error } = await supabase.rpc('run_combined_system_checks', {}, {
+          count: 'exact',
+          retryCount: 3,
+          retryDelay: 1000
+        });
+
         if (error) {
           console.error("System checks error:", error);
+          toast({
+            variant: "destructive",
+            title: "Error fetching system checks",
+            description: error.message
+          });
           throw error;
         }
-        return data?.map((check: any) => ({
-          check_type: check.check_type,
-          status: check.status,
-          metric_name: check.metric_name,
-          current_value: check.current_value,
-          threshold: check.threshold,
-          check_details: check.check_details || {} // Only use check_details field
+
+        if (!data) {
+          return [];
+        }
+
+        return data.map((check: any) => ({
+          check_type: check.check_type || 'Unknown',
+          status: check.status || 'Unknown',
+          metric_name: check.metric_name || '',
+          current_value: check.current_value || 0,
+          threshold: check.threshold || 0,
+          check_details: typeof check.check_details === 'object' ? check.check_details : {}
         }));
       } catch (error: any) {
         console.error("System checks error:", error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching system checks",
+          description: error.message
+        });
         throw error;
       }
-    }
+    },
+    retry: 3,
+    retryDelay: 1000,
+    staleTime: 30000 // Cache data for 30 seconds
   });
 
   const ErrorAlert = ({ error }: { error: Error | null }) => {
