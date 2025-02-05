@@ -146,10 +146,11 @@ export function RoleManagement() {
     }
 
     try {
-      const { data, error } = await supabase.rpc('fix_role_issue', {
+      // Using update_user_role instead of fix_role_issue
+      const { data, error } = await supabase.rpc('update_user_role', {
         p_user_id: userId,
-        p_check_type: checkType,
-        p_fix_type: fixType
+        p_role_type: fixType,
+        p_action: checkType
       });
 
       if (error) throw error;
