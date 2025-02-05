@@ -5,26 +5,52 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, History, Filter, Search, Clock, Database, User, Shield } from "lucide-react";
+import { 
+  Download, 
+  History, 
+  Filter, 
+  Search, 
+  Clock, 
+  Database, 
+  User, 
+  Shield,
+  Calendar
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV } from "@/utils/exportUtils";
 
 interface AuditActivity {
   hour_bucket: string;
   operation: string;
   count: number;
+  severity: string;
+  table_name: string;
+  user_id: string;
 }
 
 interface AuditLogFilters {
   operation: string;
   timeRange: string;
+  severity: string;
+  tableFilter: string;
   searchTerm: string;
+  dateRange: {
+    start: string;
+    end: string;
+  };
 }
 
 export function AuditLogViewer() {
   const [filters, setFilters] = useState<AuditLogFilters>({
     operation: "all",
     timeRange: "24h",
+    severity: "all",
+    tableFilter: "all",
     searchTerm: "",
+    dateRange: {
+      start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    }
   });
 
   const { data: auditActivity, isLoading } = useQuery({
@@ -39,18 +65,16 @@ export function AuditLogViewer() {
   const handleExport = () => {
     if (!auditActivity) return;
     
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Time,Operation,Count\n" +
-      auditActivity.map(row => 
-        `${row.hour_bucket},${row.operation},${row.count}`
-      ).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "audit_logs.csv");
-    document.body.appendChild(link);
-    link.click();
+    const exportData = auditActivity.map(log => ({
+      Timestamp: new Date(log.hour_bucket).toLocaleString(),
+      Operation: log.operation,
+      'Table Name': log.table_name,
+      Severity: log.severity,
+      Count: log.count,
+      'User ID': log.user_id || 'N/A'
+    }));
+
+    exportToCSV(exportData, `audit_logs_${new Date().toISOString()}`);
   };
 
   const getOperationIcon = (operation: string) => {
@@ -66,12 +90,38 @@ export function AuditLogViewer() {
     }
   };
 
+  const getSeverityColor = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case "error":
+        return "text-red-500";
+      case "warning":
+        return "text-yellow-500";
+      case "info":
+        return "text-blue-500";
+      default:
+        return "text-gray-500";
+    }
+  };
+
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       dateStyle: 'medium',
       timeStyle: 'short'
     });
   };
+
+  const filteredLogs = auditActivity?.filter(log => {
+    if (filters.operation !== "all" && log.operation !== filters.operation) return false;
+    if (filters.severity !== "all" && log.severity !== filters.severity) return false;
+    if (filters.tableFilter !== "all" && log.table_name !== filters.tableFilter) return false;
+    
+    const logDate = new Date(log.hour_bucket);
+    const startDate = new Date(filters.dateRange.start);
+    const endDate = new Date(filters.dateRange.end);
+    if (logDate < startDate || logDate > endDate) return false;
+    
+    return true;
+  });
 
   return (
     <div className="space-y-4">
@@ -90,7 +140,7 @@ export function AuditLogViewer() {
             value={filters.operation}
             onValueChange={(value) => setFilters(prev => ({ ...prev, operation: value }))}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Operation" />
             </SelectTrigger>
             <SelectContent>
@@ -101,24 +151,48 @@ export function AuditLogViewer() {
             </SelectContent>
           </Select>
           <Select
-            value={filters.timeRange}
-            onValueChange={(value) => setFilters(prev => ({ ...prev, timeRange: value }))}
+            value={filters.severity}
+            onValueChange={(value) => setFilters(prev => ({ ...prev, severity: value }))}
           >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Time Range" />
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Severity" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1h">Last Hour</SelectItem>
-              <SelectItem value="24h">Last 24 Hours</SelectItem>
-              <SelectItem value="7d">Last 7 Days</SelectItem>
-              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="all">All Severities</SelectItem>
+              <SelectItem value="info">Info</SelectItem>
+              <SelectItem value="warning">Warning</SelectItem>
+              <SelectItem value="error">Error</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleExport} className="whitespace-nowrap">
-          <Download className="mr-2 h-4 w-4" />
-          Export Logs
-        </Button>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Input
+              type="date"
+              value={filters.dateRange.start}
+              onChange={(e) => setFilters(prev => ({
+                ...prev,
+                dateRange: { ...prev.dateRange, start: e.target.value }
+              }))}
+              className="w-[140px]"
+            />
+            <span>to</span>
+            <Input
+              type="date"
+              value={filters.dateRange.end}
+              onChange={(e) => setFilters(prev => ({
+                ...prev,
+                dateRange: { ...prev.dateRange, end: e.target.value }
+              }))}
+              className="w-[140px]"
+            />
+          </div>
+          <Button onClick={handleExport} className="whitespace-nowrap">
+            <Download className="mr-2 h-4 w-4" />
+            Export Logs
+          </Button>
+        </div>
       </div>
 
       <Card className="p-4">
@@ -128,6 +202,8 @@ export function AuditLogViewer() {
               <TableRow>
                 <TableHead className="w-[200px]">Timestamp</TableHead>
                 <TableHead>Operation</TableHead>
+                <TableHead>Table</TableHead>
+                <TableHead>Severity</TableHead>
                 <TableHead className="text-right">Count</TableHead>
                 <TableHead className="text-right">Details</TableHead>
               </TableRow>
@@ -135,9 +211,9 @@ export function AuditLogViewer() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">Loading audit logs...</TableCell>
+                  <TableCell colSpan={6} className="text-center">Loading audit logs...</TableCell>
                 </TableRow>
-              ) : auditActivity?.map((activity, index) => (
+              ) : filteredLogs?.map((activity, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
@@ -150,6 +226,12 @@ export function AuditLogViewer() {
                       {getOperationIcon(activity.operation)}
                       <span className="capitalize">{activity.operation.toLowerCase()}</span>
                     </div>
+                  </TableCell>
+                  <TableCell>{activity.table_name}</TableCell>
+                  <TableCell>
+                    <span className={getSeverityColor(activity.severity)}>
+                      {activity.severity}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">{activity.count}</TableCell>
                   <TableCell className="text-right">
