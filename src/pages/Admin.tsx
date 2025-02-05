@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,44 +38,41 @@ export default function Admin() {
   const { data: systemChecks, isLoading: isLoadingChecks, error: systemError } = useQuery({
     queryKey: ["systemChecks"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks');
+      const { data: checks, error } = await supabase
+        .rpc('run_combined_system_checks')
+        .select('check_type, status, metric_name, current_value, threshold, check_details');
 
-        if (error) {
-          console.error("System checks error:", error);
-          throw error;
-        }
-
-        if (!data) {
-          return [];
-        }
-
-        // Ensure we're explicitly handling the check_details property
-        return data.map((check: any): SystemCheck => ({
-          check_type: check.check_type || 'Unknown',
-          status: check.status || 'Unknown',
-          metric_name: check.metric_name || '',
-          current_value: check.current_value || 0,
-          threshold: check.threshold || 0,
-          check_details: check.check_details || {}
-        }));
-      } catch (error: any) {
+      if (error) {
         console.error("System checks error:", error);
-        const errorMessage = error.message || "Unknown error occurred";
-        toast({
-          variant: "destructive",
-          title: "Error fetching system checks",
-          description: errorMessage
-        });
         throw error;
       }
+
+      if (!checks) {
+        return [];
+      }
+
+      return checks.map((check: any): SystemCheck => ({
+        check_type: check.check_type || 'Unknown',
+        status: check.status || 'Unknown',
+        metric_name: check.metric_name || '',
+        current_value: check.current_value || 0,
+        threshold: check.threshold || 0,
+        check_details: check.check_details || {}
+      }));
     },
     retry: (failureCount, error: any) => {
-      // Only retry network errors, not SQL errors
       return error?.error_type === 'http_server_error' && failureCount < 3;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * (2 ** attemptIndex), 30000),
-    staleTime: 30000
+    staleTime: 30000,
+    onError: (error: any) => {
+      const errorMessage = error.message || "Unknown error occurred";
+      toast({
+        variant: "destructive",
+        title: "Error fetching system checks",
+        description: errorMessage
+      });
+    }
   });
 
   const ErrorAlert = ({ error }: { error: Error | null }) => {
@@ -107,7 +103,6 @@ export default function Admin() {
           <TabsTrigger value="email">Email Server</TabsTrigger>
         </TabsList>
 
-        {/* System Health Tab */}
         <TabsContent value="system">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">System Health Checks</h2>
@@ -124,7 +119,7 @@ export default function Admin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {systemChecks?.map((check: any, index: number) => (
+                  {systemChecks?.map((check: SystemCheck, index: number) => (
                     <TableRow key={index} className="hover:bg-primary/5">
                       <TableCell>{check.check_type}</TableCell>
                       <TableCell>
@@ -149,7 +144,6 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* Enhanced Audit Logs Tab */}
         <TabsContent value="audit">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">Audit Activity</h2>
@@ -157,7 +151,6 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* Role Management Tab */}
         <TabsContent value="roles">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">Role Management</h2>
@@ -165,7 +158,6 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* Member Search Tab */}
         <TabsContent value="members">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">Member Search</h2>
@@ -173,7 +165,6 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* Maintenance Tab */}
         <TabsContent value="maintenance">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4 text-gradient">System Maintenance</h2>
@@ -181,14 +172,12 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* Financial Tab */}
         <TabsContent value="financial">
           <Card className="p-6 glass-card">
             <FinancialManagement />
           </Card>
         </TabsContent>
 
-        {/* Email Server Tab */}
         <TabsContent value="email">
           <EmailServerDashboard />
         </TabsContent>
