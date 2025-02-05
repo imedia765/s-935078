@@ -21,9 +21,9 @@ interface EmailTemplateFormData {
 
 const previewStyles = {
   default: {
-    container: "bg-gradient-to-r from-gray-100 to-gray-200 p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
-    header: "bg-white/80 backdrop-blur-sm p-6 rounded-t-lg border-b border-gray-200",
-    body: "bg-white/90 backdrop-blur-sm p-6 rounded-b-lg text-gray-800",
+    container: "email-preview p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
+    header: "email-preview-header p-6 rounded-t-lg border-b",
+    body: "email-preview-body p-6 rounded-b-lg text-gray-800",
     title: "text-3xl font-arabic mb-4 text-gray-800 font-semibold",
     text: "text-gray-700 leading-relaxed"
   },
