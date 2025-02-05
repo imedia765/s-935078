@@ -31,15 +31,46 @@ const Profile = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    checkSession();
-    fetchData();
+    const initializeProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log("No session found, redirecting to login");
+          toast({
+            title: "Session Expired",
+            description: "Please log in again to continue",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+        await fetchData();
+      } catch (error: any) {
+        console.error("Session check error:", error);
+        toast({
+          title: "Authentication Error",
+          description: "Please log in again to continue",
+          variant: "destructive",
+        });
+        navigate("/");
+      }
+    };
+
+    initializeProfile();
   }, [navigate]);
 
   const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/");
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("Session check error:", error);
       navigate("/");
-      return;
+      return false;
     }
   };
 
@@ -49,6 +80,7 @@ const Profile = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
+        console.log("No user found, redirecting to login");
         navigate("/");
         return;
       }
@@ -106,7 +138,7 @@ const Profile = () => {
         setEditedData({ ...member, roles: roles?.map(r => r.role) });
       }
 
-      // Fetch payment history
+      // Fetch payment history if member exists
       if (member?.member_number) {
         const { data: payments, error: paymentsError } = await supabase
           .from("payment_requests")
@@ -114,10 +146,7 @@ const Profile = () => {
           .eq("member_number", member.member_number)
           .order("created_at", { ascending: false });
 
-        if (paymentsError) {
-          console.error("Error fetching payments:", paymentsError);
-          throw paymentsError;
-        }
+        if (paymentsError) throw paymentsError;
         setPaymentHistory(payments || []);
       }
 
@@ -128,13 +157,11 @@ const Profile = () => {
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
-      if (announcementsError) {
-        console.error("Error fetching announcements:", announcementsError);
-        throw announcementsError;
-      }
+      if (announcementsError) throw announcementsError;
       setAnnouncements(announcements || []);
 
     } catch (error: any) {
+      console.error("Error in fetchData:", error);
       setError(error.message);
       toast({
         variant: "destructive",
