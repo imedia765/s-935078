@@ -27,6 +27,7 @@ import { sendEmail } from "@/utils/email";
 import { UserRole } from "@/types/auth";
 
 type AppRole = UserRole;
+type FixType = UserRole | 'remove_role';
 
 interface User {
   id: string;
@@ -50,7 +51,7 @@ interface ValidationDetails {
 
 interface FixOption {
   label: string;
-  value: string;
+  value: FixType;
   description: string;
   icon?: React.ReactNode;
   action?: () => Promise<void>;
@@ -135,7 +136,7 @@ export function RoleManagement() {
     }
   };
 
-  const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: 'remove_role' | UserRole) => {
+  const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: FixType) => {
     if (!userId) {
       toast({
         title: "Error",
