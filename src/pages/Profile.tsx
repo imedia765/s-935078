@@ -1,25 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  User,
-  Calendar,
-  Phone,
-  Mail,
-  CreditCard,
-  Users,
-  Edit2,
-  FileText,
-  Trash2,
-  Home,
-  MapPin,
-  Building,
-  UserCircle,
+  User, Calendar, Phone, Mail, CreditCard, Users, Edit2,
+  FileText, Trash2, Home, MapPin, Building, UserCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -52,12 +39,12 @@ interface Profile {
     relationship: string;
     date_of_birth: string;
   }>;
-  payment_history?: Array<{
-    date: string;
-    type: string;
+  payment_requests?: Array<{
+    created_at: string;
+    payment_type: string;
     amount: number;
     status: string;
-    reference: string;
+    payment_number: string;
   }>;
 }
 
@@ -87,12 +74,12 @@ const Profile = () => {
               relationship,
               date_of_birth
             ),
-            payment_history (
-              date,
-              type,
+            payment_requests (
+              created_at,
+              payment_type,
               amount,
               status,
-              reference
+              payment_number
             )
           `)
           .eq("auth_user_id", user.id)
@@ -101,7 +88,16 @@ const Profile = () => {
         if (error) throw error;
 
         console.log('Fetched member data:', memberData);
-        setProfile(memberData);
+        
+        // Transform the data to match our Profile interface
+        const profileData: Profile = {
+          ...memberData,
+          payment_status: memberData.yearly_payment_status || 'pending',
+          next_payment_due: memberData.yearly_payment_due_date || new Date().toISOString(),
+          amount_due: memberData.yearly_payment_amount || 0,
+        };
+        
+        setProfile(profileData);
       } catch (error: any) {
         console.error("Error fetching profile:", error);
         toast({
@@ -122,9 +118,7 @@ const Profile = () => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-500/20 text-green-500';
       case 'completed':
-        return 'bg-green-500/20 text-green-500';
       case 'approved':
         return 'bg-green-500/20 text-green-500';
       case 'pending':
@@ -318,17 +312,17 @@ const Profile = () => {
                 </tr>
               </thead>
               <tbody>
-                {profile.payment_history?.map((payment, index) => (
+                {profile.payment_requests?.map((payment, index) => (
                   <tr key={index} className="border-b last:border-0">
-                    <td className="py-4">{format(new Date(payment.date), 'PP')}</td>
-                    <td className="py-4">{payment.type}</td>
+                    <td className="py-4">{format(new Date(payment.created_at), 'PP')}</td>
+                    <td className="py-4">{payment.payment_type}</td>
                     <td className="py-4">£{payment.amount.toFixed(2)}</td>
                     <td className="py-4">
                       <Badge className={getStatusColor(payment.status)}>
                         {payment.status}
                       </Badge>
                     </td>
-                    <td className="py-4">{payment.reference}</td>
+                    <td className="py-4">{payment.payment_number}</td>
                   </tr>
                 ))}
               </tbody>
