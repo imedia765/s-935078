@@ -1924,6 +1924,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      fix_all_role_issues: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       fix_role_error:
         | {
             Args: {

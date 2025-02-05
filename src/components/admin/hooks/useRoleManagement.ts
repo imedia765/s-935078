@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +9,7 @@ export const useRoleManagement = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("table");
+  const [isFixingAll, setIsFixingAll] = useState(false);
 
   const generateMagicLink = async (userId: string) => {
     try {
@@ -50,6 +50,31 @@ export const useRoleManagement = () => {
     }
   };
 
+  const handleFixAllIssues = async () => {
+    try {
+      setIsFixingAll(true);
+      const { data, error } = await supabase.rpc('fix_all_role_issues');
+      
+      if (error) throw error;
+
+      await refetch();
+      
+      toast({
+        title: "Success",
+        description: "All role issues have been fixed",
+      });
+    } catch (error: any) {
+      console.error('Error fixing all issues:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsFixingAll(false);
+    }
+  };
+
   const handleFixRoleError = async (userId: string | undefined, checkType: string, fixType: FixType) => {
     if (!userId) {
       toast({
@@ -61,35 +86,12 @@ export const useRoleManagement = () => {
     }
 
     try {
-      let response;
-      
-      // Get current roles first
-      const { data: currentRoles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
+      const { data, error } = await supabase.rpc('fix_role_error', {
+        p_error_type: checkType,
+        p_user_id: userId,
+        p_specific_fix: fixType === 'remove_role' ? 'remove_role' : null
+      });
 
-      if (fixType === 'remove_role') {
-        // If we're removing a role, we need to delete all roles and then add back the correct one
-        const { error: deleteError } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId);
-        
-        if (deleteError) throw deleteError;
-
-        // If user should have a member role, add it back
-        if (checkType === 'Inconsistent Member Status') {
-          response = await supabase.from('user_roles')
-            .insert({ user_id: userId, role: 'member' });
-        }
-      } else {
-        // For adding roles, use the specific role type
-        response = await supabase.from('user_roles')
-          .insert({ user_id: userId, role: fixType });
-      }
-
-      const { error } = response || {};
       if (error) throw error;
 
       toast({
@@ -248,10 +250,12 @@ export const useRoleManagement = () => {
     generateMagicLink,
     handleFixRoleError,
     handleRoleChange,
+    handleFixAllIssues,
     userData,
     isLoadingUsers,
     roleValidation,
     isLoadingValidation,
+    isFixingAll,
     refetch
   };
 };

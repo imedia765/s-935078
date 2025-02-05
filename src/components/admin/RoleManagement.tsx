@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRoleManagement } from "./hooks/useRoleManagement";
@@ -7,6 +7,7 @@ import { ErrorView } from "./components/ErrorView";
 import { AuditView } from "./components/AuditView";
 import { RoleChangeRequests } from "./components/RoleChangeRequests";
 import { RolePermissionsMatrix } from "./components/RolePermissionsMatrix";
+import { Button } from "@/components/ui/button";
 
 export function RoleManagement() {
   const {
@@ -17,10 +18,12 @@ export function RoleManagement() {
     generateMagicLink,
     handleFixRoleError,
     handleRoleChange,
+    handleFixAllIssues,
     userData,
     isLoadingUsers,
     roleValidation,
-    isLoadingValidation
+    isLoadingValidation,
+    isFixingAll
   } = useRoleManagement();
 
   const filteredUsers = userData?.filter(user => 
@@ -42,23 +45,38 @@ export function RoleManagement() {
 
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
 
+  const hasIssues = filteredValidations?.some((validation: any) => validation.status !== 'Good');
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
       <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={
-              activeTab === "table" ? "Search by name, email, ID or member number..." :
-              activeTab === "errors" ? "Search errors by type or details..." :
-              activeTab === "requests" ? "Search role change requests..." :
-              activeTab === "permissions" ? "Search permissions..." :
-              "Search audit logs..."
-            }
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Search className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder={
+                activeTab === "table" ? "Search by name, email, ID or member number..." :
+                activeTab === "errors" ? "Search errors by type or details..." :
+                activeTab === "requests" ? "Search role change requests..." :
+                activeTab === "permissions" ? "Search permissions..." :
+                "Search audit logs..."
+              }
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+          {hasIssues && (
+            <Button 
+              variant="outline"
+              onClick={handleFixAllIssues}
+              disabled={isFixingAll}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isFixingAll ? 'animate-spin' : ''}`} />
+              {isFixingAll ? 'Fixing Issues...' : 'Fix All Issues'}
+            </Button>
+          )}
         </div>
 
         <TabsList>
