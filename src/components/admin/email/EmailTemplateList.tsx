@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2, Eye } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Eye, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,10 @@ interface EmailTemplateFormData {
   subject: string;
   body: string;
   is_active: boolean;
+}
+
+interface TestEmailFormData {
+  to: string;
 }
 
 const previewStyles = {
@@ -49,6 +53,7 @@ export function EmailTemplateList() {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [testEmailDialogOpen, setTestEmailDialogOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<keyof typeof previewStyles>("default");
 
   const form = useForm<EmailTemplateFormData>({
@@ -57,6 +62,12 @@ export function EmailTemplateList() {
       subject: "",
       body: "",
       is_active: true
+    }
+  });
+
+  const testEmailForm = useForm<TestEmailFormData>({
+    defaultValues: {
+      to: ""
     }
   });
 
@@ -148,6 +159,42 @@ export function EmailTemplateList() {
       });
     }
   });
+
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async ({ to, template }: { to: string; template: any }) => {
+      const { error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to,
+          subject: template.subject,
+          html: template.body,
+        },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Test email sent successfully",
+      });
+      setTestEmailDialogOpen(false);
+      testEmailForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to send test email: " + error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSendTestEmail = (data: TestEmailFormData) => {
+    if (!selectedTemplate) return;
+    sendTestEmailMutation.mutate({
+      to: data.to,
+      template: selectedTemplate
+    });
+  };
 
   const onSubmit = (data: EmailTemplateFormData) => {
     if (selectedTemplate) {
@@ -306,6 +353,43 @@ export function EmailTemplateList() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Test Email Dialog */}
+        <Dialog open={testEmailDialogOpen} onOpenChange={setTestEmailDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Send Test Email</DialogTitle>
+            </DialogHeader>
+            <Form {...testEmailForm}>
+              <form onSubmit={testEmailForm.handleSubmit(handleSendTestEmail)} className="space-y-4">
+                <FormField
+                  control={testEmailForm.control}
+                  name="to"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recipient Email</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" placeholder="test@example.com" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setTestEmailDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    Send Test
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Table>
@@ -342,6 +426,16 @@ export function EmailTemplateList() {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                        setTestEmailDialogOpen(true);
+                      }}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
