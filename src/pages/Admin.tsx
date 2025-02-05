@@ -29,9 +29,11 @@ interface SystemCheck {
   metric_name: string;
   current_value: number;
   threshold: number;
-  message: string;
-  timestamp: string;
-  metrics: Record<string, any>;
+  details: {
+    message: string;
+    timestamp: string;
+    metrics: Record<string, any>;
+  };
 }
 
 export default function Admin() {
@@ -43,7 +45,6 @@ export default function Admin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .rpc('run_combined_system_checks')
-        .select('check_type, status, metric_name, current_value, threshold, message, timestamp, metrics')
         .returns<SystemCheck[]>();
 
       if (error) {
@@ -129,9 +130,9 @@ export default function Admin() {
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
                           {JSON.stringify({
-                            message: check.message,
-                            timestamp: check.timestamp,
-                            metrics: check.metrics,
+                            message: check.details.message,
+                            timestamp: check.details.timestamp,
+                            metrics: check.details.metrics,
                             current_value: check.current_value,
                             threshold: check.threshold
                           }, null, 2)}
