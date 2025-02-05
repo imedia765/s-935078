@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info, UserPlus, UserMinus } from "lucide-react";
+import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info, UserPlus, UserMinus, CheckCheck, History as HistoryIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,57 +53,15 @@ interface FixOption {
   action?: () => Promise<void>;
 }
 
-// Function to generate a magic link for a user
-const generateMagicLink = async (userId: string) => {
-  try {
-    // First get the user's email from the members table
-    const { data: memberData, error: memberError } = await supabase
-      .from('members')
-      .select('email')
-      .eq('auth_user_id', userId)
-      .maybeSingle(); // Changed from single() to maybeSingle()
-
-    if (memberError) {
-      console.error('Error fetching member email:', memberError);
-      throw new Error('Could not fetch member email');
-    }
-
-    if (!memberData?.email) {
-      throw new Error('No email found for this user');
-    }
-
-    // Generate the magic link using the email
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: memberData.email
-    });
-    
-    if (error) {
-      console.error('Error generating magic link:', error);
-      if (error.message === 'User not allowed') {
-        throw new Error('Admin access required to generate magic links');
-      }
-      throw error;
-    }
-    
-    return data;
-  } catch (error: any) {
-    console.error('Error generating magic link:', error);
-    throw new Error(error.message || 'Failed to generate magic link');
-  }
-};
-
 export function RoleManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("table");
 
-  // Function to handle role changes
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
     try {
       console.log(`Changing role for user ${userId} to ${newRole}`);
       
-      // First get current roles
       const { data: currentRoles } = await supabase
         .from('user_roles')
         .select('role')
@@ -111,7 +69,6 @@ export function RoleManagement() {
       
       console.log('Current roles:', currentRoles);
 
-      // Remove all existing roles
       const { error: removeError } = await supabase
         .from('user_roles')
         .delete()
@@ -119,14 +76,12 @@ export function RoleManagement() {
 
       if (removeError) throw removeError;
 
-      // Add new role with correct type
       const { error: addError } = await supabase
         .from('user_roles')
         .insert({ user_id: userId, role: newRole });
 
       if (addError) throw addError;
 
-      // Log the change
       await supabase.from('audit_logs').insert([{
         table_name: 'user_roles',
         operation: 'UPDATE',
@@ -154,13 +109,11 @@ export function RoleManagement() {
     }
   };
 
-  // Query for users and their roles
   const { data: userData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       console.log("Fetching users and roles data...");
       
-      // First get all users with their roles
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
@@ -170,7 +123,6 @@ export function RoleManagement() {
         throw rolesError;
       }
 
-      // Then get member details for these users
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select('auth_user_id, email, member_number, full_name');
@@ -180,7 +132,6 @@ export function RoleManagement() {
         throw membersError;
       }
 
-      // Create a map of auth_user_id to member details
       const memberMap = members.reduce((acc: {[key: string]: {email: string, member_number: string, full_name: string}}, member: any) => {
         if (member.auth_user_id) {
           acc[member.auth_user_id] = {
@@ -192,7 +143,6 @@ export function RoleManagement() {
         return acc;
       }, {});
 
-      // Transform the data to match the User interface
       const userMap = userRoles.reduce((acc: {[key: string]: User}, role: any) => {
         if (!acc[role.user_id]) {
           acc[role.user_id] = {
@@ -240,171 +190,6 @@ export function RoleManagement() {
     }
   });
 
-  const handleFixRoleError = async (userId: string | undefined, errorType: string, specificFix?: string) => {
-    try {
-      console.log(`Starting fix operation for user ${userId}, type: ${errorType}, specific fix: ${specificFix}`);
-      
-      if (errorType === 'Inconsistent Member Status' && !userId) {
-        const validationDetails = roleValidation?.validation?.find(v => v.check_type === errorType);
-        const details = validationDetails?.details as ValidationDetails;
-        userId = details?.auth_user_id;
-        
-        console.log('Extracted validation details:', details);
-        console.log('Using auth_user_id:', userId);
-      }
-
-      if (!userId) {
-        console.error("User ID is undefined");
-        throw new Error("User ID is required");
-      }
-
-      // Log current state before fix
-      const { data: currentRoles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-      console.log('Current roles before fix:', currentRoles);
-
-      // Update the RPC call to include p_specific_fix parameter
-      const { data, error } = await supabase.rpc('fix_role_error', {
-        p_error_type: errorType,
-        p_user_id: userId,
-        p_specific_fix: specificFix || null // Add the specific fix parameter
-      } as any); // Using 'as any' temporarily until the types are updated in the database
-      
-      if (error) {
-        console.error("Fix role error failed:", error);
-        throw error;
-      }
-
-      console.log('Fix operation response:', data);
-
-      // Log state after fix
-      const { data: updatedRoles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-      console.log('Updated roles after fix:', updatedRoles);
-
-      await supabase.from('audit_logs').insert([{
-        table_name: 'user_roles',
-        operation: 'UPDATE',
-        record_id: userId,
-        new_values: {
-          error_type: errorType,
-          specific_fix: specificFix,
-          resolution: 'automatic_fix',
-          before_state: currentRoles,
-          after_state: updatedRoles
-        }
-      }]);
-
-      await refetch();
-      
-      toast({
-        title: "Success",
-        description: `Role error fixed successfully (${specificFix || 'default fix'})`,
-      });
-    } catch (error: any) {
-      console.error("Error fixing role:", error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Filter functions for each tab
-  const filteredUsers = userData?.filter(user => 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.member_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredValidations = roleValidation?.validation?.filter((validation: any) =>
-    validation.check_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    JSON.stringify(validation.details).toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredAuditLogs = roleValidation?.auditLogs?.filter((log: any) =>
-    JSON.stringify(log.new_values).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.operation.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getErrorSeverity = (status: string) => {
-    switch (status) {
-      case 'Critical': return 'destructive';
-      case 'Warning': return 'warning';
-      default: return 'default';
-    }
-  };
-
-  const getErrorIcon = (status: string) => {
-    switch (status) {
-      case 'Critical': return <AlertCircle className="h-4 w-4" />;
-      case 'Warning': return <AlertTriangle className="h-4 w-4" />;
-      case 'Good': return <CheckCircle2 className="h-4 w-4" />;
-      default: return <Info className="h-4 w-4" />;
-    }
-  };
-
-  const getErrorFix = (checkType: string) => {
-    switch (checkType) {
-      case 'Multiple Roles Assigned':
-        return "This user has multiple roles which may cause conflicts. The fix will keep only the highest priority role (admin > collector > member).";
-      case 'Member Without Role':
-        return "This user doesn't have the basic member role. The fix will assign the member role automatically.";
-      case 'Collector Missing Role':
-        return "This collector is missing their collector role. The fix will assign the collector role while maintaining existing roles.";
-      case 'Inconsistent Member Status':
-        return "The member's status is inconsistent with their roles. Please review their profile and update manually.";
-      default:
-        return "Contact system administrator for assistance.";
-    }
-  };
-
-  const getErrorDetails = (checkType: string, details: any) => {
-    switch (checkType) {
-      case 'Multiple Roles Assigned':
-        return {
-          explanation: "User has conflicting roles that may cause permission issues",
-          impact: "This can lead to unexpected behavior in role-based access control",
-          currentState: `Current roles: ${details.current_roles?.join(', ')}`,
-          recommendation: "Keep only the highest priority role (admin > collector > member)"
-        };
-      case 'Member Without Role':
-        return {
-          explanation: "User exists in the members table but has no assigned role",
-          impact: "User cannot access any role-based features",
-          currentState: "No roles currently assigned",
-          recommendation: "Assign at least the basic member role"
-        };
-      case 'Collector Missing Role':
-        return {
-          explanation: "User marked as collector in members table but missing collector role",
-          impact: "Cannot perform collector-specific functions",
-          currentState: `Current roles: ${details.current_roles?.join(', ') || 'None'}`,
-          recommendation: "Add collector role while maintaining existing roles"
-        };
-      case 'Inconsistent Member Status':
-        return {
-          explanation: "Member status doesn't match assigned roles",
-          impact: "May cause access control issues",
-          currentState: `Status: ${details.member_status}, Roles: ${details.current_roles?.join(', ')}`,
-          recommendation: "Review member profile and update status or roles accordingly"
-        };
-      default:
-        return {
-          explanation: "Unknown error type",
-          impact: "Potential system inconsistency",
-          currentState: "Unknown",
-          recommendation: "Contact system administrator"
-        };
-    }
-  };
-
   const getFixOptions = (checkType: string, details: ValidationDetails): FixOption[] => {
     const baseOptions: FixOption[] = [
       {
@@ -438,13 +223,6 @@ export function RoleManagement() {
           description: "Removes all roles except the highest priority one",
           icon: <CheckCircle2 className="h-4 w-4" />,
           action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "keep_highest") : Promise.resolve()
-        },
-        {
-          label: "Remove conflicting roles",
-          value: "remove_conflicts",
-          description: "Keeps compatible roles and removes conflicts",
-          icon: <XCircle className="h-4 w-4" />,
-          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "remove_conflicts") : Promise.resolve()
         }
       ],
       'Member Without Role': [
@@ -470,21 +248,38 @@ export function RoleManagement() {
           label: "Verify and add member role",
           value: "verify_and_add_member",
           description: "Verifies the user and ensures they have the member role",
-          icon: <CheckCircle2 className="h-4 w-4" />,
+          icon: <CheckCheck className="h-4 w-4" />,
           action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "verify_and_add_member") : Promise.resolve()
         },
         {
           label: "Update roles to match status",
           value: "update_roles",
           description: "Updates roles to match current member status",
-          icon: <History className="h-4 w-4" />,
+          icon: <HistoryIcon className="h-4 w-4" />,
           action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "update_roles") : Promise.resolve()
         }
       ]
     };
 
-    return [...baseOptions, ...(additionalOptions[checkType] || [])];
+    return [...(additionalOptions[checkType] || []), ...baseOptions];
   };
+
+  const filteredUsers = userData?.filter(user => 
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.member_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredValidations = roleValidation?.validation?.filter((validation: any) =>
+    validation.check_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    JSON.stringify(validation.details).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredAuditLogs = roleValidation?.auditLogs?.filter((log: any) =>
+    JSON.stringify(log.new_values).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.operation.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
 
@@ -510,6 +305,71 @@ export function RoleManagement() {
           <TabsTrigger value="errors">Error View</TabsTrigger>
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="errors">
+          <div className="space-y-4">
+            {filteredValidations?.map((validation: any, index: number) => (
+              <Alert
+                key={index}
+                variant={getErrorSeverity(validation.status)}
+                className="glass-card"
+              >
+                {getErrorIcon(validation.status)}
+                <AlertTitle className="flex items-center justify-between">
+                  <span>{validation.check_type}</span>
+                  <div className="flex gap-2">
+                    {validation.status !== 'Good' && (
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        {getFixOptions(validation.check_type, validation.details).map((option) => (
+                          <Button
+                            key={option.value}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => option.action ? 
+                              option.action() : 
+                              handleFixRoleError(validation.details?.auth_user_id, validation.check_type, option.value)
+                            }
+                            className="whitespace-nowrap flex items-center gap-2 bg-background hover:bg-secondary/80"
+                          >
+                            {option.icon}
+                            {option.label}
+                          </Button>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => generateMagicLink(validation.details?.auth_user_id)}
+                          className="whitespace-nowrap flex items-center gap-2 bg-background hover:bg-secondary/80"
+                        >
+                          <History className="h-4 w-4" />
+                          Generate Magic Link
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </AlertTitle>
+                <AlertDescription>
+                  <div className="mt-2 space-y-2">
+                    {validation.status !== 'Good' && (
+                      <div className="bg-background/50 p-4 rounded-md space-y-3">
+                        {Object.entries(getErrorDetails(validation.check_type, validation.details)).map(([key, value]) => (
+                          <div key={key} className="space-y-1">
+                            <div className="text-sm font-medium capitalize">{key}:</div>
+                            <div className="text-sm text-muted-foreground">{value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-sm font-medium mt-4">Raw Details:</div>
+                    <pre className="bg-background/50 p-2 rounded-md text-sm whitespace-pre-wrap overflow-auto">
+                      {JSON.stringify(validation.details, null, 2)}
+                    </pre>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        </TabsContent>
 
         <TabsContent value="table">
           <div className="rounded-md border">
@@ -561,79 +421,6 @@ export function RoleManagement() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="errors">
-          <div className="space-y-4">
-            {filteredValidations?.map((validation: any, index: number) => (
-              <Alert
-                key={index}
-                variant={getErrorSeverity(validation.status)}
-                className="glass-card"
-              >
-                {getErrorIcon(validation.status)}
-                <AlertTitle className="flex items-center justify-between">
-                  <span>{validation.check_type}</span>
-                  <div className="flex gap-2">
-                    {validation.status !== 'Good' && (
-                      <>
-                        <div className="flex flex-col gap-2">
-                          {getFixOptions(validation.check_type, validation.details).map((option) => (
-                            <Button
-                              key={option.value}
-                              variant="outline"
-                              size="sm"
-                              onClick={() => option.action ? 
-                                option.action() : 
-                                handleFixRoleError(validation.details?.user_id, validation.check_type, option.value)
-                              }
-                              className="whitespace-nowrap flex items-center gap-2"
-                            >
-                              {option.icon || <XCircle className="h-4 w-4" />}
-                              {option.label}
-                            </Button>
-                          ))}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => generateMagicLink(validation.details?.user_id)}
-                        >
-                          Generate Magic Link
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </AlertTitle>
-                <AlertDescription>
-                  <div className="mt-2 space-y-2">
-                    {validation.status !== 'Good' && (
-                      <div className="bg-secondary/50 p-4 rounded-md space-y-3">
-                        {Object.entries(getErrorDetails(validation.check_type, validation.details)).map(([key, value]) => (
-                          <div key={key} className="space-y-1">
-                            <div className="text-sm font-medium capitalize">{key}:</div>
-                            <div className="text-sm text-muted-foreground">{value}</div>
-                          </div>
-                        ))}
-                        <div className="mt-2">
-                          <div className="text-sm font-medium">Available Fixes:</div>
-                          {getFixOptions(validation.check_type, validation.details).map((option) => (
-                            <div key={option.value} className="text-sm text-muted-foreground mt-1">
-                              • {option.label}: {option.description}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="text-sm font-medium mt-4">Raw Details:</div>
-                    <pre className="bg-secondary/50 p-2 rounded-md text-sm whitespace-pre-wrap">
-                      {JSON.stringify(validation.details, null, 2)}
-                    </pre>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            ))}
           </div>
         </TabsContent>
 
