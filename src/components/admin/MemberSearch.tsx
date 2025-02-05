@@ -8,24 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import debounce from "lodash/debounce";
-
-type MemberWithRelations = {
-  id: string;
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  member_number: string;
-  failed_login_attempts: number | null;
-  user_roles: Array<{ role: string }>;
-  member_notes: Array<{ note_text: string; note_type: string }>;
-  payment_requests: Array<{ status: string | null; amount: number; payment_type: string }>;
-  status: string;
-  date_of_birth: string | null;
-  address: string | null;
-  membership_type: string | null;
-  payment_date: string | null;
-  family_members: Array<{ full_name: string; relationship: string; date_of_birth: string | null }>;
-}
+import { MemberWithRelations } from "@/types/member";
 
 export function MemberSearch() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,7 +37,7 @@ export function MemberSearch() {
           ),
           payment_requests!payment_requests_member_id_fkey(status, amount, payment_type),
           family_members(full_name, relationship, date_of_birth),
-          user_roles!user_roles_member_fkey(role)
+          user_roles:auth_user_id(role)
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
@@ -64,9 +47,21 @@ export function MemberSearch() {
         throw error;
       }
 
-      console.log('Fetched members data:', members); // Debug log
+      // Transform the data to match MemberWithRelations type
+      const transformedMembers = members?.map(member => ({
+        ...member,
+        user_roles: member.user_roles ? 
+          Array.isArray(member.user_roles) ? 
+            member.user_roles.map((role: any) => ({ role: role.role })) : 
+            [] : 
+          [],
+        member_notes: member.member_notes || [],
+        payment_requests: member.payment_requests || [],
+        family_members: member.family_members || []
+      })) || [];
 
-      return members as MemberWithRelations[];
+      console.log('Transformed members data:', transformedMembers);
+      return transformedMembers as MemberWithRelations[];
     },
     enabled: searchTerm.length > 2
   });
@@ -159,7 +154,7 @@ export function MemberSearch() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {member.user_roles?.map((role: any, index: number) => (
+                  {member.user_roles?.map((role, index) => (
                     <Badge key={`${role.role}-${index}`} variant="secondary">
                       {role.role}
                     </Badge>
@@ -200,7 +195,7 @@ export function MemberSearch() {
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-muted-foreground mb-2">Family Members</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {member.family_members.map((familyMember: any, index: number) => (
+                    {member.family_members.map((familyMember, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
                         <Badge variant="outline">{familyMember.relationship}</Badge>
                         <span>{familyMember.full_name}</span>
@@ -214,7 +209,7 @@ export function MemberSearch() {
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-muted-foreground mb-2">Notes</h4>
                   <div className="space-y-2">
-                    {member.member_notes.map((note: any, index: number) => (
+                    {member.member_notes.map((note, index) => (
                       <div key={index} className="text-sm bg-muted p-2 rounded">
                         <Badge variant="outline" className="mb-1">{note.note_type}</Badge>
                         <p>{note.note_text}</p>
