@@ -25,15 +25,16 @@ import {
 
 interface SystemCheck {
   check_type: string;
+  metric_name: string | null;
+  current_value: number | null;
+  threshold: number | null;
   status: string;
-  metric_name: string;
-  current_value: number;
-  threshold: number;
-  details: {
-    message: string;
-    timestamp: string;
-    metrics: Record<string, any>;
+  check_details: {
+    message?: string;
+    timestamp?: string;
+    metrics?: Record<string, any>;
   };
+  test_category: string;
 }
 
 export default function Admin() {
@@ -130,11 +131,10 @@ export default function Admin() {
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
                           {JSON.stringify({
-                            message: check.details.message,
-                            timestamp: check.details.timestamp,
-                            metrics: check.details.metrics,
+                            metric_name: check.metric_name,
                             current_value: check.current_value,
-                            threshold: check.threshold
+                            threshold: check.threshold,
+                            details: check.check_details
                           }, null, 2)}
                         </pre>
                       </TableCell>
