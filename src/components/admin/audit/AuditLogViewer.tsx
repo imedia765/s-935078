@@ -109,7 +109,9 @@ export function AuditLogViewer() {
     }
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string | undefined) => {
+    if (!severity) return "text-gray-500";
+    
     switch (severity.toLowerCase()) {
       case "error":
         return "text-red-500";
