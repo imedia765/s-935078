@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Database } from "@/integrations/supabase/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type EmailStatus = Database["public"]["Enums"]["email_status"];
 
@@ -22,7 +23,22 @@ export function EmailQueueStatus() {
   const [statusFilter, setStatusFilter] = useState<EmailStatus | "all">("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  const { data: queuedEmails, isLoading, refetch } = useQuery({
+  // Query for SMTP configuration
+  const { data: smtpConfig, isLoading: isLoadingSmtp } = useQuery({
+    queryKey: ["smtpConfig"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("smtp_configurations")
+        .select("*")
+        .eq("is_active", true)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: queuedEmails, isLoading: isLoadingEmails, refetch } = useQuery({
     queryKey: ["emailQueue", statusFilter, sortOrder],
     queryFn: async () => {
       let query = supabase
@@ -43,9 +59,19 @@ export function EmailQueueStatus() {
       if (error) throw error;
       return data;
     },
+    enabled: !!smtpConfig, // Only fetch emails if SMTP is configured
   });
 
   const handleRetry = async (emailId: string) => {
+    if (!smtpConfig) {
+      toast({
+        title: "Error",
+        description: "No active SMTP configuration found. Please configure SMTP settings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("email_logs")
@@ -87,6 +113,20 @@ export function EmailQueueStatus() {
     }
   };
 
+  if (isLoadingSmtp) {
+    return <div>Loading SMTP configuration...</div>;
+  }
+
+  if (!smtpConfig) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          No active SMTP configuration found. Please configure SMTP settings first.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -118,7 +158,7 @@ export function EmailQueueStatus() {
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoadingEmails ? (
         <div>Loading...</div>
       ) : !queuedEmails?.length ? (
         <div>No emails in queue</div>
