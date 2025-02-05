@@ -127,17 +127,17 @@ export function RoleManagement() {
     }
   });
 
-  const handleFixRoleError = async (userId: string | undefined, errorType: string) => {
+  const handleFixRoleError = async (userId: string | undefined, errorType: string, specificFix?: string) => {
     try {
-      console.log(`Attempting to fix role error for user ${userId}, type: ${errorType}`);
+      console.log(`Starting fix operation for user ${userId}, type: ${errorType}, specific fix: ${specificFix}`);
       
-      // For 'Inconsistent Member Status', we need to extract user ID from auth_user_id in details
       if (errorType === 'Inconsistent Member Status' && !userId) {
         const validationDetails = roleValidation?.validation?.find(v => v.check_type === errorType);
         const details = validationDetails?.details as ValidationDetails;
         userId = details?.auth_user_id;
         
         console.log('Extracted validation details:', details);
+        console.log('Using auth_user_id:', userId);
       }
 
       if (!userId) {
@@ -145,9 +145,17 @@ export function RoleManagement() {
         throw new Error("User ID is required");
       }
 
+      // Log current state before fix
+      const { data: currentRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      console.log('Current roles before fix:', currentRoles);
+
       const { data, error } = await supabase.rpc('fix_role_error', {
         p_error_type: errorType,
-        p_user_id: userId
+        p_user_id: userId,
+        p_specific_fix: specificFix
       });
       
       if (error) {
@@ -155,13 +163,25 @@ export function RoleManagement() {
         throw error;
       }
 
+      console.log('Fix operation response:', data);
+
+      // Log state after fix
+      const { data: updatedRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      console.log('Updated roles after fix:', updatedRoles);
+
       await supabase.from('audit_logs').insert([{
         table_name: 'user_roles',
         operation: 'UPDATE',
         record_id: userId,
         new_values: {
           error_type: errorType,
-          resolution: 'automatic_fix'
+          specific_fix: specificFix,
+          resolution: 'automatic_fix',
+          before_state: currentRoles,
+          after_state: updatedRoles
         }
       }]);
 
@@ -169,48 +189,10 @@ export function RoleManagement() {
       
       toast({
         title: "Success",
-        description: "Role error fixed successfully",
+        description: `Role error fixed successfully (${specificFix || 'default fix'})`,
       });
     } catch (error: any) {
       console.error("Error fixing role:", error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const generateMagicLink = async (userId: string) => {
-    try {
-      if (!userId) {
-        throw new Error("User ID is required");
-      }
-
-      const { data: memberData, error: memberError } = await supabase
-        .from('members')
-        .select('member_number')
-        .eq('auth_user_id', userId)
-        .single();
-
-      if (memberError) throw memberError;
-      if (!memberData?.member_number) throw new Error('Member not found');
-
-      const { data, error } = await supabase.rpc('generate_magic_link_token', {
-        p_member_number: memberData.member_number
-      });
-
-      if (error) throw error;
-
-      const magicLink = `${window.location.origin}/reset-password?token=${data}`;
-      await navigator.clipboard.writeText(magicLink);
-
-      toast({
-        title: "Magic Link Generated",
-        description: "Link has been copied to clipboard",
-      });
-    } catch (error: any) {
-      console.error("Error generating magic link:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -309,6 +291,65 @@ export function RoleManagement() {
     }
   };
 
+  const getFixOptions = (checkType: string, details: ValidationDetails) => {
+    switch (checkType) {
+      case 'Multiple Roles Assigned':
+        return [
+          {
+            label: "Keep highest priority role only",
+            value: "keep_highest",
+            description: "Removes all roles except the highest priority one"
+          },
+          {
+            label: "Remove conflicting roles",
+            value: "remove_conflicts",
+            description: "Keeps compatible roles and removes conflicts"
+          }
+        ];
+      case 'Member Without Role':
+        return [
+          {
+            label: "Add member role",
+            value: "add_member",
+            description: "Assigns the basic member role"
+          },
+          {
+            label: "Sync with member status",
+            value: "sync_status",
+            description: "Assigns roles based on member status"
+          }
+        ];
+      case 'Collector Missing Role':
+        return [
+          {
+            label: "Add collector role",
+            value: "add_collector",
+            description: "Adds collector role while keeping existing roles"
+          },
+          {
+            label: "Full collector setup",
+            value: "setup_collector",
+            description: "Sets up all necessary collector permissions"
+          }
+        ];
+      case 'Inconsistent Member Status':
+        return [
+          {
+            label: "Update roles to match status",
+            value: "update_roles",
+            description: "Updates roles to match current member status"
+          },
+          {
+            label: "Verify and sync",
+            value: "verify_sync",
+            description: "Verifies member status and syncs roles"
+          }
+        ];
+      default:
+        return [];
+    }
+  };
+
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
 
   return (
@@ -387,14 +428,20 @@ export function RoleManagement() {
                   <div className="flex gap-2">
                     {validation.status !== 'Good' && (
                       <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleFixRoleError(validation.details?.user_id, validation.check_type)}
-                        >
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Fix Issue
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          {getFixOptions(validation.check_type, validation.details).map((option) => (
+                            <Button
+                              key={option.value}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleFixRoleError(validation.details?.user_id, validation.check_type, option.value)}
+                              className="whitespace-nowrap"
+                            >
+                              <XCircle className="mr-2 h-4 w-4" />
+                              {option.label}
+                            </Button>
+                          ))}
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
@@ -416,6 +463,14 @@ export function RoleManagement() {
                             <div className="text-sm text-muted-foreground">{value}</div>
                           </div>
                         ))}
+                        <div className="mt-2">
+                          <div className="text-sm font-medium">Available Fixes:</div>
+                          {getFixOptions(validation.check_type, validation.details).map((option) => (
+                            <div key={option.value} className="text-sm text-muted-foreground mt-1">
+                              • {option.label}: {option.description}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     <div className="text-sm font-medium mt-4">Raw Details:</div>
