@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,15 +43,7 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('system_checks')
-        .select(`
-          check_type,
-          status,
-          metric_name,
-          current_value,
-          threshold,
-          check_details
-        `)
+        .rpc('run_combined_system_checks')
         .returns<SystemCheck[]>();
 
       if (error) {
