@@ -56,17 +56,40 @@ interface FixOption {
 // Function to generate a magic link for a user
 const generateMagicLink = async (userId: string) => {
   try {
+    // First get the user's email from the members table
+    const { data: memberData, error: memberError } = await supabase
+      .from('members')
+      .select('email')
+      .eq('auth_user_id', userId)
+      .single();
+
+    if (memberError) {
+      console.error('Error fetching member email:', memberError);
+      throw new Error('Could not find member email');
+    }
+
+    if (!memberData?.email) {
+      throw new Error('No email found for this user');
+    }
+
+    // Generate the magic link using the email
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
-      email: userId // Using userId as email since that's what we have
+      email: memberData.email
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error generating magic link:', error);
+      if (error.message === 'User not allowed') {
+        throw new Error('Admin access required to generate magic links');
+      }
+      throw error;
+    }
     
     return data;
   } catch (error: any) {
     console.error('Error generating magic link:', error);
-    throw new Error('Failed to generate magic link');
+    throw new Error(error.message || 'Failed to generate magic link');
   }
 };
 
@@ -502,13 +525,27 @@ export function RoleManagement() {
                     <TableCell>{user.member_number || 'N/A'}</TableCell>
                     <TableCell className="font-mono text-sm">{user.id}</TableCell>
                     <TableCell>
-                      {user.user_roles?.map((role: any) => role.role).join(", ")}
+                      {user.user_roles?.map(role => role.role).join(", ")}
                     </TableCell>
                     <TableCell>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => generateMagicLink(user.id)}
+                        onClick={async () => {
+                          try {
+                            await generateMagicLink(user.id);
+                            toast({
+                              title: "Success",
+                              description: "Magic link generated and sent successfully",
+                            });
+                          } catch (error: any) {
+                            toast({
+                              title: "Error",
+                              description: error.message,
+                              variant: "destructive",
+                            });
+                          }
+                        }}
                       >
                         Generate Magic Link
                       </Button>
