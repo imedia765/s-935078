@@ -1,6 +1,7 @@
+
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
-import { User, Settings, Users, LogOut, Loader2, Sun, Moon } from "lucide-react"
+import { User, Settings, Users, LogOut, Loader2, Sun, Moon, Wallet } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -70,6 +71,12 @@ export const Navigation = () => {
       icon: <Users className="mr-2 h-4 w-4" />, 
       label: "Members",
       show: hasAccess('collector' as UserRole)
+    },
+    { 
+      path: "/financials", 
+      icon: <Wallet className="mr-2 h-4 w-4" />, 
+      label: "Financials",
+      show: hasAccess('admin' as UserRole)
     },
     { 
       path: "/admin", 
@@ -148,5 +155,5 @@ export const Navigation = () => {
         )}
       </div>
     </div>
-  )
+  );
 }

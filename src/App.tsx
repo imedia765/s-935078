@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as Sonner } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -9,6 +10,7 @@ import Index from "./pages/Index"
 import Profile from "./pages/Profile"
 import Admin from "./pages/Admin"
 import Members from "./pages/Members"
+import Financials from "./pages/Financials"
 import ResetPassword from "./pages/ResetPassword"
 import NotFound from "./pages/NotFound"
 import { useQuery } from "@tanstack/react-query"
@@ -78,6 +80,14 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRole="collector">
                       <Members />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/financials" 
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <Financials />
                     </ProtectedRoute>
                   } 
                 />

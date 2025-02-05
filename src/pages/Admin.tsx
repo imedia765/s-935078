@@ -2,15 +2,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { MemberSearch } from "@/components/admin/MemberSearch";
 import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
-import { FinancialManagement } from "@/components/admin/FinancialManagement";
 import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
 import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashboard";
 import { useState } from "react";
@@ -92,7 +89,6 @@ export default function Admin() {
           <TabsTrigger value="roles">Role Management</TabsTrigger>
           <TabsTrigger value="members">Member Search</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-          <TabsTrigger value="financial">Financial</TabsTrigger>
           <TabsTrigger value="email">Email Server</TabsTrigger>
         </TabsList>
 
@@ -170,16 +166,9 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="financial">
-          <Card className="p-6 glass-card">
-            <FinancialManagement />
-          </Card>
-        </TabsContent>
-
         <TabsContent value="email">
           <EmailServerDashboard />
         </TabsContent>
-
       </Tabs>
     </div>
   );
