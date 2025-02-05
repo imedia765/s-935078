@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Loader2 } from "lucide-react";
+import { FileText, Loader2, User, Calendar, Phone, Mail, CreditCard, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 interface Profile {
   id: string;
@@ -127,12 +129,28 @@ const Profile = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      <Card className="p-8">
-        <h2 className="text-3xl font-bold mb-6 text-gradient">Profile Details</h2>
+      {/* Profile Overview Card */}
+      <Card className="p-8 bg-card">
+        <div className="flex items-start justify-between mb-6">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold text-primary">Profile Details</h2>
+            <p className="text-muted-foreground">Manage your account information</p>
+          </div>
+          <Badge 
+            variant={profile.status === 'active' ? 'default' : 'destructive'}
+            className="text-sm"
+          >
+            {profile.status.toUpperCase()}
+          </Badge>
+        </div>
+
         <form onSubmit={handleUpdate} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="memberNumber" className="text-muted-foreground">Member Number</Label>
+              <Label htmlFor="memberNumber" className="text-muted-foreground flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Member Number
+              </Label>
               <Input
                 id="memberNumber"
                 value={profile.member_number}
@@ -142,17 +160,23 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status" className="text-muted-foreground">Status</Label>
+              <Label htmlFor="membershipType" className="text-muted-foreground flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Membership Type
+              </Label>
               <Input
-                id="status"
-                value={profile.status}
+                id="membershipType"
+                value={profile.membership_type || 'N/A'}
                 disabled
                 className="bg-muted"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-muted-foreground">Full Name</Label>
+              <Label htmlFor="fullName" className="text-muted-foreground flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Full Name
+              </Label>
               <Input
                 id="fullName"
                 value={profile.full_name}
@@ -162,7 +186,10 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -173,7 +200,10 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-muted-foreground">Phone</Label>
+              <Label htmlFor="phone" className="text-muted-foreground flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Phone
+              </Label>
               <Input
                 id="phone"
                 value={profile.phone}
@@ -183,10 +213,13 @@ const Profile = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="membershipType" className="text-muted-foreground">Membership Type</Label>
+              <Label htmlFor="dateOfBirth" className="text-muted-foreground flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Date of Birth
+              </Label>
               <Input
-                id="membershipType"
-                value={profile.membership_type || 'N/A'}
+                id="dateOfBirth"
+                value={profile.date_of_birth ? format(new Date(profile.date_of_birth), 'PPP') : 'N/A'}
                 disabled
                 className="bg-muted"
               />
@@ -221,42 +254,42 @@ const Profile = () => {
       </Card>
       
       {/* Important Documents Section */}
-      <div className="glass-card p-8">
-        <h2 className="text-3xl font-bold text-gradient mb-6 text-left">Important Documents</h2>
+      <Card className="p-8 bg-card">
+        <h2 className="text-3xl font-bold text-primary mb-6">Important Documents</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="glass-card p-6 hover:bg-primary/5 transition-colors">
+          <Card className="p-6 hover:bg-accent/5 transition-colors">
             <div className="flex items-center gap-3 mb-4">
-              <FileText className="text-primary flex-shrink-0" />
-              <div className="flex-1 text-left">
-                <h3 className="text-xl font-semibold text-gradient">Member Guidelines</h3>
+              <FileText className="text-primary h-5 w-5" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-primary">Member Guidelines</h3>
                 <p className="text-sm text-muted-foreground">Last updated: December 2023</p>
               </div>
-              <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
+              <Button variant="outline" className="hover:bg-primary/20">
                 <FileText className="mr-2 h-4 w-4" /> View
               </Button>
             </div>
-            <p className="text-gray-200 text-left">
+            <p className="text-muted-foreground">
               Complete guide to membership rules, rights, and responsibilities.
             </p>
           </Card>
 
-          <Card className="glass-card p-6 hover:bg-primary/5 transition-colors">
+          <Card className="p-6 hover:bg-accent/5 transition-colors">
             <div className="flex items-center gap-3 mb-4">
-              <FileText className="text-primary flex-shrink-0" />
-              <div className="flex-1 text-left">
-                <h3 className="text-xl font-semibold text-gradient">Payment Guidelines</h3>
+              <FileText className="text-primary h-5 w-5" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-primary">Payment Guidelines</h3>
                 <p className="text-sm text-muted-foreground">Last updated: December 2023</p>
               </div>
-              <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
+              <Button variant="outline" className="hover:bg-primary/20">
                 <FileText className="mr-2 h-4 w-4" /> View
               </Button>
             </div>
-            <p className="text-gray-200 text-left">
+            <p className="text-muted-foreground">
               Information about payment methods, deadlines, and policies.
             </p>
           </Card>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
