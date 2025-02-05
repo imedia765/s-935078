@@ -1,3 +1,4 @@
+
 import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info, UserPlus, UserMinus, CheckCheck, History as HistoryIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -151,7 +152,7 @@ export function RoleManagement() {
       if (fixType === 'remove_role') {
         response = await supabase.rpc('remove_user_role', {
           p_user_id: userId,
-          p_role: checkType
+          p_role: checkType as UserRole
         });
       } else {
         response = await supabase.rpc('add_user_role', {
