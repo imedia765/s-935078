@@ -24,12 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type AppRole = "admin" | "collector" | "member";
+
 interface User {
   id: string;
   email?: string;
   member_number?: string;
   full_name?: string;
-  user_roles?: { role: string }[];
+  user_roles?: { role: AppRole }[];
 }
 
 interface ValidationDetails {
@@ -39,8 +41,16 @@ interface ValidationDetails {
   verified?: boolean;
   full_name?: string;
   member_number?: string;
-  current_roles?: string[];
+  current_roles?: AppRole[];
   member_status?: string;
+}
+
+interface FixOption {
+  label: string;
+  value: string;
+  description: string;
+  icon?: React.ReactNode;
+  action?: () => Promise<void>;
 }
 
 // Function to generate a magic link for a user
@@ -66,7 +76,7 @@ export function RoleManagement() {
   const [activeTab, setActiveTab] = useState("table");
 
   // Function to handle role changes
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleRoleChange = async (userId: string, newRole: AppRole) => {
     try {
       console.log(`Changing role for user ${userId} to ${newRole}`);
       
@@ -86,12 +96,10 @@ export function RoleManagement() {
 
       if (removeError) throw removeError;
 
-      // Add new role
+      // Add new role with correct type
       const { error: addError } = await supabase
         .from('user_roles')
-        .insert([
-          { user_id: userId, role: newRole }
-        ]);
+        .insert({ user_id: userId, role: newRole });
 
       if (addError) throw addError;
 
@@ -374,91 +382,78 @@ export function RoleManagement() {
     }
   };
 
-  const getFixOptions = (checkType: string, details: ValidationDetails) => {
-    const baseOptions = [
+  const getFixOptions = (checkType: string, details: ValidationDetails): FixOption[] => {
+    const baseOptions: FixOption[] = [
       {
         label: "Change to Member",
         value: "change_to_member",
         description: "Set role to basic member",
         icon: <UserMinus className="h-4 w-4" />,
-        action: () => details?.auth_user_id && handleRoleChange(details.auth_user_id, 'member')
+        action: () => details?.auth_user_id ? handleRoleChange(details.auth_user_id, 'member') : Promise.resolve()
       },
       {
         label: "Change to Collector",
         value: "change_to_collector",
         description: "Set role to collector",
         icon: <UserSearch className="h-4 w-4" />,
-        action: () => details?.auth_user_id && handleRoleChange(details.auth_user_id, 'collector')
+        action: () => details?.auth_user_id ? handleRoleChange(details.auth_user_id, 'collector') : Promise.resolve()
       },
       {
         label: "Change to Admin",
         value: "change_to_admin",
         description: "Set role to admin",
         icon: <UserPlus className="h-4 w-4" />,
-        action: () => details?.auth_user_id && handleRoleChange(details.auth_user_id, 'admin')
+        action: () => details?.auth_user_id ? handleRoleChange(details.auth_user_id, 'admin') : Promise.resolve()
       }
     ];
 
-    switch (checkType) {
-      case 'Multiple Roles Assigned':
-        return [
-          ...baseOptions,
-          {
-            label: "Keep highest priority role only",
-            value: "keep_highest",
-            description: "Removes all roles except the highest priority one"
-          },
-          {
-            label: "Remove conflicting roles",
-            value: "remove_conflicts",
-            description: "Keeps compatible roles and removes conflicts"
-          }
-        ];
-      case 'Member Without Role':
-        return [
-          ...baseOptions,
-          {
-            label: "Add member role",
-            value: "add_member",
-            description: "Assigns the basic member role"
-          },
-          {
-            label: "Sync with member status",
-            value: "sync_status",
-            description: "Assigns roles based on member status"
-          }
-        ];
-      case 'Collector Missing Role':
-        return [
-          ...baseOptions,
-          {
-            label: "Add collector role",
-            value: "add_collector",
-            description: "Adds collector role while keeping existing roles"
-          },
-          {
-            label: "Full collector setup",
-            value: "setup_collector",
-            description: "Sets up all necessary collector permissions"
-          }
-        ];
-      case 'Inconsistent Member Status':
-        return [
-          ...baseOptions,
-          {
-            label: "Update roles to match status",
-            value: "update_roles",
-            description: "Updates roles to match current member status"
-          },
-          {
-            label: "Verify and sync",
-            value: "verify_sync",
-            description: "Verifies member status and syncs roles"
-          }
-        ];
-      default:
-        return baseOptions;
-    }
+    const additionalOptions: Record<string, FixOption[]> = {
+      'Multiple Roles Assigned': [
+        {
+          label: "Keep highest priority role only",
+          value: "keep_highest",
+          description: "Removes all roles except the highest priority one",
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "keep_highest") : Promise.resolve()
+        },
+        {
+          label: "Remove conflicting roles",
+          value: "remove_conflicts",
+          description: "Keeps compatible roles and removes conflicts",
+          icon: <XCircle className="h-4 w-4" />,
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "remove_conflicts") : Promise.resolve()
+        }
+      ],
+      'Member Without Role': [
+        {
+          label: "Add member role",
+          value: "add_member",
+          description: "Assigns the basic member role",
+          icon: <UserPlus className="h-4 w-4" />,
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "add_member") : Promise.resolve()
+        }
+      ],
+      'Collector Missing Role': [
+        {
+          label: "Add collector role",
+          value: "add_collector",
+          description: "Adds collector role while keeping existing roles",
+          icon: <UserSearch className="h-4 w-4" />,
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "add_collector") : Promise.resolve()
+        }
+      ],
+      'Inconsistent Member Status': [
+        {
+          label: "Update roles to match status",
+          value: "update_roles",
+          description: "Updates roles to match current member status",
+          icon: <History className="h-4 w-4" />,
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "update_roles") : Promise.resolve()
+        }
+      ]
+    };
+
+    return [...baseOptions, ...(additionalOptions[checkType] || [])];
   };
 
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
