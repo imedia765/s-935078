@@ -467,6 +467,13 @@ export function RoleManagement() {
       ],
       'Inconsistent Member Status': [
         {
+          label: "Verify and add member role",
+          value: "verify_and_add_member",
+          description: "Verifies the user and ensures they have the member role",
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          action: () => details?.auth_user_id ? handleFixRoleError(details.auth_user_id, checkType, "verify_and_add_member") : Promise.resolve()
+        },
+        {
           label: "Update roles to match status",
           value: "update_roles",
           description: "Updates roles to match current member status",
