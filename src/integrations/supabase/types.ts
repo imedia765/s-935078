@@ -1603,6 +1603,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_health_metrics: {
+        Row: {
+          category: string
+          current_value: number | null
+          details: Json | null
+          id: string
+          metric_name: string
+          recorded_at: string | null
+          status: string | null
+          threshold: number | null
+        }
+        Insert: {
+          category: string
+          current_value?: number | null
+          details?: Json | null
+          id?: string
+          metric_name: string
+          recorded_at?: string | null
+          status?: string | null
+          threshold?: number | null
+        }
+        Update: {
+          category?: string
+          current_value?: number | null
+          details?: Json | null
+          id?: string
+          metric_name?: string
+          recorded_at?: string | null
+          status?: string | null
+          threshold?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
