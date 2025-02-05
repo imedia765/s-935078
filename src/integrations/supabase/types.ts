@@ -667,6 +667,42 @@ export type Database = {
           },
         ]
       }
+      integrity_check_results: {
+        Row: {
+          check_type: string
+          checked_at: string | null
+          details: Json | null
+          id: string
+          issue_count: number | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          table_name: string | null
+        }
+        Insert: {
+          check_type: string
+          checked_at?: string | null
+          details?: Json | null
+          id?: string
+          issue_count?: number | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          table_name?: string | null
+        }
+        Update: {
+          check_type?: string
+          checked_at?: string | null
+          details?: Json | null
+          id?: string
+          issue_count?: number | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          table_name?: string | null
+        }
+        Relationships: []
+      }
       maintenance_settings: {
         Row: {
           created_at: string | null
@@ -1378,6 +1414,39 @@ export type Database = {
         }
         Relationships: []
       }
+      schema_versions: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          changes: Json | null
+          checksum: string | null
+          description: string | null
+          id: string
+          is_current: boolean | null
+          version_number: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          changes?: Json | null
+          checksum?: string | null
+          description?: string | null
+          id?: string
+          is_current?: boolean | null
+          version_number: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          changes?: Json | null
+          checksum?: string | null
+          description?: string | null
+          id?: string
+          is_current?: boolean | null
+          version_number?: string
+        }
+        Relationships: []
+      }
       smtp_configurations: {
         Row: {
           created_at: string
@@ -1426,6 +1495,42 @@ export type Database = {
           secret_key?: string
           updated_at?: string
           username?: string
+        }
+        Relationships: []
+      }
+      storage_metrics: {
+        Row: {
+          bloat_size: number | null
+          dead_tuples: number | null
+          id: string
+          index_size: number | null
+          last_analyze: string | null
+          last_vacuum: string | null
+          recorded_at: string | null
+          table_name: string
+          total_size: number | null
+        }
+        Insert: {
+          bloat_size?: number | null
+          dead_tuples?: number | null
+          id?: string
+          index_size?: number | null
+          last_analyze?: string | null
+          last_vacuum?: string | null
+          recorded_at?: string | null
+          table_name: string
+          total_size?: number | null
+        }
+        Update: {
+          bloat_size?: number | null
+          dead_tuples?: number | null
+          id?: string
+          index_size?: number | null
+          last_analyze?: string | null
+          last_vacuum?: string | null
+          recorded_at?: string | null
+          table_name?: string
+          total_size?: number | null
         }
         Relationships: []
       }
@@ -1539,6 +1644,15 @@ export type Database = {
           p_role: Database["public"]["Enums"]["app_role"]
         }
         Returns: Json
+      }
+      analyze_storage_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          table_name: string
+          total_size: number
+          bloat_percentage: number
+          recommendations: Json
+        }[]
       }
       assign_collector_role: {
         Args: {

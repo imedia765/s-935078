@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HealthMonitoring } from "./HealthMonitoring";
 import { QueryAnalysis } from "./QueryAnalysis";
 import { BackupScheduler } from "./BackupScheduler";
+import { DataIntegrity } from "./DataIntegrity";
+import { StorageOptimizer } from "./StorageOptimizer";
 import { supabase } from "@/integrations/supabase/client";
 
 interface HealthMetric {
@@ -33,6 +35,8 @@ export function DatabaseManagement() {
           <TabsList>
             <TabsTrigger value="health">Health Monitoring</TabsTrigger>
             <TabsTrigger value="performance">Query Performance</TabsTrigger>
+            <TabsTrigger value="integrity">Data Integrity</TabsTrigger>
+            <TabsTrigger value="storage">Storage Optimization</TabsTrigger>
             <TabsTrigger value="backups">Backup Management</TabsTrigger>
           </TabsList>
 
@@ -42,6 +46,14 @@ export function DatabaseManagement() {
 
           <TabsContent value="performance">
             <QueryAnalysis />
+          </TabsContent>
+
+          <TabsContent value="integrity">
+            <DataIntegrity />
+          </TabsContent>
+
+          <TabsContent value="storage">
+            <StorageOptimizer />
           </TabsContent>
 
           <TabsContent value="backups">
