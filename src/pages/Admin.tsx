@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,7 @@ import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement"
 import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
 import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashboard";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableHeader,
