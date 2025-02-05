@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,25 +39,15 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('run_combined_system_checks');
+        .rpc('get_system_checks')
+        .returns<SystemCheck[]>();
 
       if (error) {
         console.error("System checks error:", error);
         throw error;
       }
 
-      if (!data) {
-        return [];
-      }
-
-      return data.map((check: any): SystemCheck => ({
-        check_type: check.check_type || 'Unknown',
-        status: check.status || 'Unknown',
-        metric_name: check.metric_name || '',
-        current_value: check.current_value || 0,
-        threshold: check.threshold || 0,
-        check_details: check.check_details || {}
-      }));
+      return data || [];
     },
     retry: (failureCount, error: any) => {
       return error?.error_type === 'http_server_error' && failureCount < 3;
