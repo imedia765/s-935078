@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,11 +28,7 @@ interface SystemCheck {
   current_value: number | null;
   threshold: number | null;
   status: string;
-  check_details: {
-    message?: string;
-    timestamp?: string;
-    metrics?: Record<string, any>;
-  };
+  check_details: Record<string, any>;
   test_category: string;
 }
 
