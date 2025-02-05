@@ -5,12 +5,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Pencil, Trash2, Eye, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface EmailTemplateFormData {
   name: string;
@@ -19,9 +22,11 @@ interface EmailTemplateFormData {
   is_active: boolean;
 }
 
-interface TestEmailFormData {
-  to: string;
-}
+const testEmailSchema = z.object({
+  to: z.string().email("Please enter a valid email address"),
+});
+
+type TestEmailFormData = z.infer<typeof testEmailSchema>;
 
 const previewStyles = {
   default: {
@@ -55,6 +60,7 @@ export function EmailTemplateList() {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [testEmailDialogOpen, setTestEmailDialogOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<keyof typeof previewStyles>("default");
+  const [smtpError, setSmtpError] = useState<string | null>(null);
 
   const form = useForm<EmailTemplateFormData>({
     defaultValues: {
@@ -66,6 +72,7 @@ export function EmailTemplateList() {
   });
 
   const testEmailForm = useForm<TestEmailFormData>({
+    resolver: zodResolver(testEmailSchema),
     defaultValues: {
       to: ""
     }
@@ -162,6 +169,8 @@ export function EmailTemplateList() {
 
   const sendTestEmailMutation = useMutation({
     mutationFn: async ({ to, template }: { to: string; template: any }) => {
+      setSmtpError(null);
+      
       // First get active SMTP configuration
       const { data: smtpConfig, error: smtpError } = await supabase
         .from('smtp_configurations')
@@ -169,7 +178,13 @@ export function EmailTemplateList() {
         .eq('is_active', true)
         .single();
 
-      if (smtpError) throw new Error('No active SMTP configuration found');
+      if (smtpError) {
+        throw new Error('No active SMTP configuration found. Please configure SMTP settings first.');
+      }
+
+      if (!template.body.trim()) {
+        throw new Error('Template body cannot be empty');
+      }
 
       const { error } = await supabase.functions.invoke('send-email', {
         body: {
@@ -185,20 +200,22 @@ export function EmailTemplateList() {
           }
         },
       });
+      
       if (error) throw error;
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Test email sent successfully",
+        description: "Test email sent successfully. Please check your inbox.",
       });
       setTestEmailDialogOpen(false);
       testEmailForm.reset();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      setSmtpError(error.message);
       toast({
         title: "Error",
-        description: "Failed to send test email: " + error.message,
+        description: "Failed to send test email. Please check SMTP configuration.",
         variant: "destructive",
       });
     }
@@ -378,6 +395,11 @@ export function EmailTemplateList() {
             </DialogHeader>
             <Form {...testEmailForm}>
               <form onSubmit={testEmailForm.handleSubmit(handleSendTestEmail)} className="space-y-4">
+                {smtpError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{smtpError}</AlertDescription>
+                  </Alert>
+                )}
                 <FormField
                   control={testEmailForm.control}
                   name="to"
@@ -387,6 +409,7 @@ export function EmailTemplateList() {
                       <FormControl>
                         <Input {...field} type="email" placeholder="test@example.com" />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -394,12 +417,18 @@ export function EmailTemplateList() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setTestEmailDialogOpen(false)}
+                    onClick={() => {
+                      setTestEmailDialogOpen(false);
+                      setSmtpError(null);
+                    }}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    Send Test
+                  <Button 
+                    type="submit"
+                    disabled={sendTestEmailMutation.isPending}
+                  >
+                    {sendTestEmailMutation.isPending ? "Sending..." : "Send Test"}
                   </Button>
                 </div>
               </form>
