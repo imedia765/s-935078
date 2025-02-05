@@ -1,12 +1,13 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { Database, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
 
 interface HealthMetric {
   metric_name: string;
   current_value: number;
   status: 'healthy' | 'warning' | 'critical';
-  details: Record<string, any>;
+  details: Json;
 }
 
 interface HealthMonitoringProps {
@@ -41,12 +42,14 @@ export function HealthMonitoring({ metrics }: HealthMonitoringProps) {
             </div>
 
             <div className="mt-2 text-sm text-muted-foreground">
-              {Object.entries(metric.details).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <span>{key.replace(/_/g, ' ')}:</span>
-                  <span>{value}</span>
-                </div>
-              ))}
+              {typeof metric.details === 'object' && metric.details !== null && 
+                Object.entries(metric.details as Record<string, any>).map(([key, value]) => (
+                  <div key={key} className="flex justify-between">
+                    <span>{key.replace(/_/g, ' ')}:</span>
+                    <span>{value}</span>
+                  </div>
+                ))
+              }
             </div>
           </Card>
         ))}
