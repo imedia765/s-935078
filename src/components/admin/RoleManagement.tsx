@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, XCircle, History, Search, UserSearch, AlertTriangle, Info, UserPlus, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface User {
   id: string;
@@ -57,6 +64,64 @@ export function RoleManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("table");
+
+  // Function to handle role changes
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      console.log(`Changing role for user ${userId} to ${newRole}`);
+      
+      // First get current roles
+      const { data: currentRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      console.log('Current roles:', currentRoles);
+
+      // Remove all existing roles
+      const { error: removeError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (removeError) throw removeError;
+
+      // Add new role
+      const { error: addError } = await supabase
+        .from('user_roles')
+        .insert([
+          { user_id: userId, role: newRole }
+        ]);
+
+      if (addError) throw addError;
+
+      // Log the change
+      await supabase.from('audit_logs').insert([{
+        table_name: 'user_roles',
+        operation: 'UPDATE',
+        record_id: userId,
+        new_values: {
+          action: 'role_change',
+          old_roles: currentRoles,
+          new_role: newRole
+        }
+      }]);
+
+      toast({
+        title: "Success",
+        description: `Role changed to ${newRole}`,
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error("Error changing role:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   // Query for users and their roles
   const { data: userData, isLoading: isLoadingUsers } = useQuery({
@@ -310,9 +375,34 @@ export function RoleManagement() {
   };
 
   const getFixOptions = (checkType: string, details: ValidationDetails) => {
+    const baseOptions = [
+      {
+        label: "Change to Member",
+        value: "change_to_member",
+        description: "Set role to basic member",
+        icon: <UserMinus className="h-4 w-4" />,
+        action: () => details?.auth_user_id && handleRoleChange(details.auth_user_id, 'member')
+      },
+      {
+        label: "Change to Collector",
+        value: "change_to_collector",
+        description: "Set role to collector",
+        icon: <UserSearch className="h-4 w-4" />,
+        action: () => details?.auth_user_id && handleRoleChange(details.auth_user_id, 'collector')
+      },
+      {
+        label: "Change to Admin",
+        value: "change_to_admin",
+        description: "Set role to admin",
+        icon: <UserPlus className="h-4 w-4" />,
+        action: () => details?.auth_user_id && handleRoleChange(details.auth_user_id, 'admin')
+      }
+    ];
+
     switch (checkType) {
       case 'Multiple Roles Assigned':
         return [
+          ...baseOptions,
           {
             label: "Keep highest priority role only",
             value: "keep_highest",
@@ -326,6 +416,7 @@ export function RoleManagement() {
         ];
       case 'Member Without Role':
         return [
+          ...baseOptions,
           {
             label: "Add member role",
             value: "add_member",
@@ -339,6 +430,7 @@ export function RoleManagement() {
         ];
       case 'Collector Missing Role':
         return [
+          ...baseOptions,
           {
             label: "Add collector role",
             value: "add_collector",
@@ -352,6 +444,7 @@ export function RoleManagement() {
         ];
       case 'Inconsistent Member Status':
         return [
+          ...baseOptions,
           {
             label: "Update roles to match status",
             value: "update_roles",
@@ -364,7 +457,7 @@ export function RoleManagement() {
           }
         ];
       default:
-        return [];
+        return baseOptions;
     }
   };
 
@@ -452,10 +545,13 @@ export function RoleManagement() {
                               key={option.value}
                               variant="outline"
                               size="sm"
-                              onClick={() => handleFixRoleError(validation.details?.user_id, validation.check_type, option.value)}
-                              className="whitespace-nowrap"
+                              onClick={() => option.action ? 
+                                option.action() : 
+                                handleFixRoleError(validation.details?.user_id, validation.check_type, option.value)
+                              }
+                              className="whitespace-nowrap flex items-center gap-2"
                             >
-                              <XCircle className="mr-2 h-4 w-4" />
+                              {option.icon || <XCircle className="h-4 w-4" />}
                               {option.label}
                             </Button>
                           ))}
