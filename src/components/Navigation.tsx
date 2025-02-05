@@ -84,33 +84,33 @@ export const Navigation = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center py-3 border-b border-white/10">
-          <p className="text-xl font-arabic text-primary tracking-wider">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
+        <div className="py-2 border-b border-white/10">
+          <p className="text-lg font-arabic text-primary tracking-wider">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
         </div>
 
         {session && (
-          <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
+          <div className="flex items-center justify-between px-3 py-2 lg:px-4 lg:py-2">
             {isLoading ? (
-              <div className="flex items-center space-x-4">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                <span className="text-sm text-muted-foreground">Loading navigation...</span>
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground">Loading...</span>
               </div>
             ) : (
               <NavigationMenu>
-                <NavigationMenuList className="flex items-center gap-2 lg:gap-4">
+                <NavigationMenuList className="flex items-center gap-1.5 lg:gap-2">
                   {menuItems.filter(item => item.show).map((item) => (
                     <NavigationMenuItem key={item.path}>
                       <NavigationMenuLink
                         className={cn(
-                          "group inline-flex h-9 items-center justify-center rounded-md px-3 lg:px-4 py-1 text-sm font-medium transition-all duration-200",
+                          "group inline-flex h-8 items-center justify-center rounded-md px-2.5 lg:px-3 py-1 text-sm font-medium transition-all duration-200",
                           "hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                           isActive(item.path) ? 
                             "bg-primary/20 text-primary shadow-sm" : 
-                            "bg-black/40 text-gray-200"
+                            "bg-black/40 text-foreground"
                         )}
                         onClick={() => navigate(item.path)}
                       >
-                        {item.icon} {item.label}
+                        {item.icon} <span className="ml-1.5">{item.label}</span>
                       </NavigationMenuLink>
                     </NavigationMenuItem>
                   ))}
@@ -118,7 +118,7 @@ export const Navigation = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 bg-black/40 text-gray-200 hover:bg-primary/20 hover:text-primary"
+                      className="h-8 w-8 bg-black/40 text-foreground hover:bg-primary/20 hover:text-primary"
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                     >
                       {theme === "dark" ? (
@@ -132,13 +132,13 @@ export const Navigation = () => {
                   <NavigationMenuItem className="ml-auto">
                     <NavigationMenuLink
                       className={cn(
-                        "group inline-flex h-9 items-center justify-center rounded-md px-3 lg:px-4 py-1 text-sm font-medium transition-all duration-200",
+                        "group inline-flex h-8 items-center justify-center rounded-md px-2.5 lg:px-3 py-1 text-sm font-medium transition-all duration-200",
                         "hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none",
                         "bg-black/40 text-red-500"
                       )}
                       onClick={handleSignOut}
                     >
-                      <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                      <LogOut className="h-4 w-4" /> <span className="ml-1.5">Sign Out</span>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
                 </NavigationMenuList>
