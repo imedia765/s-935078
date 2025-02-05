@@ -29,7 +29,11 @@ interface SystemCheck {
   metric_name: string;
   current_value: number;
   threshold: number;
-  check_details: Record<string, any>;
+  check_details: {
+    message?: string;
+    timestamp?: string;
+    metrics?: Record<string, any>;
+  };
 }
 
 export default function Admin() {
@@ -40,7 +44,15 @@ export default function Admin() {
     queryKey: ["systemChecks"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('run_combined_system_checks')
+        .from('system_checks')
+        .select(`
+          check_type,
+          status,
+          metric_name,
+          current_value,
+          threshold,
+          check_details
+        `)
         .returns<SystemCheck[]>();
 
       if (error) {
