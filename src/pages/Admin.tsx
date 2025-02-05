@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,20 +39,19 @@ export default function Admin() {
   const { data: systemChecks, isLoading: isLoadingChecks, error: systemError } = useQuery({
     queryKey: ["systemChecks"],
     queryFn: async () => {
-      const { data: checks, error } = await supabase
-        .rpc('run_combined_system_checks')
-        .select('check_type, status, metric_name, current_value, threshold, check_details');
+      const { data, error } = await supabase
+        .rpc('run_combined_system_checks');
 
       if (error) {
         console.error("System checks error:", error);
         throw error;
       }
 
-      if (!checks) {
+      if (!data) {
         return [];
       }
 
-      return checks.map((check: any): SystemCheck => ({
+      return data.map((check: any): SystemCheck => ({
         check_type: check.check_type || 'Unknown',
         status: check.status || 'Unknown',
         metric_name: check.metric_name || '',
@@ -65,13 +65,15 @@ export default function Admin() {
     },
     retryDelay: (attemptIndex) => Math.min(1000 * (2 ** attemptIndex), 30000),
     staleTime: 30000,
-    onError: (error: any) => {
-      const errorMessage = error.message || "Unknown error occurred";
-      toast({
-        variant: "destructive",
-        title: "Error fetching system checks",
-        description: errorMessage
-      });
+    onSettled: (data, error: any) => {
+      if (error) {
+        const errorMessage = error.message || "Unknown error occurred";
+        toast({
+          variant: "destructive",
+          title: "Error fetching system checks",
+          description: errorMessage
+        });
+      }
     }
   });
 
