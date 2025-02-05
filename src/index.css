@@ -71,7 +71,7 @@
     }
 
     .nav-gradient {
-      @apply bg-white/95 border-b border-gray-200;
+      @apply bg-white/95 border-b border-gray-200 backdrop-blur-sm;
     }
   }
 
@@ -82,7 +82,7 @@
     }
 
     .nav-gradient {
-      @apply bg-black/80 border-b border-white/10;
+      @apply bg-black/80 border-b border-white/10 backdrop-blur-sm;
     }
   }
 

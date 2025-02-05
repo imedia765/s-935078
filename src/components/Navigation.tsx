@@ -89,7 +89,7 @@ export const Navigation = () => {
         </div>
 
         {session && (
-          <div className="flex items-center justify-between px-3 py-2 lg:px-4 lg:py-2">
+          <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-3">
             {isLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -102,7 +102,7 @@ export const Navigation = () => {
                     <NavigationMenuItem key={item.path}>
                       <NavigationMenuLink
                         className={cn(
-                          "group inline-flex h-8 items-center justify-center rounded-md px-2.5 lg:px-3 py-1 text-sm font-medium transition-all duration-200",
+                          "group inline-flex h-9 items-center justify-center rounded-md px-3 lg:px-4 py-2 text-sm font-medium transition-all duration-200",
                           "hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                           isActive(item.path) ? 
                             "bg-primary/20 text-primary shadow-sm" : 
@@ -118,7 +118,7 @@ export const Navigation = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 bg-black/40 text-foreground hover:bg-primary/20 hover:text-primary"
+                      className="h-9 w-9 bg-black/40 text-foreground hover:bg-primary/20 hover:text-primary"
                       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                     >
                       {theme === "dark" ? (
