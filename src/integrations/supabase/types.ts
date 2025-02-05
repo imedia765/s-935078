@@ -405,6 +405,45 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          subject: string
+          updated_at: string
+          variables: Json | null
+          version: number | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          subject: string
+          updated_at?: string
+          variables?: Json | null
+          version?: number | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          subject?: string
+          updated_at?: string
+          variables?: Json | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       enhanced_roles: {
         Row: {
           created_at: string | null
@@ -1237,6 +1276,57 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"] | null
           role_id?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      smtp_configurations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          encryption_type: string | null
+          from_address: string
+          host: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          port: number
+          provider: string | null
+          secret_key: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          encryption_type?: string | null
+          from_address: string
+          host: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          port: number
+          provider?: string | null
+          secret_key: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          encryption_type?: string | null
+          from_address?: string
+          host?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          port?: number
+          provider?: string | null
+          secret_key?: string
+          updated_at?: string
+          username?: string
         }
         Relationships: []
       }

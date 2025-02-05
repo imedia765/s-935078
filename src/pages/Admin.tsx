@@ -11,16 +11,15 @@ import { MemberSearch } from "@/components/admin/MemberSearch";
 import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
 import { FinancialManagement } from "@/components/admin/FinancialManagement";
 import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
+import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashboard";
 import { useState } from "react";
 import {
   Table,
   TableHeader,
   TableBody,
-  TableFooter,
   TableHead,
   TableRow,
   TableCell,
-  TableCaption,
 } from "@/components/ui/table";
 
 export default function Admin() {
@@ -72,6 +71,7 @@ export default function Admin() {
           <TabsTrigger value="members">Member Search</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           <TabsTrigger value="financial">Financial</TabsTrigger>
+          <TabsTrigger value="email">Email Server</TabsTrigger>
         </TabsList>
 
         {/* System Health Tab */}
@@ -153,6 +153,11 @@ export default function Admin() {
           <Card className="p-6 glass-card">
             <FinancialManagement />
           </Card>
+        </TabsContent>
+
+        {/* Email Server Tab */}
+        <TabsContent value="email">
+          <EmailServerDashboard />
         </TabsContent>
 
       </Tabs>
