@@ -162,11 +162,27 @@ export function EmailTemplateList() {
 
   const sendTestEmailMutation = useMutation({
     mutationFn: async ({ to, template }: { to: string; template: any }) => {
+      // First get active SMTP configuration
+      const { data: smtpConfig, error: smtpError } = await supabase
+        .from('smtp_configurations')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      if (smtpError) throw new Error('No active SMTP configuration found');
+
       const { error } = await supabase.functions.invoke('send-email', {
         body: {
           to,
           subject: template.subject,
           html: template.body,
+          smtp: {
+            host: smtpConfig.host,
+            port: smtpConfig.port,
+            username: smtpConfig.username,
+            password: smtpConfig.password,
+            from: smtpConfig.from_address
+          }
         },
       });
       if (error) throw error;
