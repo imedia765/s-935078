@@ -1,16 +1,19 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
-import { User, Settings, Users, LogOut, Loader2 } from "lucide-react"
+import { User, Settings, Users, LogOut, Loader2, Sun, Moon } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { UserRole } from "@/types/auth"
+import { useTheme } from "next-themes"
+import { Button } from "@/components/ui/button"
 
 export const Navigation = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
+  const { theme, setTheme } = useTheme()
 
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session"],
@@ -111,6 +114,21 @@ export const Navigation = () => {
                       </NavigationMenuLink>
                     </NavigationMenuItem>
                   ))}
+                  <NavigationMenuItem>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-black/40 text-gray-200 hover:bg-primary/20 hover:text-primary"
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="h-4 w-4" />
+                      ) : (
+                        <Moon className="h-4 w-4" />
+                      )}
+                      <span className="sr-only">Toggle theme</span>
+                    </Button>
+                  </NavigationMenuItem>
                   <NavigationMenuItem className="ml-auto">
                     <NavigationMenuLink
                       className={cn(
