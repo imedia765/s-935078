@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,11 +29,9 @@ interface SystemCheck {
   metric_name: string;
   current_value: number;
   threshold: number;
-  check_details: {
-    message?: string;
-    timestamp?: string;
-    metrics?: Record<string, any>;
-  };
+  message: string;
+  timestamp: string;
+  metrics: Record<string, any>;
 }
 
 export default function Admin() {
@@ -44,6 +43,7 @@ export default function Admin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .rpc('run_combined_system_checks')
+        .select('check_type, status, metric_name, current_value, threshold, message, timestamp, metrics')
         .returns<SystemCheck[]>();
 
       if (error) {
@@ -128,7 +128,13 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                          {JSON.stringify(check.check_details, null, 2)}
+                          {JSON.stringify({
+                            message: check.message,
+                            timestamp: check.timestamp,
+                            metrics: check.metrics,
+                            current_value: check.current_value,
+                            threshold: check.threshold
+                          }, null, 2)}
                         </pre>
                       </TableCell>
                     </TableRow>
