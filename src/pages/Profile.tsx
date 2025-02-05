@@ -352,7 +352,9 @@ const Profile = () => {
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-gradient">Member Dashboard</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Member Dashboard
+            </h1>
           </div>
 
           {/* Main Content Grid */}
@@ -362,6 +364,7 @@ const Profile = () => {
               {/* Profile Card */}
               <Card className="glass-card p-6">
                 <div className="flex items-start gap-6">
+                  {/* Avatar Section */}
                   <div className="relative group">
                     <Avatar className="h-20 w-20">
                       {memberData?.photo_url ? (
@@ -392,6 +395,7 @@ const Profile = () => {
                     />
                   </div>
                   
+                  {/* Member Details */}
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div className="space-y-4">
@@ -402,17 +406,17 @@ const Profile = () => {
                             className="mb-2"
                           />
                         ) : (
-                          <h2 className="text-2xl font-semibold text-gradient">{memberData?.full_name}</h2>
+                          <h2 className="text-2xl font-semibold text-primary">{memberData?.full_name}</h2>
                         )}
                         <div className="flex items-center gap-2">
-                          <p className="text-gray-400">Member #{memberData?.member_number}</p>
+                          <p className="text-muted-foreground font-mono">Member #{memberData?.member_number}</p>
                         </div>
                         {/* Role Badges */}
                         <div className="flex flex-wrap gap-2">
                           {memberData?.roles?.map((role: string, index: number) => (
                             <Badge 
                               key={index} 
-                              className={`bg-gray-500 text-white capitalize text-sm px-3 py-1 shadow-lg hover:opacity-90 transition-opacity`}
+                              className="bg-primary/20 text-primary hover:bg-primary/30 transition-colors capitalize text-sm px-3 py-1"
                               variant="outline"
                             >
                               <Shield className="w-4 h-4 mr-2" />
@@ -425,81 +429,86 @@ const Profile = () => {
                       <div className="flex gap-2">
                         {isEditing ? (
                           <>
-                            <Button onClick={handleSave} size="sm" className="bg-primary/20">
+                            <Button onClick={handleSave} size="sm" className="bg-primary/20 hover:bg-primary/30 text-primary">
                               <Save className="w-4 h-4 mr-1" /> Save
                             </Button>
-                            <Button onClick={handleCancel} variant="outline" size="sm" className="bg-black/40">
+                            <Button onClick={handleCancel} variant="outline" size="sm" className="hover:bg-destructive/20 hover:text-destructive">
                               <X className="w-4 h-4 mr-1" /> Cancel
                             </Button>
                           </>
                         ) : (
-                          <Button onClick={handleEdit} variant="outline" size="sm" className="bg-black/40">
+                          <Button onClick={handleEdit} variant="outline" size="sm" className="hover:bg-primary/20 hover:text-primary">
                             <Edit className="w-4 h-4 mr-1" /> Edit
                           </Button>
                         )}
-                        <Badge variant={memberData?.status === 'active' ? 'default' : 'destructive'}>
+                        <Badge 
+                          variant={memberData?.status === 'active' ? 'default' : 'destructive'}
+                          className={memberData?.status === 'active' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
+                        >
                           {memberData?.status}
                         </Badge>
                       </div>
                     </div>
+
+                    {/* Contact Information Grid */}
                     <div className="mt-4 grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-400">Email</p>
+                        <p className="text-sm text-muted-foreground">Email</p>
                         {isEditing ? (
                           <Input
                             value={editedData?.email}
                             onChange={(e) => handleInputChange("email", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">{memberData?.email}</p>
+                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.email}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Phone</p>
+                        <p className="text-sm text-muted-foreground">Phone</p>
                         {isEditing ? (
                           <Input
                             value={editedData?.phone}
                             onChange={(e) => handleInputChange("phone", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">{memberData?.phone}</p>
+                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.phone}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Address</p>
+                        <p className="text-sm text-muted-foreground">Address</p>
                         {isEditing ? (
                           <Input
                             value={editedData?.address}
                             onChange={(e) => handleInputChange("address", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">{memberData?.address}</p>
+                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.address}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Postcode</p>
+                        <p className="text-sm text-muted-foreground">Postcode</p>
                         {isEditing ? (
                           <Input
                             value={editedData?.postcode}
                             onChange={(e) => handleInputChange("postcode", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">{memberData?.postcode}</p>
+                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.postcode}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Town</p>
+                        <p className="text-sm text-muted-foreground">Town</p>
                         {isEditing ? (
                           <Input
                             value={editedData?.town}
                             onChange={(e) => handleInputChange("town", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">{memberData?.town}</p>
+                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.town}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Date of Birth</p>
+                        <p className="text-sm text-muted-foreground">Date of Birth</p>
                         {isEditing ? (
                           <Input
                             type="date"
@@ -507,107 +516,110 @@ const Profile = () => {
                             onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">
+                          <p className="text-foreground hover:text-primary transition-colors">
                             {memberData?.date_of_birth ? new Date(memberData.date_of_birth).toLocaleDateString() : 'Not set'}
                           </p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Gender</p>
+                        <p className="text-sm text-muted-foreground">Gender</p>
                         {isEditing ? (
                           <Input
                             value={editedData?.gender}
                             onChange={(e) => handleInputChange("gender", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">{memberData?.gender || 'Not set'}</p>
+                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.gender || 'Not set'}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Marital Status</p>
+                        <p className="text-sm text-muted-foreground">Marital Status</p>
                         {isEditing ? (
                           <Input
                             value={editedData?.marital_status}
                             onChange={(e) => handleInputChange("marital_status", e.target.value)}
                           />
                         ) : (
-                          <p className="text-gray-200">{memberData?.marital_status || 'Not set'}</p>
+                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.marital_status || 'Not set'}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400">Collector</p>
-                        <p className="text-gray-200">{memberData?.collector}</p>
+                        <p className="text-sm text-muted-foreground">Collector</p>
+                        <p className="text-foreground hover:text-primary transition-colors">{memberData?.collector}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </Card>
 
-              {/* Bank Details */}
-              <Card className="glass-card p-6">
+              {/* Bank Details Card */}
+              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
                   <Building2 className="text-primary" />
-                  <h2 className="text-xl font-semibold text-gradient">Bank Details</h2>
+                  <h2 className="text-xl font-semibold text-primary">Bank Details</h2>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-400">Bank Name</p>
-                    <p className="text-gray-200">HSBC Bank</p>
+                    <p className="text-sm text-muted-foreground">Bank Name</p>
+                    <p className="text-foreground font-medium">HSBC Bank</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Account Name</p>
-                    <p className="text-gray-200">Pakistan Welfare Association</p>
+                    <p className="text-sm text-muted-foreground">Account Name</p>
+                    <p className="text-foreground font-medium">Pakistan Welfare Association</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Sort Code</p>
-                    <p className="text-gray-200">40-15-34</p>
+                    <p className="text-sm text-muted-foreground">Sort Code</p>
+                    <p className="text-foreground font-mono">40-15-34</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Account Number</p>
-                    <p className="text-gray-200">41024892</p>
+                    <p className="text-sm text-muted-foreground">Account Number</p>
+                    <p className="text-foreground font-mono">41024892</p>
                   </div>
                 </div>
                 <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                  <p className="text-sm text-yellow-500">
+                  <p className="text-sm text-yellow-600 dark:text-yellow-400">
                     <strong>IMPORTANT:</strong> You must use your member number ({memberData?.member_number}) as the payment
                     reference when making bank transfers.
                   </p>
                 </div>
               </Card>
 
-              {/* Payment History */}
-              <Card className="glass-card p-6">
+              {/* Payment History Card */}
+              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Receipt className="text-primary" />
-                    <h2 className="text-xl font-semibold text-gradient">Payment History</h2>
+                    <h2 className="text-xl font-semibold text-primary">Payment History</h2>
                   </div>
                 </div>
                 <div className="relative overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Reference</TableHead>
+                        <TableHead className="text-muted-foreground">Date</TableHead>
+                        <TableHead className="text-muted-foreground">Type</TableHead>
+                        <TableHead className="text-muted-foreground">Amount</TableHead>
+                        <TableHead className="text-muted-foreground">Status</TableHead>
+                        <TableHead className="text-muted-foreground">Reference</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paymentHistory.map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell>
+                        <TableRow key={payment.id} className="hover:bg-muted/50">
+                          <TableCell className="text-foreground">
                             {new Date(payment.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell className="capitalize">{payment.payment_type}</TableCell>
-                          <TableCell>£{payment.amount}</TableCell>
+                          <TableCell className="capitalize text-foreground">{payment.payment_type}</TableCell>
+                          <TableCell className="text-foreground font-medium">£{payment.amount}</TableCell>
                           <TableCell>
-                            <Badge variant={payment.status === 'approved' ? 'default' : 'secondary'}>
+                            <Badge 
+                              variant={payment.status === 'approved' ? 'default' : 'secondary'}
+                              className={payment.status === 'approved' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
+                            >
                               {payment.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{payment.payment_number}</TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{payment.payment_number}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -616,46 +628,49 @@ const Profile = () => {
               </Card>
             </div>
 
-            {/* Right Column - Additional Info */}
+            {/* Right Column */}
             <div className="space-y-6">
-              {/* Membership Details */}
-              <Card className="glass-card p-6">
+              {/* Membership Details Card */}
+              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
                   <Shield className="text-primary" />
-                  <h2 className="text-xl font-semibold text-gradient">Membership Details</h2>
+                  <h2 className="text-xl font-semibold text-primary">Membership Details</h2>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-gray-400">Type</p>
-                    <p className="text-gray-200 capitalize">{memberData?.membership_type}</p>
+                    <p className="text-sm text-muted-foreground">Type</p>
+                    <p className="text-foreground capitalize font-medium">{memberData?.membership_type}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Payment Status</p>
-                    <Badge variant={memberData?.yearly_payment_status === 'completed' ? 'default' : 'destructive'}>
+                    <p className="text-sm text-muted-foreground">Payment Status</p>
+                    <Badge 
+                      variant={memberData?.yearly_payment_status === 'completed' ? 'default' : 'destructive'}
+                      className={memberData?.yearly_payment_status === 'completed' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
+                    >
                       {memberData?.yearly_payment_status}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Next Payment Due</p>
-                    <p className="text-gray-200">
+                    <p className="text-sm text-muted-foreground">Next Payment Due</p>
+                    <p className="text-foreground">
                       {memberData?.yearly_payment_due_date ? 
                         new Date(memberData.yearly_payment_due_date).toLocaleDateString() :
                         'Not set'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-400">Amount Due</p>
-                    <p className="text-gray-200">£{memberData?.yearly_payment_amount || '0'}</p>
+                    <p className="text-sm text-muted-foreground">Amount Due</p>
+                    <p className="text-foreground font-medium">£{memberData?.yearly_payment_amount || '0'}</p>
                   </div>
                 </div>
               </Card>
 
-              {/* Family Members */}
-              <Card className="glass-card p-6">
+              {/* Family Members Card */}
+              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Users className="text-primary" />
-                    <h2 className="text-xl font-semibold text-gradient">Family Members</h2>
+                    <h2 className="text-xl font-semibold text-primary">Family Members</h2>
                   </div>
                   <Button 
                     variant="outline" 
