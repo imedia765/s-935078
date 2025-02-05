@@ -36,6 +36,23 @@ interface ValidationDetails {
   member_status?: string;
 }
 
+// Function to generate a magic link for a user
+const generateMagicLink = async (userId: string) => {
+  try {
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: userId // Using userId as email since that's what we have
+    });
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error: any) {
+    console.error('Error generating magic link:', error);
+    throw new Error('Failed to generate magic link');
+  }
+};
+
 export function RoleManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -152,11 +169,12 @@ export function RoleManagement() {
         .eq('user_id', userId);
       console.log('Current roles before fix:', currentRoles);
 
+      // Update the RPC call to include p_specific_fix parameter
       const { data, error } = await supabase.rpc('fix_role_error', {
         p_error_type: errorType,
         p_user_id: userId,
-        p_specific_fix: specificFix
-      });
+        p_specific_fix: specificFix || null // Add the specific fix parameter
+      } as any); // Using 'as any' temporarily until the types are updated in the database
       
       if (error) {
         console.error("Fix role error failed:", error);
