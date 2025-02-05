@@ -36,14 +36,13 @@ export default function Admin() {
           console.error("System checks error:", error);
           throw error;
         }
-        // Map the response to ensure we handle the details field correctly
         return data?.map((check: any) => ({
           check_type: check.check_type,
           status: check.status,
           metric_name: check.metric_name,
           current_value: check.current_value,
           threshold: check.threshold,
-          details: check.check_details || {} // Ensure we use check_details instead of details
+          check_details: check.check_details || {} // Only use check_details field
         }));
       } catch (error: any) {
         console.error("System checks error:", error);
@@ -111,7 +110,7 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <pre className="text-sm whitespace-pre-wrap text-muted-foreground">
-                          {JSON.stringify(check.details, null, 2)}
+                          {JSON.stringify(check.check_details, null, 2)}
                         </pre>
                       </TableCell>
                     </TableRow>
