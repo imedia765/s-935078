@@ -32,7 +32,6 @@ export function MemberSearch() {
   const [searchType, setSearchType] = useState<"full_name" | "member_number">("full_name");
   const { toast } = useToast();
 
-  // Debounced search function
   const debouncedSearch = useCallback(
     debounce((term: string) => {
       setSearchTerm(term);
