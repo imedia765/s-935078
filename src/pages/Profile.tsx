@@ -84,12 +84,19 @@ const Profile = () => {
 
       console.log("User roles:", roles);
 
-      // Then fetch member data
+      // Then fetch member data with explicit relationship specification
       const { data: member, error: memberError } = await supabase
         .from("members")
         .select(`
           *,
-          family_members (*)
+          family_members (*),
+          payment_requests!payment_requests_member_id_fkey (
+            created_at,
+            payment_type,
+            amount,
+            status,
+            payment_number
+          )
         `)
         .eq("auth_user_id", user.id)
         .maybeSingle();
@@ -104,16 +111,9 @@ const Profile = () => {
       setMemberData({ ...member, roles: roles?.map(r => r.role) });
       setEditedData({ ...member, roles: roles?.map(r => r.role) });
 
-      // Fetch payment history if member exists
-      if (member?.member_number) {
-        const { data: payments, error: paymentsError } = await supabase
-          .from("payment_requests")
-          .select("*")
-          .eq("member_number", member.member_number)
-          .order("created_at", { ascending: false });
-
-        if (paymentsError) throw paymentsError;
-        setPaymentHistory(payments || []);
+      // Set payment history from the fetched payment_requests
+      if (member?.payment_requests) {
+        setPaymentHistory(member.payment_requests);
       }
 
       // Fetch announcements
