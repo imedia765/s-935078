@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +23,10 @@ export const Index = () => {
     try {
       console.log("Attempting login for member:", memberNumber);
       
-      // First check if member exists and is active
+      // First check if member exists and is active - removed user_roles join
       const { data: member, error: memberError } = await supabase
         .from("members")
-        .select("*, user_roles(role)")
+        .select("*")
         .eq("member_number", memberNumber)
         .single();
 
