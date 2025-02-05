@@ -12,6 +12,16 @@ import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement"
 import { FinancialManagement } from "@/components/admin/FinancialManagement";
 import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
 import { useState } from "react";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+} from "@/components/ui/table";
 
 export default function Admin() {
   const { toast } = useToast();
