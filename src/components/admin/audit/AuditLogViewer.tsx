@@ -14,10 +14,14 @@ import {
   Database, 
   User, 
   Shield,
-  Calendar
+  Calendar,
+  AlertCircle,
+  BarChart3
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { exportToCSV } from "@/utils/exportUtils";
+import { AuditAnalytics } from "./AuditAnalytics";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuditActivity {
   hour_bucket: string;
@@ -38,9 +42,11 @@ interface AuditLogFilters {
     start: string;
     end: string;
   };
+  retentionPeriod: string;
 }
 
 export function AuditLogViewer() {
+  const { toast } = useToast();
   const [filters, setFilters] = useState<AuditLogFilters>({
     operation: "all",
     timeRange: "24h",
@@ -50,14 +56,22 @@ export function AuditLogViewer() {
     dateRange: {
       start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       end: new Date().toISOString().split('T')[0]
-    }
+    },
+    retentionPeriod: "30days"
   });
 
   const { data: auditActivity, isLoading } = useQuery({
     queryKey: ["auditActivity", filters],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_audit_activity_summary');
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error fetching audit logs",
+          description: error.message,
+          variant: "destructive"
+        });
+        throw error;
+      }
       return data as AuditActivity[];
     }
   });
@@ -75,6 +89,11 @@ export function AuditLogViewer() {
     }));
 
     exportToCSV(exportData, `audit_logs_${new Date().toISOString()}`);
+    
+    toast({
+      title: "Export successful",
+      description: "Audit logs have been exported to CSV",
+    });
   };
 
   const getOperationIcon = (operation: string) => {
@@ -125,6 +144,8 @@ export function AuditLogViewer() {
 
   return (
     <div className="space-y-4">
+      <AuditAnalytics />
+      
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 items-center space-x-2">
           <div className="relative flex-1 max-w-sm">
@@ -162,6 +183,20 @@ export function AuditLogViewer() {
               <SelectItem value="info">Info</SelectItem>
               <SelectItem value="warning">Warning</SelectItem>
               <SelectItem value="error">Error</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={filters.retentionPeriod}
+            onValueChange={(value) => setFilters(prev => ({ ...prev, retentionPeriod: value }))}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Retention" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7days">7 Days</SelectItem>
+              <SelectItem value="30days">30 Days</SelectItem>
+              <SelectItem value="90days">90 Days</SelectItem>
+              <SelectItem value="1year">1 Year</SelectItem>
             </SelectContent>
           </Select>
         </div>
