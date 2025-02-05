@@ -180,7 +180,7 @@ export function EmailTemplateList() {
             host: smtpConfig.host,
             port: smtpConfig.port,
             username: smtpConfig.username,
-            password: smtpConfig.password,
+            password: smtpConfig.secret_key,
             from: smtpConfig.from_address
           }
         },
