@@ -139,6 +139,49 @@ const Profile = () => {
     }
   };
 
+  const generateFamilyMemberNumber = (parentMemberNumber: string, relationship: string) => {
+    const base = parentMemberNumber;
+    const prefix = relationship === 'spouse' ? 'S' : 'D';
+    return `${base}-${prefix}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+  };
+
+  const handleAddFamilyMember = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const relationship = formData.get('relationship')?.toString() || '';
+      const familyMemberNumber = generateFamilyMemberNumber(memberData.member_number, relationship);
+
+      const { error } = await supabase
+        .from('family_members')
+        .insert({
+          member_id: memberData.id,
+          family_member_number: familyMemberNumber,
+          full_name: formData.get('full_name')?.toString() || '',
+          relationship: relationship,
+          date_of_birth: formData.get('date_of_birth')?.toString() || null,
+          gender: formData.get('gender')?.toString() || null
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Family member added successfully"
+      });
+      
+      setIsAddFamilyMemberOpen(false);
+      fetchData(); // Refresh data
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    }
+  };
+
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files[0]) return;
 
@@ -222,39 +265,6 @@ const Profile = () => {
   const handleEdit = () => {
     setEditedData(memberData);
     setIsEditing(true);
-  };
-
-  const handleAddFamilyMember = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    try {
-      const { error } = await supabase
-        .from('family_members')
-        .insert({
-          member_id: memberData.id,
-          full_name: formData.get('full_name')?.toString() || '',
-          relationship: formData.get('relationship')?.toString() || '',
-          date_of_birth: formData.get('date_of_birth')?.toString() || null,
-          gender: formData.get('gender')?.toString() || null
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Family member added successfully"
-      });
-      
-      setIsAddFamilyMemberOpen(false);
-      fetchData(); // Refresh data
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message
-      });
-    }
   };
 
   const handleEditFamilyMember = async (e: React.FormEvent<HTMLFormElement>) => {
