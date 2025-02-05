@@ -20,12 +20,16 @@ export const Index = () => {
     setIsLoading(true);
 
     try {
+      console.log("Attempting login for member:", memberNumber);
+      
       // First check if member exists and is active
       const { data: member, error: memberError } = await supabase
         .from("members")
-        .select("*")
+        .select("*, user_roles(role)")
         .eq("member_number", memberNumber)
         .single();
+
+      console.log("Member lookup result:", { member, memberError });
 
       if (memberError || !member) {
         toast({
@@ -33,6 +37,7 @@ export const Index = () => {
           title: "Error",
           description: "Member number not found",
         });
+        setIsLoading(false);
         return;
       }
 
@@ -42,14 +47,20 @@ export const Index = () => {
           title: "Account Inactive",
           description: "Please contact support to activate your account",
         });
+        setIsLoading(false);
         return;
       }
 
       // Attempt to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: `${memberNumber.toLowerCase()}@temp.com`,
+      const loginEmail = `${memberNumber.toLowerCase()}@temp.com`;
+      console.log("Attempting auth with email:", loginEmail);
+      
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
         password,
       });
+
+      console.log("Auth result:", { authData, signInError });
 
       if (signInError) {
         // Handle failed login attempt
@@ -66,6 +77,7 @@ export const Index = () => {
           title: "Login Failed",
           description: signInError.message,
         });
+        setIsLoading(false);
         return;
       }
 
@@ -76,13 +88,13 @@ export const Index = () => {
       });
       navigate("/profile");
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "An unexpected error occurred",
       });
-      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
