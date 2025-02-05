@@ -61,11 +61,11 @@ const generateMagicLink = async (userId: string) => {
       .from('members')
       .select('email')
       .eq('auth_user_id', userId)
-      .single();
+      .maybeSingle(); // Changed from single() to maybeSingle()
 
     if (memberError) {
       console.error('Error fetching member email:', memberError);
-      throw new Error('Could not find member email');
+      throw new Error('Could not fetch member email');
     }
 
     if (!memberData?.email) {
