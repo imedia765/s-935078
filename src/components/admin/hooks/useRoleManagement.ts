@@ -62,19 +62,34 @@ export const useRoleManagement = () => {
 
     try {
       let response;
+      
+      // Get current roles first
+      const { data: currentRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
       if (fixType === 'remove_role') {
-        response = await supabase.rpc('remove_user_role', {
-          p_user_id: userId,
-          p_role: checkType as UserRole
-        });
+        // If we're removing a role, we need to delete all roles and then add back the correct one
+        const { error: deleteError } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', userId);
+        
+        if (deleteError) throw deleteError;
+
+        // If user should have a member role, add it back
+        if (checkType === 'Inconsistent Member Status') {
+          response = await supabase.from('user_roles')
+            .insert({ user_id: userId, role: 'member' });
+        }
       } else {
-        response = await supabase.rpc('add_user_role', {
-          p_user_id: userId,
-          p_role: fixType
-        });
+        // For adding roles, use the specific role type
+        response = await supabase.from('user_roles')
+          .insert({ user_id: userId, role: fixType });
       }
 
-      const { error } = response;
+      const { error } = response || {};
       if (error) throw error;
 
       toast({
