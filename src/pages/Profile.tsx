@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, CreditCard, Users, Calendar, Receipt, Building2, Edit, Save, X, Upload, Loader2 } from "lucide-react";
+import { Shield, CreditCard, Users, Calendar, Receipt, Building2, Edit, Save, X, Upload, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
@@ -17,6 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const Profile = () => {
   const [memberData, setMemberData] = useState<any>(null);
@@ -27,6 +30,9 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [isAddFamilyMemberOpen, setIsAddFamilyMemberOpen] = useState(false);
+  const [isEditFamilyMemberOpen, setIsEditFamilyMemberOpen] = useState(false);
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -58,21 +64,6 @@ const Profile = () => {
 
     initializeProfile();
   }, [navigate]);
-
-  const checkSession = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/");
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error("Session check error:", error);
-      navigate("/");
-      return false;
-    }
-  };
 
   const fetchData = async () => {
     try {
@@ -110,33 +101,8 @@ const Profile = () => {
         throw new Error("Failed to fetch member data");
       }
       
-      // If no member record exists but user has roles, create a basic member record
-      if (!member && roles && roles.length > 0) {
-        const { data: newMember, error: createError } = await supabase
-          .from("members")
-          .insert([
-            {
-              auth_user_id: user.id,
-              full_name: user.user_metadata?.full_name || user.email,
-              email: user.email,
-              status: 'active',
-              member_number: `M${Date.now().toString().slice(-6)}` // Generate a temporary member number
-            }
-          ])
-          .select()
-          .single();
-
-        if (createError) {
-          console.error("Error creating member:", createError);
-          throw new Error("Failed to create member profile");
-        }
-
-        setMemberData({ ...newMember, roles: roles?.map(r => r.role) });
-        setEditedData({ ...newMember, roles: roles?.map(r => r.role) });
-      } else {
-        setMemberData({ ...member, roles: roles?.map(r => r.role) });
-        setEditedData({ ...member, roles: roles?.map(r => r.role) });
-      }
+      setMemberData({ ...member, roles: roles?.map(r => r.role) });
+      setEditedData({ ...member, roles: roles?.map(r => r.role) });
 
       // Fetch payment history if member exists
       if (member?.member_number) {
@@ -173,87 +139,30 @@ const Profile = () => {
     }
   };
 
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setUploadingPhoto(true);
-      
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${memberData.member_number}-${Math.random()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
-
-      // Update member record with new photo URL
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({ photo_url: publicUrl })
-        .eq('id', memberData.id);
-
-      if (updateError) throw updateError;
-
-      // Update local state
-      setMemberData(prev => ({ ...prev, photo_url: publicUrl }));
-      
-      toast({
-        title: "Success",
-        description: "Profile photo updated successfully"
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message
-      });
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancel = () => {
-    setEditedData(memberData);
-    setIsEditing(false);
-  };
-
-  const handleSave = async () => {
+  const handleAddFamilyMember = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
     try {
       const { error } = await supabase
-        .from("members")
-        .update({
-          full_name: editedData.full_name,
-          email: editedData.email,
-          phone: editedData.phone,
-          address: editedData.address,
-          postcode: editedData.postcode,
-          town: editedData.town,
-          date_of_birth: editedData.date_of_birth,
-          gender: editedData.gender,
-          marital_status: editedData.marital_status
-        })
-        .eq("id", memberData.id);
+        .from('family_members')
+        .insert({
+          member_id: memberData.id,
+          full_name: formData.get('full_name'),
+          relationship: formData.get('relationship'),
+          date_of_birth: formData.get('date_of_birth') || null,
+          gender: formData.get('gender') || null
+        });
 
       if (error) throw error;
 
-      setMemberData(editedData);
-      setIsEditing(false);
       toast({
         title: "Success",
-        description: "Profile updated successfully"
+        description: "Family member added successfully"
       });
+      
+      setIsAddFamilyMemberOpen(false);
+      fetchData(); // Refresh data
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -263,23 +172,61 @@ const Profile = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setEditedData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleEditFamilyMember = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const { error } = await supabase
+        .from('family_members')
+        .update({
+          full_name: formData.get('full_name'),
+          relationship: formData.get('relationship'),
+          date_of_birth: formData.get('date_of_birth') || null,
+          gender: formData.get('gender') || null
+        })
+        .eq('id', selectedFamilyMember.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Family member updated successfully"
+      });
+      
+      setIsEditFamilyMemberOpen(false);
+      setSelectedFamilyMember(null);
+      fetchData(); // Refresh data
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
+    }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-[#8B5CF6] text-white';
-      case 'collector':
-        return 'bg-[#F97316] text-white';
-      case 'member':
-        return 'bg-[#0EA5E9] text-white';
-      default:
-        return 'bg-gray-500 text-white';
+  const handleDeleteFamilyMember = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('family_members')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Family member removed successfully"
+      });
+      
+      fetchData(); // Refresh data
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message
+      });
     }
   };
 
@@ -370,7 +317,7 @@ const Profile = () => {
                           {memberData?.roles?.map((role: string, index: number) => (
                             <Badge 
                               key={index} 
-                              className={`${getRoleBadgeColor(role)} capitalize text-sm px-3 py-1 shadow-lg hover:opacity-90 transition-opacity`}
+                              className={`bg-gray-500 text-white capitalize text-sm px-3 py-1 shadow-lg hover:opacity-90 transition-opacity`}
                               variant="outline"
                             >
                               <Shield className="w-4 h-4 mr-2" />
@@ -615,7 +562,12 @@ const Profile = () => {
                     <Users className="text-primary" />
                     <h2 className="text-xl font-semibold text-gradient">Family Members</h2>
                   </div>
-                  <Button variant="outline" size="sm" className="bg-black/40">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-black/40"
+                    onClick={() => setIsAddFamilyMemberOpen(true)}
+                  >
                     Add Member
                   </Button>
                 </div>
@@ -628,8 +580,31 @@ const Profile = () => {
                       <div>
                         <p className="font-medium text-gray-200">{member.full_name}</p>
                         <p className="text-sm text-gray-400 capitalize">{member.relationship}</p>
+                        {member.date_of_birth && (
+                          <p className="text-sm text-gray-400">
+                            DOB: {new Date(member.date_of_birth).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
-                      <Badge variant="outline">{member.family_member_number}</Badge>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedFamilyMember(member);
+                            setIsEditFamilyMemberOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteFamilyMember(member.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                   {(!memberData?.family_members || memberData.family_members.length === 0) && (
@@ -638,32 +613,151 @@ const Profile = () => {
                 </div>
               </Card>
 
-              {/* System Announcements */}
-              <Card className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Calendar className="text-primary" />
-                  <h2 className="text-xl font-semibold text-gradient">Announcements</h2>
-                </div>
-                <div className="space-y-4">
-                  {announcements.map((announcement) => (
-                    <div
-                      key={announcement.id}
-                      className="p-4 rounded-lg bg-black/20 border border-gray-800"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-gray-200">{announcement.title}</h3>
-                        <Badge variant="outline">
-                          {new Date(announcement.created_at).toLocaleDateString()}
-                        </Badge>
+              {/* Add Family Member Dialog */}
+              <Dialog open={isAddFamilyMemberOpen} onOpenChange={setIsAddFamilyMemberOpen}>
+                <DialogContent className="glass-card">
+                  <DialogHeader>
+                    <DialogTitle>Add Family Member</DialogTitle>
+                    <DialogDescription>
+                      Add a new family member to your profile
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddFamilyMember} className="space-y-4">
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="full_name" className="text-right">
+                          Full Name
+                        </Label>
+                        <Input
+                          id="full_name"
+                          name="full_name"
+                          className="col-span-3"
+                          required
+                        />
                       </div>
-                      <p className="text-sm text-gray-400">{announcement.message}</p>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="relationship" className="text-right">
+                          Relationship
+                        </Label>
+                        <Select name="relationship" required>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select relationship" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="spouse">Spouse</SelectItem>
+                            <SelectItem value="child">Child</SelectItem>
+                            <SelectItem value="parent">Parent</SelectItem>
+                            <SelectItem value="sibling">Sibling</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="date_of_birth" className="text-right">
+                          Date of Birth
+                        </Label>
+                        <Input
+                          id="date_of_birth"
+                          name="date_of_birth"
+                          type="date"
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="gender" className="text-right">
+                          Gender
+                        </Label>
+                        <Select name="gender">
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  ))}
-                  {announcements.length === 0 && (
-                    <p className="text-gray-400 text-center py-4">No active announcements</p>
-                  )}
-                </div>
-              </Card>
+                    <DialogFooter>
+                      <Button type="submit">Add Family Member</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              {/* Edit Family Member Dialog */}
+              <Dialog open={isEditFamilyMemberOpen} onOpenChange={setIsEditFamilyMemberOpen}>
+                <DialogContent className="glass-card">
+                  <DialogHeader>
+                    <DialogTitle>Edit Family Member</DialogTitle>
+                    <DialogDescription>
+                      Update family member details
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleEditFamilyMember} className="space-y-4">
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="full_name" className="text-right">
+                          Full Name
+                        </Label>
+                        <Input
+                          id="full_name"
+                          name="full_name"
+                          className="col-span-3"
+                          defaultValue={selectedFamilyMember?.full_name}
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="relationship" className="text-right">
+                          Relationship
+                        </Label>
+                        <Select name="relationship" defaultValue={selectedFamilyMember?.relationship} required>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select relationship" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="spouse">Spouse</SelectItem>
+                            <SelectItem value="child">Child</SelectItem>
+                            <SelectItem value="parent">Parent</SelectItem>
+                            <SelectItem value="sibling">Sibling</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="date_of_birth" className="text-right">
+                          Date of Birth
+                        </Label>
+                        <Input
+                          id="date_of_birth"
+                          name="date_of_birth"
+                          type="date"
+                          className="col-span-3"
+                          defaultValue={selectedFamilyMember?.date_of_birth}
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="gender" className="text-right">
+                          Gender
+                        </Label>
+                        <Select name="gender" defaultValue={selectedFamilyMember?.gender}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit">Update Family Member</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
