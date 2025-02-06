@@ -1986,6 +1986,21 @@ export type Database = {
           failure_details: Json
         }[]
       }
+      get_collectors_role_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          collector_name: string
+          member_number: string
+          contact_info: Json
+          role_verification: Json
+          auth_status: Json
+          sync_status: Json
+          last_sync: string
+          enhanced_role_status: string
+          role_store_status: string
+          permissions: Json
+        }[]
+      }
       get_email_quota: {
         Args: {
           category: string

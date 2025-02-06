@@ -7,6 +7,7 @@ import { ErrorView } from "./components/ErrorView";
 import { AuditView } from "./components/AuditView";
 import { RoleChangeRequests } from "./components/RoleChangeRequests";
 import { RolePermissionsMatrix } from "./components/RolePermissionsMatrix";
+import { CollectorsView } from "./components/CollectorsView";
 import { Button } from "@/components/ui/button";
 
 export function RoleManagement() {
@@ -59,6 +60,7 @@ export function RoleManagement() {
                 activeTab === "errors" ? "Search errors by type or details..." :
                 activeTab === "requests" ? "Search role change requests..." :
                 activeTab === "permissions" ? "Search permissions..." :
+                activeTab === "collectors" ? "Search collectors..." :
                 "Search audit logs..."
               }
               value={searchTerm}
@@ -84,6 +86,7 @@ export function RoleManagement() {
           <TabsTrigger value="errors">Error View</TabsTrigger>
           <TabsTrigger value="requests">Change Requests</TabsTrigger>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
+          <TabsTrigger value="collectors">Active Collectors</TabsTrigger>
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
         </TabsList>
 
@@ -109,6 +112,10 @@ export function RoleManagement() {
 
         <TabsContent value="permissions">
           <RolePermissionsMatrix />
+        </TabsContent>
+
+        <TabsContent value="collectors">
+          <CollectorsView />
         </TabsContent>
 
         <TabsContent value="audit">
