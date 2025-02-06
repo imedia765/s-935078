@@ -2,7 +2,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { User } from "../types/role-types";
-import { Shield, Key } from "lucide-react";
+import { Shield, Key, UserCog, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +13,72 @@ interface UserTableProps {
 
 export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
   const { toast } = useToast();
+
+  const handleResetLoginState = async (memberNumber: string | undefined) => {
+    if (!memberNumber) {
+      toast({
+        title: "Error",
+        description: "Member number is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log("Resetting login state for member:", memberNumber);
+      
+      const { data, error } = await supabase.rpc('reset_user_login_state', {
+        p_member_number: memberNumber
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "User login state has been reset",
+      });
+    } catch (error: any) {
+      console.error("Error resetting login state:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCleanupFailedAttempts = async (memberNumber: string | undefined) => {
+    if (!memberNumber) {
+      toast({
+        title: "Error",
+        description: "Member number is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log("Cleaning up failed attempts for member:", memberNumber);
+      
+      const { error } = await supabase.rpc('cleanup_failed_attempts', {
+        p_member_number: memberNumber
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Failed login attempts have been cleaned up",
+      });
+    } catch (error: any) {
+      console.error("Error cleaning up failed attempts:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleQuickFix = async (memberNumber: string | undefined) => {
     if (!memberNumber) {
@@ -27,7 +93,6 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
     try {
       console.log("Attempting quick fix for member:", memberNumber);
       
-      // Update member status and reset all login-related fields
       const { error: updateError } = await supabase
         .from('members')
         .update({ 
@@ -93,9 +158,25 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => handleResetLoginState(user.member_number)}
+                  >
+                    <UserCog className="h-4 w-4 mr-2" />
+                    Reset Login
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCleanupFailedAttempts(user.member_number)}
+                  >
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Clear Attempts
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleQuickFix(user.member_number)}
                   >
-                    Quick Fix Login
+                    Quick Fix
                   </Button>
                 </div>
               </TableCell>
@@ -106,4 +187,3 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
     </div>
   );
 };
-
