@@ -25,7 +25,7 @@ export const Index = () => {
       // First check if member exists and is active
       const { data: member, error: memberError } = await supabase
         .from("members")
-        .select("*")
+        .select("*, user_roles(*)")
         .eq("member_number", memberNumber)
         .single();
 
@@ -42,11 +42,20 @@ export const Index = () => {
       }
 
       if (member.status !== "active") {
-        toast({
-          variant: "destructive",
-          title: "Account Inactive",
-          description: "Please contact support to activate your account",
-        });
+        // Check for failed login attempts
+        if (member.failed_login_attempts && member.failed_login_attempts > 3) {
+          toast({
+            variant: "destructive",
+            title: "Account Locked",
+            description: "Too many failed attempts. Please contact support.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Account Inactive",
+            description: "Please contact support to activate your account",
+          });
+        }
         setIsLoading(false);
         return;
       }
