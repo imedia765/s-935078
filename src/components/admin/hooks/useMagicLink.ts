@@ -23,21 +23,33 @@ export const useMagicLink = () => {
 
       console.log("Found member email:", memberData.email);
 
-      // Call the rpc function instead of direct admin API
-      const { data: magicLinkData, error } = await supabase.rpc('generate_magic_link', {
-        user_email: memberData.email
-      }) as { data: { magic_link: string } | null, error: any };
+      // Use the edge function to generate magic link
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-magic-link`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            email: memberData.email,
+          }),
+        }
+      );
 
-      if (error) {
-        console.error("Magic link generation error:", error);
-        throw error;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate magic link');
       }
 
-      if (magicLinkData?.magic_link) {
+      const { magicLink } = await response.json();
+
+      if (magicLink) {
         await sendEmail({
           to: memberData.email,
           subject: 'Your Login Link',
-          html: `<p>Here's your magic login link: ${magicLinkData.magic_link}</p>`,
+          html: `<p>Here's your magic login link: ${magicLink}</p>`,
         });
 
         toast({
@@ -57,3 +69,4 @@ export const useMagicLink = () => {
 
   return { generateMagicLink };
 };
+
