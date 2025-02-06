@@ -1143,7 +1143,6 @@ export type Database = {
           invalidated_at: string | null
           member_number: string | null
           token: string
-          token_type: Database["public"]["Enums"]["token_type"]
           used_at: string | null
           user_id: string | null
         }
@@ -1155,7 +1154,6 @@ export type Database = {
           invalidated_at?: string | null
           member_number?: string | null
           token: string
-          token_type?: Database["public"]["Enums"]["token_type"]
           used_at?: string | null
           user_id?: string | null
         }
@@ -1167,7 +1165,6 @@ export type Database = {
           invalidated_at?: string | null
           member_number?: string | null
           token?: string
-          token_type?: Database["public"]["Enums"]["token_type"]
           used_at?: string | null
           user_id?: string | null
         }
@@ -1986,20 +1983,6 @@ export type Database = {
         }
         Returns: Json
       }
-      generate_magic_link_token: {
-        Args: {
-          p_member_number: string
-          p_token_type?: Database["public"]["Enums"]["token_type"]
-        }
-        Returns: string
-      }
-      generate_password_reset_token: {
-        Args: {
-          p_member_number: string
-          p_token_type?: Database["public"]["Enums"]["token_type"]
-        }
-        Returns: string
-      }
       generate_payment_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2334,7 +2317,7 @@ export type Database = {
         | "connection_count"
         | "cache_hit_ratio"
       severity_level: "info" | "warning" | "error" | "critical"
-      token_type: "password_reset" | "email_verification"
+      token_type: "password_reset" | "magic_link"
     }
     CompositeTypes: {
       reset_rate_limit_error: {
