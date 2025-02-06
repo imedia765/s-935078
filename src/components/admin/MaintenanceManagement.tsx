@@ -51,11 +51,14 @@ export function MaintenanceManagement() {
     }
   });
 
-  // Query system health with updated field names
+  // Query system health with explicit column selection
   const { data: systemHealth } = useQuery({
     queryKey: ["systemHealth"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('run_combined_system_checks');
+      const { data, error } = await supabase
+        .rpc('run_combined_system_checks')
+        .select('check_type, metric_name, current_value, threshold, status, check_details, test_category');
+        
       if (error) {
         console.error("System health check error:", error);
         throw error;

@@ -41,7 +41,11 @@ export default function Admin() {
     queryFn: async () => {
       console.log("Fetching system checks...");
       try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks');
+        // Call the RPC with explicit column selection to avoid ambiguity
+        const { data, error } = await supabase
+          .rpc('run_combined_system_checks')
+          .select('check_type, metric_name, current_value, threshold, status, check_details, test_category');
+          
         if (error) {
           console.error("System checks error:", error);
           throw error;
