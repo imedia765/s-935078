@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ export const Index = () => {
       // First check if member exists and is active
       const { data: member, error: memberError } = await supabase
         .from("members")
-        .select("*, user_roles(*)")
+        .select("*, auth_user_id")
         .eq("member_number", memberNumber)
         .single();
 
@@ -40,6 +41,18 @@ export const Index = () => {
         setIsLoading(false);
         return;
       }
+
+      // Get user roles if auth_user_id exists
+      let userRoles = [];
+      if (member.auth_user_id) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", member.auth_user_id);
+        userRoles = roles || [];
+      }
+
+      console.log("User roles:", userRoles);
 
       if (member.status !== "active") {
         // Check for failed login attempts
