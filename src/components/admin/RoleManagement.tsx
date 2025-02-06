@@ -1,3 +1,4 @@
+
 import { Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,11 +10,14 @@ import { RoleChangeRequests } from "./components/RoleChangeRequests";
 import { RolePermissionsMatrix } from "./components/RolePermissionsMatrix";
 import { CollectorsView } from "./components/CollectorsView";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function RoleManagement() {
   const {
     searchTerm,
     setSearchTerm,
+    searchType,
+    setSearchType,
     activeTab,
     setActiveTab,
     generateMagicLink,
@@ -27,12 +31,22 @@ export function RoleManagement() {
     isFixingAll
   } = useRoleManagement();
 
-  const filteredUsers = userData?.filter(user => 
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.member_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = userData?.filter(user => {
+    if (!searchTerm) return true;
+    
+    switch (searchType) {
+      case "email":
+        return user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      case "id":
+        return user.id?.toLowerCase().includes(searchTerm.toLowerCase());
+      case "member_number":
+        return user.member_number?.toLowerCase().includes(searchTerm.toLowerCase());
+      case "full_name":
+        return user.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      default:
+        return true;
+    }
+  });
 
   const filteredValidations = roleValidation?.validation?.filter((validation: any) =>
     validation.check_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,9 +68,23 @@ export function RoleManagement() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Search className="w-4 h-4 text-muted-foreground" />
+            <Select
+              value={searchType}
+              onValueChange={setSearchType}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Search by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full_name">Search by Name</SelectItem>
+                <SelectItem value="email">Search by Email</SelectItem>
+                <SelectItem value="id">Search by ID</SelectItem>
+                <SelectItem value="member_number">Search by Member #</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               placeholder={
-                activeTab === "table" ? "Search by name, email, ID or member number..." :
+                activeTab === "table" ? `Search by ${searchType.replace('_', ' ')}...` :
                 activeTab === "errors" ? "Search errors by type or details..." :
                 activeTab === "requests" ? "Search role change requests..." :
                 activeTab === "permissions" ? "Search permissions..." :

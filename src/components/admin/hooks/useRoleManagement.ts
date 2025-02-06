@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ import { User, ValidationDetails, FixType, UserRole } from "../types/role-types"
 export const useRoleManagement = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState<"full_name" | "email" | "id" | "member_number">("full_name");
   const [activeTab, setActiveTab] = useState("table");
   const [isFixingAll, setIsFixingAll] = useState(false);
 
@@ -274,6 +276,8 @@ export const useRoleManagement = () => {
   return {
     searchTerm,
     setSearchTerm,
+    searchType,
+    setSearchType,
     activeTab,
     setActiveTab,
     generateMagicLink,
