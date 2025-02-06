@@ -27,27 +27,26 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
     try {
       console.log("Attempting quick fix for member:", memberNumber);
       
-      // Reset failed login attempts
-      const { error: resetError } = await supabase.rpc('reset_login_state', {
-        p_member_number: memberNumber
-      });
-
-      if (resetError) throw resetError;
-
-      // Cleanup any failed attempts
-      const { error: cleanupError } = await supabase.rpc('cleanup_failed_attempts', {
-        p_member_number: memberNumber
-      });
-
-      if (cleanupError) throw cleanupError;
-
-      // Update member status to active if needed
+      // Update member status and reset failed login attempts
       const { error: updateError } = await supabase
         .from('members')
-        .update({ status: 'active' })
+        .update({ 
+          status: 'active',
+          failed_login_attempts: 0,
+          last_failed_login: null,
+          locked_until: null
+        })
         .eq('member_number', memberNumber);
 
       if (updateError) throw updateError;
+
+      // Clear any failed login records
+      const { error: deleteError } = await supabase
+        .from('failed_login_attempts')
+        .delete()
+        .eq('member_number', memberNumber);
+
+      if (deleteError) throw deleteError;
 
       toast({
         title: "Success",
@@ -115,3 +114,4 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
     </div>
   );
 };
+
