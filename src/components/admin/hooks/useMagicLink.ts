@@ -17,7 +17,7 @@ export const useMagicLink = () => {
     try {
       console.log("Generating magic link for user:", userId);
       
-      // Call our secure RPC function with proper TypeScript typing
+      // Call our secure RPC function
       const { data, error } = await supabase
         .rpc('generate_magic_link', { 
           p_user_id: userId 
@@ -28,21 +28,31 @@ export const useMagicLink = () => {
         throw error;
       }
 
-      // Safely type check the response
+      // Safely type check and validate the response structure
       if (!data || typeof data !== 'object' || Array.isArray(data)) {
         throw new Error('Invalid response format from magic link generation');
       }
 
-      const response = data as MagicLinkResponse;
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to generate magic link');
+      // Type guard function to validate response shape
+      const isMagicLinkResponse = (obj: unknown): obj is MagicLinkResponse => {
+        const response = obj as Partial<MagicLinkResponse>;
+        return typeof response.success === 'boolean';
+      };
+
+      // Cast to unknown first, then validate
+      if (!isMagicLinkResponse(data)) {
+        throw new Error('Invalid magic link response format');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate magic link');
       }
 
       // Send the magic link email
       await sendEmail({
-        to: response.email!,
+        to: data.email!,
         subject: 'Your Login Link',
-        html: `<p>Here's your magic login link: ${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${response.token}&type=magiclink</p>`,
+        html: `<p>Here's your magic login link: ${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink</p>`,
       });
 
       toast({
@@ -62,3 +72,4 @@ export const useMagicLink = () => {
 
   return { generateMagicLink };
 };
+
