@@ -16,16 +16,11 @@ export const useMagicLink = () => {
   const generateMagicLink = async (userId: string) => {
     try {
       console.log("Generating magic link for user:", userId);
-      
-      // Explicitly cast userId to UUID format
-      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidPattern.test(userId)) {
-        throw new Error('Invalid UUID format');
-      }
 
+      // Convert userId to the exact format expected by the database
       const { data, error } = await supabase
         .rpc('generate_magic_link', { 
-          p_user_id: userId as `${string}-${string}-${string}-${string}-${string}` // Explicit UUID type cast
+          p_user_id: userId // Pass as regular string, let Supabase handle conversion
         });
 
       if (error) {
