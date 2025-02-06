@@ -72,7 +72,7 @@ export function CollectorsView() {
               <TableCell>
                 <div className="flex flex-col gap-2">
                   <Badge 
-                    variant={collector.role_verification.total_issues > 0 ? "destructive" : "success"}
+                    variant={collector.role_verification.total_issues > 0 ? "destructive" : "default"}
                     className="w-fit"
                   >
                     {collector.role_verification.total_issues} Issues
@@ -98,7 +98,7 @@ export function CollectorsView() {
               <TableCell>
                 <div className="flex flex-col gap-1">
                   <Badge 
-                    variant={collector.sync_status.status === 'completed' ? "success" : "warning"}
+                    variant={collector.sync_status.status === 'completed' ? "default" : "secondary"}
                     className="w-fit"
                   >
                     {collector.sync_status.status}
