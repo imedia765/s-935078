@@ -23,18 +23,17 @@ export function EmailQueueStatus() {
   const [statusFilter, setStatusFilter] = useState<EmailStatus | "all">("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Query for SMTP configuration
-  const { data: smtpConfig, isLoading: isLoadingSmtp } = useQuery({
+  // Query for SMTP configuration - Modified to handle multiple active configs
+  const { data: smtpConfigs, isLoading: isLoadingSmtp } = useQuery({
     queryKey: ["smtpConfig"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("smtp_configurations")
         .select("*")
-        .eq("is_active", true)
-        .single();
+        .eq("is_active", true);
 
       if (error) throw error;
-      return data;
+      return data; // Now returning an array of configs
     },
   });
 
@@ -59,11 +58,11 @@ export function EmailQueueStatus() {
       if (error) throw error;
       return data;
     },
-    enabled: !!smtpConfig, // Only fetch emails if SMTP is configured
+    enabled: !!smtpConfigs, // Only fetch emails if SMTP is configured
   });
 
   const handleRetry = async (emailId: string) => {
-    if (!smtpConfig) {
+    if (!smtpConfigs?.length) {
       toast({
         title: "Error",
         description: "No active SMTP configuration found. Please configure SMTP settings first.",
@@ -117,7 +116,8 @@ export function EmailQueueStatus() {
     return <div>Loading SMTP configuration...</div>;
   }
 
-  if (!smtpConfig) {
+  // Check if there's at least one active SMTP configuration
+  if (!smtpConfigs?.length) {
     return (
       <Alert variant="destructive">
         <AlertDescription>

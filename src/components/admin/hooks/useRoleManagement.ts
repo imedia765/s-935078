@@ -262,6 +262,7 @@ export const useRoleManagement = () => {
     queryFn: async () => {
       console.log("Fetching role validation data...");
       
+      // Using validate_user_roles instead of run_combined_system_checks
       const { data: validationData, error: validationError } = await supabase
         .rpc('validate_user_roles');
       
@@ -272,6 +273,7 @@ export const useRoleManagement = () => {
 
       console.log("Validation data:", validationData);
 
+      // Fetch audit logs separately
       const { data: auditLogs, error: auditError } = await supabase
         .from('audit_logs')
         .select('*')
