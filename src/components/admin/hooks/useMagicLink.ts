@@ -10,42 +10,31 @@ export const useMagicLink = () => {
     try {
       console.log("Generating magic link for user:", userId);
       
-      const { data: memberData, error: memberError } = await supabase
-        .from('members')
-        .select('email, auth_user_id')
-        .eq('auth_user_id', userId)
-        .single();
+      // Call our secure RPC function
+      const { data, error } = await supabase
+        .rpc('generate_magic_link', { p_user_id: userId });
 
-      if (memberError || !memberData?.email) {
-        console.error("Member data fetch error:", memberError);
-        throw new Error(memberError?.message || 'No email found for user');
+      if (error) {
+        console.error("Magic link generation error:", error);
+        throw error;
       }
 
-      console.log("Found member email:", memberData.email);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate magic link');
+      }
 
-      // Create the magic link directly using Supabase Auth
-      const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: memberData.email,
+      // Send the magic link email
+      await sendEmail({
+        to: data.email,
+        subject: 'Your Login Link',
+        html: `<p>Here's your magic login link: ${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink</p>`,
       });
 
-      if (magicLinkError) {
-        console.error("Magic link generation error:", magicLinkError);
-        throw magicLinkError;
-      }
-
-      if (magicLinkData?.properties?.action_link) {
-        await sendEmail({
-          to: memberData.email,
-          subject: 'Your Login Link',
-          html: `<p>Here's your magic login link: ${magicLinkData.properties.action_link}</p>`,
-        });
-
-        toast({
-          title: "Success",
-          description: "Magic link sent successfully",
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Magic link sent successfully",
+      });
+      
     } catch (error: any) {
       console.error('Error generating magic link:', error);
       toast({
