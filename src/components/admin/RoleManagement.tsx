@@ -50,15 +50,19 @@ export function RoleManagement() {
     }
   });
 
-  const filteredValidations = roleValidation?.validation?.filter((validation: any) =>
-    validation.check_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    JSON.stringify(validation.details).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredValidations = roleValidation?.validation && Array.isArray(roleValidation.validation) 
+    ? roleValidation.validation.filter((validation: any) =>
+        validation.check_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        JSON.stringify(validation.details).toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
-  const filteredAuditLogs = roleValidation?.auditLogs?.filter((log: any) =>
-    JSON.stringify(log.new_values).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.operation.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAuditLogs = roleValidation?.auditLogs && Array.isArray(roleValidation.auditLogs)
+    ? roleValidation.auditLogs.filter((log: any) =>
+        JSON.stringify(log.new_values).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.operation.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
   if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
 

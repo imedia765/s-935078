@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -263,11 +262,8 @@ export const useRoleManagement = () => {
     queryFn: async () => {
       console.log("Fetching role validation data...");
       
-      // Modified the RPC call to avoid ambiguous column names
       const { data: validationData, error: validationError } = await supabase
-        .rpc('run_system_validation_checks', {
-          // Add any parameters if needed
-        });
+        .rpc('validate_user_roles');
       
       if (validationError) {
         console.error("Role validation error:", validationError);
@@ -290,7 +286,7 @@ export const useRoleManagement = () => {
       console.log("Audit logs:", auditLogs);
 
       return {
-        validation: validationData,
+        validation: validationData || [],
         auditLogs: auditLogs || []
       };
     }
