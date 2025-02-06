@@ -25,6 +25,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface MemberProfileCardProps {
   member: {
@@ -61,6 +68,7 @@ interface MemberProfileCardProps {
 
 export function MemberProfileCard({ member, onEdit, onDelete }: MemberProfileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
   const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
@@ -107,7 +115,7 @@ export function MemberProfileCard({ member, onEdit, onDelete }: MemberProfileCar
           member_number: member.member_number,
           amount: 40,
           payment_type: 'yearly',
-          payment_method: 'cash',
+          payment_method: paymentMethod,
           status: 'pending',
           notes: 'Yearly membership payment'
         });
@@ -233,15 +241,29 @@ export function MemberProfileCard({ member, onEdit, onDelete }: MemberProfileCar
                     Due: {format(new Date(member.yearly_payment_due_date), 'PPP')}
                   </div>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRecordPayment}
-                  className="mt-2 w-full bg-primary/20 hover:bg-primary/30"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Record Payment
-                </Button>
+                <div className="mt-2 space-y-2">
+                  <Select
+                    value={paymentMethod}
+                    onValueChange={(value: 'cash' | 'bank') => setPaymentMethod(value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Payment Method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="bank">Bank Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRecordPayment}
+                    className="w-full bg-primary/20 hover:bg-primary/30"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Record Payment
+                  </Button>
+                </div>
               </div>
 
               {/* Emergency Collection */}
