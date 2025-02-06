@@ -17,10 +17,10 @@ export const useMagicLink = () => {
     try {
       console.log("Generating magic link for user:", userId);
       
-      // Cast the string ID to UUID type explicitly for the function call
+      // Call the RPC function with UUID parameter
       const { data, error } = await supabase
         .rpc('generate_magic_link', { 
-          p_user_id: userId as unknown as `${string}-${string}-${string}-${string}-${string}` // UUID format
+          p_user_id: userId // Pass userId directly - Supabase will handle the type conversion
         });
 
       if (error) {
