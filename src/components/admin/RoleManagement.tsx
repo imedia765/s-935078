@@ -12,6 +12,8 @@ import { CollectorsView } from "./components/CollectorsView";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+type SearchType = "full_name" | "email" | "id" | "member_number";
+
 export function RoleManagement() {
   const {
     searchTerm,
@@ -70,7 +72,7 @@ export function RoleManagement() {
             <Search className="w-4 h-4 text-muted-foreground" />
             <Select
               value={searchType}
-              onValueChange={setSearchType}
+              onValueChange={(value: SearchType) => setSearchType(value)}
             >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Search by..." />
