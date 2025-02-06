@@ -3,6 +3,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail } from "@/utils/email";
 
+interface MagicLinkResponse {
+  success: boolean;
+  email?: string;
+  token?: string;
+  error?: string;
+}
+
 export const useMagicLink = () => {
   const { toast } = useToast();
 
@@ -12,7 +19,7 @@ export const useMagicLink = () => {
       
       // Call our secure RPC function
       const { data, error } = await supabase
-        .rpc('generate_magic_link', { p_user_id: userId });
+        .rpc<MagicLinkResponse>('generate_magic_link', { p_user_id: userId });
 
       if (error) {
         console.error("Magic link generation error:", error);
@@ -25,7 +32,7 @@ export const useMagicLink = () => {
 
       // Send the magic link email
       await sendEmail({
-        to: data.email,
+        to: data.email!,
         subject: 'Your Login Link',
         html: `<p>Here's your magic login link: ${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink</p>`,
       });
