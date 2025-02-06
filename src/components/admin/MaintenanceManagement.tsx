@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, Clock, ShieldAlert } from "lucide-react";
+import { Clock, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
@@ -22,16 +23,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface SystemCheck {
-  check_type: string;
-  metric_name: string | null;
-  current_value: number | null;
-  threshold: number | null;
-  status: string;
-  check_details: Record<string, any>;
-  test_category: string;
-}
-
 export function MaintenanceManagement() {
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
@@ -48,22 +39,6 @@ export function MaintenanceManagement() {
         .single();
       if (error) throw error;
       return data;
-    }
-  });
-
-  // Query system health with explicit column selection
-  const { data: systemHealth } = useQuery({
-    queryKey: ["systemHealth"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc('run_combined_system_checks')
-        .select('check_type, metric_name, current_value, threshold, status, check_details, test_category');
-        
-      if (error) {
-        console.error("System health check error:", error);
-        throw error;
-      }
-      return data as SystemCheck[];
     }
   });
 
@@ -142,54 +117,6 @@ export function MaintenanceManagement() {
     }
   };
 
-  const handleFixRoleError = async (userId: string | undefined, errorType: string) => {
-    try {
-      if (errorType === 'Inconsistent Member Status' && !userId) {
-        const validationDetails = systemHealth?.find(v => v.check_type === errorType);
-        userId = validationDetails?.check_details?.auth_user_id;
-      }
-
-      if (!userId) {
-        console.error("User ID is undefined");
-        throw new Error("User ID is required");
-      }
-
-      console.log(`Fixing role error for user ${userId}, type: ${errorType}`);
-      
-      const { data, error } = await supabase.rpc('fix_role_error', {
-        p_error_type: errorType,
-        p_user_id: userId
-      });
-      
-      if (error) {
-        console.error("Fix role error failed:", error);
-        throw error;
-      }
-
-      await supabase.from('audit_logs').insert([{
-        table_name: 'user_roles',
-        operation: 'UPDATE',
-        record_id: userId,
-        new_values: {
-          error_type: errorType,
-          resolution: 'automatic_fix'
-        }
-      }]);
-
-      toast({
-        title: "Success",
-        description: "Role error fixed successfully",
-      });
-    } catch (error: any) {
-      console.error("Error fixing role:", error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Maintenance Mode Toggle */}
@@ -221,53 +148,6 @@ export function MaintenanceManagement() {
 
         <TabsContent value="overview">
           <div className="space-y-6">
-            {/* System Health Status */}
-            {systemHealth && (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {systemHealth.map((check: SystemCheck, index: number) => (
-                  <div key={index} className="p-4 border rounded-lg bg-background">
-                    <h4 className="font-medium">{check.check_type}</h4>
-                    <div className={`mt-2 text-sm ${
-                      check.status === 'Good' ? 'text-green-500' : 
-                      check.status === 'Warning' ? 'text-yellow-500' : 'text-red-500'
-                    }`}>
-                      {check.status}
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      {check.metric_name && (
-                        <div className="flex justify-between">
-                          <span>{check.metric_name}:</span>
-                          <span>{check.current_value}</span>
-                        </div>
-                      )}
-                      {check.threshold && (
-                        <div className="flex justify-between">
-                          <span>Threshold:</span>
-                          <span>{check.threshold}</span>
-                        </div>
-                      )}
-                      {Object.entries(check.check_details || {}).map(([key, value]) => (
-                        <div key={key} className="flex justify-between">
-                          <span>{key.replace(/_/g, ' ')}:</span>
-                          <span>{value}</span>
-                        </div>
-                      ))}
-                      {check.status !== 'Good' && check.check_details?.user_id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => handleFixRoleError(check.check_details.user_id, check.check_type)}
-                        >
-                          Fix Issue
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
             <div className="flex gap-4">
               <Button 
                 onClick={handleRunMaintenance} 
@@ -309,11 +189,6 @@ export function MaintenanceManagement() {
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-red-100 text-red-800'
                           }`}>
-                            {record.status === 'completed' ? (
-                              <CheckCircle2 className="h-4 w-4" />
-                            ) : (
-                              <AlertCircle className="h-4 w-4" />
-                            )}
                             {record.status}
                           </span>
                         </TableCell>
