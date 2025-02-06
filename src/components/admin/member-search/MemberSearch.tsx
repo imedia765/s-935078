@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -18,38 +19,111 @@ export function MemberSearch() {
     queryFn: async () => {
       if (!searchTerm) return [];
       
-      const { data: members, error } = await supabase
+      console.log("Searching members with term:", searchTerm);
+      
+      // First get members with their related data using explicit foreign key references
+      const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
-          *,
-          member_notes(note_text, note_type),
-          payment_requests!payment_requests_member_id_fkey(status, amount, payment_type),
-          family_members(full_name, relationship, date_of_birth)
+          id,
+          auth_user_id,
+          full_name,
+          email,
+          phone,
+          member_number,
+          status,
+          date_of_birth,
+          address,
+          membership_type,
+          payment_date,
+          failed_login_attempts,
+          member_notes:member_notes (
+            id,
+            note_text,
+            note_type
+          ),
+          payment_requests:payment_requests_member_id_fkey (
+            id,
+            status,
+            amount,
+            payment_type
+          ),
+          family_members:family_members_parent_id_fkey (
+            id,
+            full_name,
+            relationship,
+            date_of_birth
+          )
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
 
-      if (error) throw error;
+      if (membersError) {
+        console.error('Error fetching members:', membersError);
+        toast({
+          variant: "destructive",
+          title: "Error fetching members",
+          description: membersError.message
+        });
+        throw membersError;
+      }
 
-      const membersWithRoles = await Promise.all((members || []).map(async (member) => {
-        if (!member.auth_user_id) return { ...member, user_roles: [] };
+      console.log("Found members:", members);
 
-        const { data: roles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', member.auth_user_id);
+      // Then get roles for each member with auth_user_id using Promise.all for parallel requests
+      const membersWithRoles = await Promise.all(
+        (members || []).map(async (member) => {
+          if (!member.auth_user_id) {
+            console.log(`No auth_user_id for member ${member.member_number}`);
+            return {
+              ...member,
+              user_roles: []
+            };
+          }
 
-        if (rolesError) {
-          console.error('Error fetching roles:', rolesError);
-          return { ...member, user_roles: [] };
-        }
+          const { data: userRoles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', member.auth_user_id);
 
-        return { ...member, user_roles: roles || [] };
-      }));
-        
+          if (rolesError) {
+            console.error(`Error fetching roles for member ${member.member_number}:`, rolesError);
+            toast({
+              variant: "destructive",
+              title: "Error fetching roles",
+              description: `Failed to fetch roles for member ${member.member_number}`
+            });
+            return {
+              ...member,
+              user_roles: []
+            };
+          }
+
+          console.log(`Roles for member ${member.member_number}:`, userRoles);
+
+          return {
+            ...member,
+            user_roles: userRoles || [],
+            member_notes: member.member_notes || [],
+            payment_requests: member.payment_requests || [],
+            family_members: member.family_members || []
+          };
+        })
+      );
+
       return membersWithRoles as MemberWithRelations[];
     },
-    enabled: searchTerm.length > 2
+    enabled: searchTerm.length > 2,
+    meta: {
+      onError: (error: Error) => {
+        console.error("Query error:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch member data. Please try again."
+        });
+      }
+    }
   });
 
   const handleResetLoginState = async (memberNumber: string) => {
