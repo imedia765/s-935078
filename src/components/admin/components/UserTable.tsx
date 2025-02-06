@@ -27,26 +27,18 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
     try {
       console.log("Attempting quick fix for member:", memberNumber);
       
-      // Update member status and reset failed login attempts
+      // Update member status and reset all login-related fields
       const { error: updateError } = await supabase
         .from('members')
         .update({ 
           status: 'active',
           failed_login_attempts: 0,
-          last_failed_login: null,
+          last_failed_attempt: null,
           locked_until: null
         })
         .eq('member_number', memberNumber);
 
       if (updateError) throw updateError;
-
-      // Clear any failed login records
-      const { error: deleteError } = await supabase
-        .from('failed_login_attempts')
-        .delete()
-        .eq('member_number', memberNumber);
-
-      if (deleteError) throw deleteError;
 
       toast({
         title: "Success",
