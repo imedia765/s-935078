@@ -17,16 +17,9 @@ export const useMagicLink = () => {
     try {
       console.log("Generating magic link for user:", userId);
 
-      // Explicitly cast userId to UUID type for PostgreSQL
       const { data, error } = await supabase
         .rpc('generate_magic_link', { 
           p_user_id: userId
-        }, {
-          headers: {
-            'Content-Profile': 'public',
-            'Content-Type': 'application/json',
-            'Prefer': 'params=single-object,resolution=merge-duplicates'
-          }
         });
 
       if (error) {
