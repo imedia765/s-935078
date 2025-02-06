@@ -23,33 +23,22 @@ export const useMagicLink = () => {
 
       console.log("Found member email:", memberData.email);
 
-      // Use the edge function to generate magic link
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-magic-link`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            email: memberData.email,
-          }),
-        }
-      );
+      // Create the magic link directly using Supabase Auth
+      const { data: magicLinkData, error: magicLinkError } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: memberData.email,
+      });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to generate magic link');
+      if (magicLinkError) {
+        console.error("Magic link generation error:", magicLinkError);
+        throw magicLinkError;
       }
 
-      const { magicLink } = await response.json();
-
-      if (magicLink) {
+      if (magicLinkData?.properties?.action_link) {
         await sendEmail({
           to: memberData.email,
           subject: 'Your Login Link',
-          html: `<p>Here's your magic login link: ${magicLink}</p>`,
+          html: `<p>Here's your magic login link: ${magicLinkData.properties.action_link}</p>`,
         });
 
         toast({
@@ -69,4 +58,3 @@ export const useMagicLink = () => {
 
   return { generateMagicLink };
 };
-
