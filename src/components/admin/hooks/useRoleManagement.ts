@@ -13,25 +13,26 @@ export const useRoleManagement = () => {
 
   const generateMagicLink = async (userId: string) => {
     try {
-      const { data: userData } = await supabase
+      // First get the member's email
+      const { data: memberData, error: memberError } = await supabase
         .from('members')
-        .select('email')
+        .select('email, auth_user_id')
         .eq('auth_user_id', userId)
         .single();
 
-      if (!userData?.email) {
-        throw new Error('No email found for user');
+      if (memberError || !memberData?.email) {
+        throw new Error(memberError?.message || 'No email found for user');
       }
 
       const { data, error } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
-        email: userData.email,
+        email: memberData.email,
       });
 
       if (error) throw error;
 
       await sendEmail({
-        to: userData.email,
+        to: memberData.email,
         subject: 'Your Login Link',
         html: `<p>Here's your magic login link: ${data.properties.action_link}</p>`,
       });
@@ -53,10 +54,17 @@ export const useRoleManagement = () => {
   const handleFixAllIssues = async () => {
     try {
       setIsFixingAll(true);
+      console.log("Starting fix all issues process...");
+      
       const { data, error } = await supabase.rpc('fix_all_role_issues');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error in fix_all_role_issues:", error);
+        throw error;
+      }
 
+      console.log("Fix all issues response:", data);
+      
       await refetch();
       
       toast({
@@ -86,13 +94,20 @@ export const useRoleManagement = () => {
     }
 
     try {
+      console.log(`Fixing role error: ${checkType} for user ${userId} with fix type ${fixType}`);
+      
       const { data, error } = await supabase.rpc('fix_role_error', {
         p_error_type: checkType,
         p_user_id: userId,
         p_specific_fix: fixType === 'remove_role' ? 'remove_role' : null
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error in fix_role_error:", error);
+        throw error;
+      }
+
+      console.log("Fix role error response:", data);
 
       toast({
         title: "Success",
@@ -184,6 +199,9 @@ export const useRoleManagement = () => {
         throw membersError;
       }
 
+      console.log("Fetched members:", members);
+      console.log("Fetched user roles:", userRoles);
+
       const memberMap = members.reduce((acc: {[key: string]: {email: string, member_number: string, full_name: string}}, member: any) => {
         if (member.auth_user_id) {
           acc[member.auth_user_id] = {
@@ -224,6 +242,8 @@ export const useRoleManagement = () => {
         throw validationError;
       }
 
+      console.log("Validation data:", validationData);
+
       const { data: auditLogs, error: auditError } = await supabase
         .from('audit_logs')
         .select('*')
@@ -234,6 +254,8 @@ export const useRoleManagement = () => {
       if (auditError) {
         console.error("Audit log fetch error:", auditError);
       }
+
+      console.log("Audit logs:", auditLogs);
 
       return {
         validation: validationData,
