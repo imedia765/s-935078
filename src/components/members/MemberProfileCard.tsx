@@ -68,7 +68,7 @@ interface MemberProfileCardProps {
 
 export function MemberProfileCard({ member, onEdit, onDelete }: MemberProfileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
   const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
@@ -244,14 +244,14 @@ export function MemberProfileCard({ member, onEdit, onDelete }: MemberProfileCar
                 <div className="mt-2 space-y-2">
                   <Select
                     value={paymentMethod}
-                    onValueChange={(value: 'cash' | 'bank') => setPaymentMethod(value)}
+                    onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Payment Method" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="bank">Bank Transfer</SelectItem>
+                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button

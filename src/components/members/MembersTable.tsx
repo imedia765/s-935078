@@ -50,7 +50,7 @@ export function MembersTable({
   onDelete,
 }: MembersTableProps) {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
   const { toast } = useToast();
 
   const handleSelectAll = (checked: boolean) => {
@@ -126,14 +126,14 @@ export function MembersTable({
           </span>
           <Select
             value={paymentMethod}
-            onValueChange={(value: 'cash' | 'bank') => setPaymentMethod(value)}
+            onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
           >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Payment Method" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="bank">Bank Transfer</SelectItem>
+              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
             </SelectContent>
           </Select>
           <Button
