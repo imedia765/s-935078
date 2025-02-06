@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,17 +216,20 @@ export const useRoleManagement = () => {
       console.log("Fetched members:", members);
       console.log("Fetched user roles:", userRoles);
 
-      // Create a map of roles by user_id
-      const rolesByUser = userRoles.reduce((acc: { [key: string]: { role: string }[] }, role: any) => {
+      // Create a map of roles by user_id with proper type checking
+      const rolesByUser = userRoles.reduce((acc: { [key: string]: { role: UserRole }[] }, role: any) => {
         if (!acc[role.user_id]) {
           acc[role.user_id] = [];
         }
-        acc[role.user_id].push({ role: role.role });
+        // Validate that the role is of type UserRole
+        if (role.role === 'admin' || role.role === 'collector' || role.role === 'member') {
+          acc[role.user_id].push({ role: role.role as UserRole });
+        }
         return acc;
       }, {});
 
-      // Map members to include their roles
-      const usersWithRoles = members.map((member: any) => ({
+      // Map members to include their roles with proper typing
+      const usersWithRoles: User[] = members.map((member: any) => ({
         id: member.auth_user_id,
         email: member.email,
         member_number: member.member_number,
