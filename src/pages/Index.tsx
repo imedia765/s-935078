@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +20,12 @@ export const Index = () => {
     setIsLoading(true);
 
     try {
+      // First clear any existing sessions to prevent refresh token errors
+      await supabase.auth.signOut();
+      
       console.log("Attempting login for member:", memberNumber);
       
-      // First check if member exists and is active
+      // Check if member exists and is active
       const { data: member, error: memberError } = await supabase
         .from("members")
         .select("*, auth_user_id")
@@ -101,6 +103,12 @@ export const Index = () => {
         });
         setIsLoading(false);
         return;
+      }
+
+      // Verify session is established
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Failed to establish session");
       }
 
       // Success - redirect to profile
