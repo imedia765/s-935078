@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,9 +30,9 @@ export const useRoleManagement = () => {
 
       console.log("Found member email:", memberData.email);
 
-      const { data, error } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
-        email: memberData.email,
+      // Call the rpc function instead of direct admin API
+      const { data, error } = await supabase.rpc('generate_magic_link', {
+        user_email: memberData.email
       });
 
       if (error) {
@@ -39,16 +40,18 @@ export const useRoleManagement = () => {
         throw error;
       }
 
-      await sendEmail({
-        to: memberData.email,
-        subject: 'Your Login Link',
-        html: `<p>Here's your magic login link: ${data.properties.action_link}</p>`,
-      });
+      if (data?.magic_link) {
+        await sendEmail({
+          to: memberData.email,
+          subject: 'Your Login Link',
+          html: `<p>Here's your magic login link: ${data.magic_link}</p>`,
+        });
 
-      toast({
-        title: "Success",
-        description: "Magic link sent successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Magic link sent successfully",
+        });
+      }
     } catch (error: any) {
       console.error('Error generating magic link:', error);
       toast({
