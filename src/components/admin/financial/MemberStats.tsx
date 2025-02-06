@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +37,7 @@ export function MemberStats() {
               relationship,
               date_of_birth
             ),
-            payment_requests (
+            payment_requests!payment_requests_member_id_fkey (
               id,
               amount,
               status,

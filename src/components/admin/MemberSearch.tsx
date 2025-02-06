@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export function MemberSearch() {
     queryFn: async () => {
       if (!searchTerm) return [];
       
+      // First get members
       const { data: members, error } = await supabase
         .from('members')
         .select(`
@@ -35,9 +37,16 @@ export function MemberSearch() {
             note_text,
             note_type
           ),
-          payment_requests!payment_requests_member_id_fkey(status, amount, payment_type),
-          family_members(full_name, relationship, date_of_birth),
-          user_roles:auth_user_id(role)
+          payment_requests!payment_requests_member_id_fkey (
+            status,
+            amount,
+            payment_type
+          ),
+          family_members (
+            full_name,
+            relationship,
+            date_of_birth
+          )
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
@@ -47,21 +56,30 @@ export function MemberSearch() {
         throw error;
       }
 
-      // Transform the data to match MemberWithRelations type
-      const transformedMembers = members?.map(member => ({
-        ...member,
-        user_roles: member.user_roles ? 
-          Array.isArray(member.user_roles) ? 
-            member.user_roles.map((role: any) => ({ role: role.role })) : 
-            [] : 
-          [],
-        member_notes: member.member_notes || [],
-        payment_requests: member.payment_requests || [],
-        family_members: member.family_members || []
-      })) || [];
+      // Then get roles for each member with auth_user_id
+      const membersWithRoles = await Promise.all(
+        members.map(async (member) => {
+          let roles = [];
+          if (member.auth_user_id) {
+            const { data: userRoles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', member.auth_user_id);
+            roles = userRoles || [];
+          }
 
-      console.log('Transformed members data:', transformedMembers);
-      return transformedMembers as MemberWithRelations[];
+          return {
+            ...member,
+            user_roles: roles,
+            member_notes: member.member_notes || [],
+            payment_requests: member.payment_requests || [],
+            family_members: member.family_members || []
+          };
+        })
+      );
+
+      console.log('Members with roles:', membersWithRoles);
+      return membersWithRoles as MemberWithRelations[];
     },
     enabled: searchTerm.length > 2
   });
