@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -190,6 +189,20 @@ export const useRoleManagement = () => {
     queryFn: async () => {
       console.log("Fetching users and roles data...");
       
+      const { data: members, error: membersError } = await supabase
+        .from('members')
+        .select(`
+          auth_user_id,
+          email,
+          member_number,
+          full_name
+        `);
+
+      if (membersError) {
+        console.error("Members fetch error:", membersError);
+        throw membersError;
+      }
+
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
@@ -199,44 +212,28 @@ export const useRoleManagement = () => {
         throw rolesError;
       }
 
-      const { data: members, error: membersError } = await supabase
-        .from('members')
-        .select('auth_user_id, email, member_number, full_name');
-
-      if (membersError) {
-        console.error("Members fetch error:", membersError);
-        throw membersError;
-      }
-
       console.log("Fetched members:", members);
       console.log("Fetched user roles:", userRoles);
 
-      const memberMap = members.reduce((acc: {[key: string]: {email: string, member_number: string, full_name: string}}, member: any) => {
-        if (member.auth_user_id) {
-          acc[member.auth_user_id] = {
-            email: member.email,
-            member_number: member.member_number,
-            full_name: member.full_name
-          };
-        }
-        return acc;
-      }, {});
-
-      const userMap = userRoles.reduce((acc: {[key: string]: User}, role: any) => {
+      // Create a map of roles by user_id
+      const rolesByUser = userRoles.reduce((acc: { [key: string]: { role: string }[] }, role: any) => {
         if (!acc[role.user_id]) {
-          acc[role.user_id] = {
-            id: role.user_id,
-            email: memberMap[role.user_id]?.email,
-            member_number: memberMap[role.user_id]?.member_number,
-            full_name: memberMap[role.user_id]?.full_name,
-            user_roles: []
-          };
+          acc[role.user_id] = [];
         }
-        acc[role.user_id].user_roles?.push({ role: role.role });
+        acc[role.user_id].push({ role: role.role });
         return acc;
       }, {});
 
-      return Object.values(userMap);
+      // Map members to include their roles
+      const usersWithRoles = members.map((member: any) => ({
+        id: member.auth_user_id,
+        email: member.email,
+        member_number: member.member_number,
+        full_name: member.full_name,
+        user_roles: rolesByUser[member.auth_user_id] || []
+      }));
+
+      return usersWithRoles;
     }
   });
 
