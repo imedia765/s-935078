@@ -41,7 +41,7 @@ export default function Admin() {
     queryFn: async () => {
       console.log("Fetching system checks...");
       try {
-        const { data, error } = await supabase.rpc('run_system_checks');
+        const { data, error } = await supabase.rpc('run_combined_system_checks');
         if (error) {
           console.error("System checks error:", error);
           throw error;
