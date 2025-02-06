@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleManagement } from "@/components/admin/RoleManagement";
-import { MemberSearch } from "@/components/admin/MemberSearch";
+import { MemberSearch } from "@/components/admin/member-search/MemberSearch";
 import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement";
 import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
 import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashboard";
