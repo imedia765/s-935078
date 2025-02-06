@@ -13,7 +13,8 @@ export const useRoleManagement = () => {
 
   const generateMagicLink = async (userId: string) => {
     try {
-      // First get the member's email
+      console.log("Generating magic link for user:", userId);
+      
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('email, auth_user_id')
@@ -21,15 +22,21 @@ export const useRoleManagement = () => {
         .single();
 
       if (memberError || !memberData?.email) {
+        console.error("Member data fetch error:", memberError);
         throw new Error(memberError?.message || 'No email found for user');
       }
+
+      console.log("Found member email:", memberData.email);
 
       const { data, error } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: memberData.email,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Magic link generation error:", error);
+        throw error;
+      }
 
       await sendEmail({
         to: memberData.email,
