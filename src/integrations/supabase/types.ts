@@ -183,6 +183,33 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_members: {
+        Row: {
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          member_data: Json
+          restored_at: string | null
+          restored_by: string | null
+        }
+        Insert: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          member_data: Json
+          restored_at?: string | null
+          restored_by?: string | null
+        }
+        Update: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          member_data?: Json
+          restored_at?: string | null
+          restored_by?: string | null
+        }
+        Relationships: []
+      }
       documentation: {
         Row: {
           created_at: string

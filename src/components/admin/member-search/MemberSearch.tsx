@@ -4,8 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { SearchBar } from "./SearchBar";
 import { MemberCard } from "./MemberCard";
+import { DeletedMembersView } from "./DeletedMembersView";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MemberWithRelations } from "../../../types/member";
-import { AlertCircle } from "lucide-react";
 
 export function MemberSearch() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,32 +95,45 @@ export function MemberSearch() {
   };
 
   return (
-    <div className="space-y-4">
-      <SearchBar 
-        onSearch={(term, type) => {
-          setSearchTerm(term);
-          setSearchType(type);
-        }} 
-      />
+    <Tabs defaultValue="active">
+      <TabsList>
+        <TabsTrigger value="active">Active Members</TabsTrigger>
+        <TabsTrigger value="deleted">Deleted Members</TabsTrigger>
+      </TabsList>
 
-      {isLoading && (
-        <div className="flex items-center justify-center p-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      )}
-      
-      {searchResults && searchResults.length > 0 && (
+      <TabsContent value="active">
         <div className="space-y-4">
-          {searchResults.map((member) => (
-            <MemberCard
-              key={member.id}
-              member={member}
-              onResetLoginState={handleResetLoginState}
-              onCleanupFailedAttempts={handleCleanupFailedAttempts}
-            />
-          ))}
+          <SearchBar 
+            onSearch={(term, type) => {
+              setSearchTerm(term);
+              setSearchType(type);
+            }} 
+          />
+
+          {isLoading && (
+            <div className="flex items-center justify-center p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          )}
+          
+          {searchResults && searchResults.length > 0 && (
+            <div className="space-y-4">
+              {searchResults.map((member) => (
+                <MemberCard
+                  key={member.id}
+                  member={member}
+                  onResetLoginState={handleResetLoginState}
+                  onCleanupFailedAttempts={handleCleanupFailedAttempts}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </TabsContent>
+
+      <TabsContent value="deleted">
+        <DeletedMembersView />
+      </TabsContent>
+    </Tabs>
   );
 }
