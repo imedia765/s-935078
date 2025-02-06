@@ -1974,19 +1974,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
-      generate_magic_link:
-        | {
-            Args: {
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_user_id: string
-            }
-            Returns: Json
-          }
+      generate_magic_link: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      generate_magic_link_text_param: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: Json
+      }
       generate_magic_link_token: {
         Args: {
           p_member_number: string
