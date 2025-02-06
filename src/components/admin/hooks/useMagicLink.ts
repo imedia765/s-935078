@@ -17,7 +17,7 @@ export const useMagicLink = () => {
     try {
       console.log("Generating magic link for user:", userId);
       
-      // Call our secure RPC function with proper type casting
+      // Call our secure RPC function with proper TypeScript typing
       const { data, error } = await supabase
         .rpc('generate_magic_link', { 
           p_user_id: userId 
@@ -28,7 +28,11 @@ export const useMagicLink = () => {
         throw error;
       }
 
-      // Type check the response
+      // Safely type check the response
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw new Error('Invalid response format from magic link generation');
+      }
+
       const response = data as MagicLinkResponse;
       if (!response.success) {
         throw new Error(response.error || 'Failed to generate magic link');
