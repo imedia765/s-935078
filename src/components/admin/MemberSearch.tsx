@@ -28,21 +28,37 @@ export function MemberSearch() {
     queryFn: async () => {
       if (!searchTerm) return [];
       
-      // First get members
-      const { data: members, error } = await supabase
+      console.log("Searching for members with term:", searchTerm);
+      
+      // First get members with their related data
+      const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
-          *,
+          id,
+          auth_user_id,
+          full_name,
+          email,
+          phone,
+          member_number,
+          status,
+          date_of_birth,
+          address,
+          membership_type,
+          payment_date,
+          failed_login_attempts,
           member_notes (
+            id,
             note_text,
             note_type
           ),
-          payment_requests!payment_requests_member_id_fkey (
+          payment_requests:payment_requests_member_id_fkey (
+            id,
             status,
             amount,
             payment_type
           ),
           family_members (
+            id,
             full_name,
             relationship,
             date_of_birth
@@ -51,26 +67,42 @@ export function MemberSearch() {
         .or(`${searchType}.ilike.%${searchTerm}%`)
         .limit(10);
 
-      if (error) {
-        console.error('Error fetching members:', error);
-        throw error;
+      if (membersError) {
+        console.error('Error fetching members:', membersError);
+        throw membersError;
       }
+
+      console.log("Found members:", members);
 
       // Then get roles for each member with auth_user_id
       const membersWithRoles = await Promise.all(
-        members.map(async (member) => {
-          let roles = [];
-          if (member.auth_user_id) {
-            const { data: userRoles } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', member.auth_user_id);
-            roles = userRoles || [];
+        (members || []).map(async (member) => {
+          if (!member.auth_user_id) {
+            console.log(`No auth_user_id for member ${member.member_number}`);
+            return {
+              ...member,
+              user_roles: []
+            };
           }
+
+          const { data: userRoles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', member.auth_user_id);
+
+          if (rolesError) {
+            console.error(`Error fetching roles for member ${member.member_number}:`, rolesError);
+            return {
+              ...member,
+              user_roles: []
+            };
+          }
+
+          console.log(`Roles for member ${member.member_number}:`, userRoles);
 
           return {
             ...member,
-            user_roles: roles,
+            user_roles: userRoles || [],
             member_notes: member.member_notes || [],
             payment_requests: member.payment_requests || [],
             family_members: member.family_members || []
@@ -78,7 +110,6 @@ export function MemberSearch() {
         })
       );
 
-      console.log('Members with roles:', membersWithRoles);
       return membersWithRoles as MemberWithRelations[];
     },
     enabled: searchTerm.length > 2
@@ -86,17 +117,22 @@ export function MemberSearch() {
 
   const handleResetLoginState = async (memberNumber: string) => {
     try {
+      console.log("Resetting login state for member:", memberNumber);
+      
       const { data, error } = await supabase.rpc('reset_user_login_state', {
         p_member_number: memberNumber
       });
       
       if (error) throw error;
       
+      console.log("Login state reset successful");
+      
       toast({
         title: "Success",
         description: "User login state has been reset",
       });
     } catch (error: any) {
+      console.error("Error resetting login state:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -107,17 +143,22 @@ export function MemberSearch() {
 
   const handleCleanupFailedAttempts = async (memberNumber: string) => {
     try {
+      console.log("Cleaning up failed attempts for member:", memberNumber);
+      
       const { error } = await supabase.rpc('cleanup_failed_attempts', {
         p_member_number: memberNumber
       });
       
       if (error) throw error;
       
+      console.log("Failed attempts cleanup successful");
+      
       toast({
         title: "Success",
         description: "Failed login attempts have been cleaned up",
       });
     } catch (error: any) {
+      console.error("Error cleaning up failed attempts:", error);
       toast({
         title: "Error",
         description: error.message,
