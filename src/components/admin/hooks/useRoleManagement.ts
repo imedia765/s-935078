@@ -190,13 +190,29 @@ export const useRoleManagement = () => {
     queryFn: async () => {
       console.log("Fetching users and roles data...");
       
+      // Fetch members without trying to join with user_roles
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
+          id,
           auth_user_id,
           email,
           member_number,
-          full_name
+          full_name,
+          member_notes (
+            note_text,
+            note_type
+          ),
+          payment_requests!payment_requests_member_id_fkey (
+            status,
+            amount,
+            payment_type
+          ),
+          family_members (
+            full_name,
+            relationship,
+            date_of_birth
+          )
         `);
 
       if (membersError) {
@@ -204,6 +220,7 @@ export const useRoleManagement = () => {
         throw membersError;
       }
 
+      // Fetch user roles separately
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
@@ -245,7 +262,12 @@ export const useRoleManagement = () => {
     queryKey: ["roleValidation"],
     queryFn: async () => {
       console.log("Fetching role validation data...");
-      const { data: validationData, error: validationError } = await supabase.rpc('validate_user_roles');
+      
+      // Modified the RPC call to avoid ambiguous column names
+      const { data: validationData, error: validationError } = await supabase
+        .rpc('run_system_validation_checks', {
+          // Add any parameters if needed
+        });
       
       if (validationError) {
         console.error("Role validation error:", validationError);
