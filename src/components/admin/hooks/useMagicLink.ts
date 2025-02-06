@@ -17,24 +17,28 @@ export const useMagicLink = () => {
     try {
       console.log("Generating magic link for user:", userId);
       
-      // Call our secure RPC function
+      // Call our secure RPC function with proper type casting
       const { data, error } = await supabase
-        .rpc<MagicLinkResponse>('generate_magic_link', { p_user_id: userId });
+        .rpc('generate_magic_link', { 
+          p_user_id: userId 
+        });
 
       if (error) {
         console.error("Magic link generation error:", error);
         throw error;
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to generate magic link');
+      // Type check the response
+      const response = data as MagicLinkResponse;
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate magic link');
       }
 
       // Send the magic link email
       await sendEmail({
-        to: data.email!,
+        to: response.email!,
         subject: 'Your Login Link',
-        html: `<p>Here's your magic login link: ${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink</p>`,
+        html: `<p>Here's your magic login link: ${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${response.token}&type=magiclink</p>`,
       });
 
       toast({
