@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
@@ -41,7 +40,7 @@ export default function Admin() {
     queryFn: async () => {
       console.log("Fetching system checks...");
       try {
-        const { data, error } = await supabase.rpc('run_combined_system_checks');
+        const { data, error } = await supabase.rpc('check_system_status');
         if (error) {
           console.error("System checks error:", error);
           throw error;
