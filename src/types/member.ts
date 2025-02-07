@@ -69,6 +69,14 @@ export const memberValidationRules: Record<string, ValidationRules> = {
   date_of_birth: {
     pattern: /^\d{4}-\d{2}-\d{2}$/,
     message: 'Please enter a valid date (YYYY-MM-DD)'
+  },
+  address: {
+    maxLength: 200,
+    message: 'Address must not exceed 200 characters'
+  },
+  town: {
+    maxLength: 100,
+    message: 'Town must not exceed 100 characters'
   }
 };
 
@@ -103,3 +111,9 @@ export const validateField = (
 
   return null;
 };
+
+export const getDisplayError = (fieldName: string, error: string | null): string => {
+  if (!error) return '';
+  return memberValidationRules[fieldName]?.message || error;
+};
+

@@ -291,11 +291,14 @@ const Profile = () => {
     setEditedData(prev => {
       if (!prev) return null;
       const updated = { ...prev, [field]: value };
+      
+      // Validate the field immediately
       const error = validateField(field, value);
       setValidationErrors(prev => ({
         ...prev,
         [field]: error || ''
       }));
+      
       return updated;
     });
   };
@@ -486,9 +489,13 @@ const Profile = () => {
                               value={editedData?.full_name || ''}
                               onChange={(e) => handleInputChange("full_name", e.target.value)}
                               className={validationErrors.full_name ? "border-red-500" : ""}
+                              aria-invalid={!!validationErrors.full_name}
+                              aria-describedby={validationErrors.full_name ? "full_name-error" : undefined}
                             />
                             {validationErrors.full_name && (
-                              <p className="text-sm text-red-500">{validationErrors.full_name}</p>
+                              <p className="text-sm text-red-500" id="full_name-error" role="alert">
+                                {validationErrors.full_name}
+                              </p>
                             )}
                           </div>
                         ) : (
@@ -561,9 +568,13 @@ const Profile = () => {
                               value={editedData?.email || ''}
                               onChange={(e) => handleInputChange("email", e.target.value)}
                               className={validationErrors.email ? "border-red-500" : ""}
+                              aria-invalid={!!validationErrors.email}
+                              aria-describedby={validationErrors.email ? "email-error" : undefined}
                             />
                             {validationErrors.email && (
-                              <p className="text-sm text-red-500">{validationErrors.email}</p>
+                              <p className="text-sm text-red-500" id="email-error" role="alert">
+                                {validationErrors.email}
+                              </p>
                             )}
                           </div>
                         ) : (
@@ -578,9 +589,13 @@ const Profile = () => {
                               value={editedData?.phone || ''}
                               onChange={(e) => handleInputChange("phone", e.target.value)}
                               className={validationErrors.phone ? "border-red-500" : ""}
+                              aria-invalid={!!validationErrors.phone}
+                              aria-describedby={validationErrors.phone ? "phone-error" : undefined}
                             />
                             {validationErrors.phone && (
-                              <p className="text-sm text-red-500">{validationErrors.phone}</p>
+                              <p className="text-sm text-red-500" id="phone-error" role="alert">
+                                {validationErrors.phone}
+                              </p>
                             )}
                           </div>
                         ) : (
@@ -590,10 +605,20 @@ const Profile = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Address</p>
                         {isEditing ? (
-                          <Input
-                            value={editedData?.address || ''}
-                            onChange={(e) => handleInputChange("address", e.target.value)}
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              value={editedData?.address || ''}
+                              onChange={(e) => handleInputChange("address", e.target.value)}
+                              className={validationErrors.address ? "border-red-500" : ""}
+                              aria-invalid={!!validationErrors.address}
+                              aria-describedby={validationErrors.address ? "address-error" : undefined}
+                            />
+                            {validationErrors.address && (
+                              <p className="text-sm text-red-500" id="address-error" role="alert">
+                                {validationErrors.address}
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <p className="text-foreground hover:text-primary transition-colors">{memberData?.address}</p>
                         )}
@@ -606,9 +631,13 @@ const Profile = () => {
                               value={editedData?.postcode || ''}
                               onChange={(e) => handleInputChange("postcode", e.target.value)}
                               className={validationErrors.postcode ? "border-red-500" : ""}
+                              aria-invalid={!!validationErrors.postcode}
+                              aria-describedby={validationErrors.postcode ? "postcode-error" : undefined}
                             />
                             {validationErrors.postcode && (
-                              <p className="text-sm text-red-500">{validationErrors.postcode}</p>
+                              <p className="text-sm text-red-500" id="postcode-error" role="alert">
+                                {validationErrors.postcode}
+                              </p>
                             )}
                           </div>
                         ) : (
@@ -618,10 +647,20 @@ const Profile = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Town</p>
                         {isEditing ? (
-                          <Input
-                            value={editedData?.town || ''}
-                            onChange={(e) => handleInputChange("town", e.target.value)}
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              value={editedData?.town || ''}
+                              onChange={(e) => handleInputChange("town", e.target.value)}
+                              className={validationErrors.town ? "border-red-500" : ""}
+                              aria-invalid={!!validationErrors.town}
+                              aria-describedby={validationErrors.town ? "town-error" : undefined}
+                            />
+                            {validationErrors.town && (
+                              <p className="text-sm text-red-500" id="town-error" role="alert">
+                                {validationErrors.town}
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <p className="text-foreground hover:text-primary transition-colors">{memberData?.town}</p>
                         )}
@@ -635,9 +674,13 @@ const Profile = () => {
                               value={editedData?.date_of_birth || ''}
                               onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                               className={validationErrors.date_of_birth ? "border-red-500" : ""}
+                              aria-invalid={!!validationErrors.date_of_birth}
+                              aria-describedby={validationErrors.date_of_birth ? "date_of_birth-error" : undefined}
                             />
                             {validationErrors.date_of_birth && (
-                              <p className="text-sm text-red-500">{validationErrors.date_of_birth}</p>
+                              <p className="text-sm text-red-500" id="date_of_birth-error" role="alert">
+                                {validationErrors.date_of_birth}
+                              </p>
                             )}
                           </div>
                         ) : (
@@ -848,42 +891,4 @@ const Profile = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date_of_birth" className="text-right">
-                  Date of Birth
-                </Label>
-                <Input
-                  id="date_of_birth"
-                  name="date_of_birth"
-                  type="date"
-                  defaultValue={selectedFamilyMember?.date_of_birth}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="gender" className="text-right">
-                  Gender
-                </Label>
-                <Select name="gender" defaultValue={selectedFamilyMember?.gender}>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">Save Changes</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default Profile;
+              <div className
