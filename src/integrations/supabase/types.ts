@@ -1555,6 +1555,7 @@ export type Database = {
           approved_by: string | null
           collector_id: string
           created_at: string | null
+          has_supporting_docs: boolean | null
           id: string
           member_id: string
           member_number: string
@@ -1562,6 +1563,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_number: string | null
           payment_type: string
+          receipt_metadata: Json | null
           retention_period: unknown | null
           status: string | null
         }
@@ -1571,6 +1573,7 @@ export type Database = {
           approved_by?: string | null
           collector_id: string
           created_at?: string | null
+          has_supporting_docs?: boolean | null
           id?: string
           member_id: string
           member_number: string
@@ -1578,6 +1581,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_number?: string | null
           payment_type: string
+          receipt_metadata?: Json | null
           retention_period?: unknown | null
           status?: string | null
         }
@@ -1587,6 +1591,7 @@ export type Database = {
           approved_by?: string | null
           collector_id?: string
           created_at?: string | null
+          has_supporting_docs?: boolean | null
           id?: string
           member_id?: string
           member_number?: string
@@ -1594,6 +1599,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_number?: string | null
           payment_type?: string
+          receipt_metadata?: Json | null
           retention_period?: unknown | null
           status?: string | null
         }
@@ -1687,6 +1693,44 @@ export type Database = {
           rows_affected?: number | null
         }
         Relationships: []
+      }
+      receipts: {
+        Row: {
+          generated_at: string | null
+          id: string
+          metadata: Json | null
+          payment_id: string | null
+          receipt_number: string
+          receipt_url: string | null
+          template_version: string | null
+        }
+        Insert: {
+          generated_at?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_id?: string | null
+          receipt_number: string
+          receipt_url?: string | null
+          template_version?: string | null
+        }
+        Update: {
+          generated_at?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_id?: string | null
+          receipt_number?: string
+          receipt_url?: string | null
+          template_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_change_requests: {
         Row: {
@@ -1939,6 +1983,50 @@ export type Database = {
           warning_threshold_percent?: number
         }
         Relationships: []
+      }
+      supporting_documents: {
+        Row: {
+          document_type: string
+          file_url: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payment_id: string | null
+          status: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          document_type: string
+          file_url: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_id?: string | null
+          status?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          document_type?: string
+          file_url?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_id?: string | null
+          status?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supporting_documents_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sync_status: {
         Row: {
