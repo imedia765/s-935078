@@ -36,8 +36,8 @@ interface EmailTemplate {
   subject: string;
   body: string;
   is_active: boolean;
-  category: typeof templateCategories[number];
-  is_system: boolean;
+  category?: typeof templateCategories[number];
+  is_system?: boolean;
   created_at: string;
   updated_at: string;
   created_by?: string;
@@ -50,7 +50,7 @@ interface EmailTemplateFormData {
   subject: string;
   body: string;
   is_active: boolean;
-  category: typeof templateCategories[number];
+  category?: typeof templateCategories[number];
   is_system?: boolean;
 }
 
@@ -125,7 +125,7 @@ export function EmailTemplateList() {
       }
       
       // Transform the data to ensure all required fields are present
-      return (data || []).map(template => ({
+      return (data || []).map((template: Partial<EmailTemplate>) => ({
         ...template,
         category: template.category || 'custom',
         is_system: template.is_system || false
