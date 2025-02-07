@@ -1,4 +1,3 @@
-
 import { useProfileManagement } from "@/hooks/useProfileManagement";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { BankDetailsCard } from "@/components/profile/BankDetailsCard";
@@ -37,9 +36,7 @@ const Profile = () => {
     fetchData,
     handleAddFamilyMember,
     handleEditFamilyMember,
-    handleDeleteFamilyMember,
-    handleViewDocument,
-    handleDownloadDocument
+    handleDeleteFamilyMember
   } = useProfileManagement();
 
   const announcements = [
@@ -49,17 +46,6 @@ const Profile = () => {
       content: 'Scheduled maintenance this weekend',
       created_at: new Date().toISOString(),
       priority: 'medium' as const
-    }
-  ];
-
-  const documents = [
-    {
-      id: '1',
-      title: 'Member Handbook',
-      type: 'PDF',
-      size: '2.5MB',
-      updated_at: new Date().toISOString(),
-      url: '#'
     }
   ];
 
@@ -158,9 +144,9 @@ const Profile = () => {
             <div className="space-y-6">
               <AnnouncementsCard announcements={announcements} />
               <DocumentsCard
-                documents={documents}
-                onView={handleViewDocument}
-                onDownload={handleDownloadDocument}
+                documents={[]}
+                onView={() => {}}
+                onDownload={() => {}}
               />
             </div>
           </div>
