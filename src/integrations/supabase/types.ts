@@ -1977,19 +1977,6 @@ export type Database = {
         }
         Returns: Json
       }
-      generate_magic_link_text_param: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      generate_magic_link_token: {
-        Args: {
-          email: string
-          token_type: Database["public"]["Enums"]["token_type"]
-        }
-        Returns: string
-      }
       generate_payment_number: {
         Args: Record<PropertyKey, never>
         Returns: string
