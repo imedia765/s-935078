@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { User } from "../types/role-types";
@@ -15,6 +14,7 @@ import {
 import { useState } from "react";
 import { useMagicLink } from "../hooks/useMagicLink";
 import { UserRole } from "@/types/auth";
+import { useUserRoles } from "../hooks/useUserRoles";
 
 interface UserTableProps {
   users: User[];
@@ -25,7 +25,7 @@ export const UserTable = ({ users }: UserTableProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const { generateMagicLink, sendMagicLinkEmail, copyToClipboard } = useMagicLink();
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const { handleRoleChange, handleRemoveRole } = useUserRoles();
 
   const handleResetLoginState = async (memberNumber: string | undefined) => {
     if (!memberNumber) {
@@ -154,42 +154,6 @@ export const UserTable = ({ users }: UserTableProps) => {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    try {
-      setIsLoading(userId);
-      
-      // First, remove existing roles
-      const { error: removeError } = await supabase.rpc('remove_user_role', { 
-        p_user_id: userId,
-        p_role: 'member' // We remove all roles by specifying any role
-      });
-      
-      if (removeError) throw removeError;
-
-      // Then add the new role
-      const { error: addError } = await supabase.rpc('add_user_role', {
-        p_user_id: userId,
-        p_role: newRole
-      });
-      
-      if (addError) throw addError;
-      
-      toast({
-        title: "Success",
-        description: `Role updated to ${newRole}`,
-      });
-    } catch (error: any) {
-      console.error('Role change error:', error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(null);
-    }
-  };
-
   return (
     <div className="rounded-md border">
       <Table>
@@ -238,6 +202,13 @@ export const UserTable = ({ users }: UserTableProps) => {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleRoleChange(user.id, "member")}>
                         Set as Member
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => handleRemoveRole(user.id)}
+                        className="text-red-600 dark:text-red-400"
+                      >
+                        Remove All Roles
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -299,4 +270,3 @@ export const UserTable = ({ users }: UserTableProps) => {
     </div>
   );
 };
-

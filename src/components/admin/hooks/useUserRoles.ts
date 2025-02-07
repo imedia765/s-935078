@@ -58,6 +58,42 @@ export const useUserRoles = () => {
     }
   };
 
+  const handleRemoveRole = async (userId: string) => {
+    try {
+      console.log(`Removing roles for user ${userId}`);
+      
+      const { error: removeError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (removeError) throw removeError;
+
+      await supabase.from('audit_logs').insert([{
+        table_name: 'user_roles',
+        operation: 'DELETE',
+        record_id: userId,
+        new_values: {
+          action: 'role_removed'
+        }
+      }]);
+
+      toast({
+        title: "Success",
+        description: "All roles removed",
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error("Error removing roles:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const { data: userData, isLoading: isLoadingUsers, refetch } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -128,6 +164,7 @@ export const useUserRoles = () => {
 
   return {
     handleRoleChange,
+    handleRemoveRole,
     userData,
     isLoadingUsers,
     refetch
