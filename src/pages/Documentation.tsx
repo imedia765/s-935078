@@ -25,7 +25,16 @@ export default function Documentation() {
           .order('title');
 
         if (error) throw error;
-        setSections(data || []);
+        
+        // Type assertion to ensure data matches our interface
+        const typedData = data?.map(item => ({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          section_type: item.section_type as 'user_guide' | 'admin_guide'
+        })) || [];
+        
+        setSections(typedData);
       } catch (error) {
         console.error('Error fetching documentation:', error);
       } finally {
