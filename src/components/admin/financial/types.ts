@@ -23,7 +23,7 @@ export interface CollectorPaymentStats {
 export interface Payment {
   id: string;
   amount: number;
-  payment_method: string;
+  payment_method: 'bank_transfer' | 'cash';
   payment_type: string;
   status: string;
   created_at: string;

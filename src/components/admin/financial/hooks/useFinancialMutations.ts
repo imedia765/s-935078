@@ -48,7 +48,7 @@ export function useFinancialMutations() {
         .from('payment_requests')
         .update({ 
           receipt_url: receiptUrl 
-        } as Partial<Payment>)
+        })
         .eq('id', paymentId);
 
       if (updateError) throw updateError;
