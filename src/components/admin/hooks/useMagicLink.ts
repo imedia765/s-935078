@@ -43,7 +43,8 @@ export const useMagicLink = () => {
         throw new Error(data.error || 'Failed to generate magic link');
       }
 
-      const magicLink = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink`;
+      // Using window.location.origin to get the current domain
+      const magicLink = `${window.location.origin}/reset-password?token=${data.token}`;
 
       return {
         magicLink,
