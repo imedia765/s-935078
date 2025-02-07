@@ -27,6 +27,17 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         variant: "destructive",
         title: "Error",
         description: "Password must be at least 8 characters long",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText("Password must be at least 8 characters long");
+            }}
+          >
+            Copy
+          </Button>
+        ),
       });
       setIsLoading(false);
       return;
@@ -37,6 +48,17 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         variant: "destructive",
         title: "Error",
         description: "Passwords do not match",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText("Passwords do not match");
+            }}
+          >
+            Copy
+          </Button>
+        ),
       });
       setIsLoading(false);
       return;
@@ -53,6 +75,17 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
           variant: "destructive",
           title: "Error",
           description: "Invalid or expired reset token",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText("Invalid or expired reset token");
+              }}
+            >
+              Copy
+            </Button>
+          ),
         });
         return;
       }
@@ -65,7 +98,25 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         }
       );
 
-      if (resetError) throw resetError;
+      if (resetError) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: resetError.message || "Failed to reset password",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(resetError.message || "Failed to reset password");
+              }}
+            >
+              Copy
+            </Button>
+          ),
+        });
+        throw resetError;
+      }
 
       toast({
         title: "Success",
@@ -77,6 +128,17 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         variant: "destructive",
         title: "Error",
         description: error.message || "Failed to reset password",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(error.message || "Failed to reset password");
+            }}
+          >
+            Copy
+          </Button>
+        ),
       });
     } finally {
       setIsLoading(false);
