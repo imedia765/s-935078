@@ -29,7 +29,7 @@ export async function logAuditEvent({
     const { error } = await supabase
       .from('audit_logs')
       .insert({
-        operation: operation.toUpperCase(),
+        operation: operation.toUpperCase() as AuditOperation,
         table_name: tableName,
         record_id: recordId,
         old_values: oldValues,
@@ -68,3 +68,4 @@ export async function getAuditLogs(tableName?: string, recordId?: string) {
   if (error) throw error;
   return data;
 }
+

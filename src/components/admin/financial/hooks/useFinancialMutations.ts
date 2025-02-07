@@ -43,13 +43,17 @@ export function useFinancialMutations() {
       const receiptBlob = await generateReceipt(payment);
       const receiptUrl = await saveReceiptToStorage(payment, receiptBlob);
 
-      // Update payment with receipt URL
-      const { error: updateError } = await supabase
-        .from('payment_requests')
-        .update({ receipt_url: receiptUrl })
-        .eq('id', paymentId);
+      // Create a new receipt record
+      const { error: receiptError } = await supabase
+        .from('receipts')
+        .insert({
+          payment_id: paymentId,
+          receipt_number: `RCP-${Date.now()}`,
+          receipt_url: receiptUrl,
+          generated_at: new Date().toISOString()
+        });
 
-      if (updateError) throw updateError;
+      if (receiptError) throw receiptError;
 
       // Send confirmation email
       await sendPaymentNotification(payment, 'confirmation');
@@ -111,3 +115,4 @@ export function useFinancialMutations() {
     deleteMutation
   };
 }
+
