@@ -1,14 +1,10 @@
 
 const PRODUCTION_DOMAIN = 'pwaburton.co.uk';
+const PRODUCTION_URL = `https://${PRODUCTION_DOMAIN}`;
 
 export const getBaseUrl = (): string => {
-  // Priority:
-  // 1. Environment variable (if set)
-  // 2. Production domain check
-  // 3. Current window location
-  return import.meta.env.VITE_APP_URL || 
-         (window.location.hostname === PRODUCTION_DOMAIN ? `https://${PRODUCTION_DOMAIN}` : 
-         window.location.origin);
+  // Simple check: if we're in production domain, use HTTPS, otherwise use current origin
+  return window.location.hostname === PRODUCTION_DOMAIN ? PRODUCTION_URL : window.location.origin;
 };
 
 export const isValidDomain = (url: string): boolean => {
@@ -16,9 +12,7 @@ export const isValidDomain = (url: string): boolean => {
     const hostname = new URL(url).hostname;
     return hostname === PRODUCTION_DOMAIN || 
            hostname === 'localhost' || 
-           hostname.endsWith('.localhost') ||
-           hostname.includes('.lovable.dev') ||
-           hostname.includes('trzaeinxlyyl'); // Adding Supabase preview domain
+           hostname.endsWith('.localhost');
   } catch {
     return false;
   }

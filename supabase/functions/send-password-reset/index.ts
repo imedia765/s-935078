@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
@@ -25,7 +26,8 @@ serve(async (req) => {
     console.log(`[${Date.now()}] Starting password reset email process for ${memberNumber}`);
     console.log(`[${Date.now()}] Target email: ${email}`);
 
-    const resetLink = `https://waburton.co.uk/reset-password?token=${token}`;
+    // Always use production URL for reset links
+    const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
     
     const client = new SmtpClient();
     console.log(`[${Date.now()}] SMTP client initialized`);
