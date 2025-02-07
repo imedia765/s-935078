@@ -95,7 +95,9 @@ const Profile = () => {
         .select(`
           *,
           family_members (*),
-          payment_requests!payment_requests_member_id_fkey (
+          member_notes (*),
+          payment_requests (
+            id,
             created_at,
             payment_type,
             amount,
@@ -120,7 +122,12 @@ const Profile = () => {
         roles: roles?.map(r => r.role) || [],
         member_notes: member?.member_notes || [],
         family_members: member?.family_members || [],
-        payment_requests: member?.payment_requests || [],
+        payment_requests: member?.payment_requests.map(pr => ({
+          id: pr.id,
+          status: pr.status,
+          amount: pr.amount,
+          payment_type: pr.payment_type
+        })) || [],
         yearly_payment_status: member?.yearly_payment_status || null,
         yearly_payment_due_date: member?.yearly_payment_due_date || null,
         yearly_payment_amount: member?.yearly_payment_amount || null,
@@ -130,7 +137,9 @@ const Profile = () => {
         marital_status: member?.marital_status || null,
         gender: member?.gender || null,
         town: member?.town || null,
-        postcode: member?.postcode || null
+        postcode: member?.postcode || null,
+        collector: member?.collector || null,
+        photo_url: member?.photo_url || null
       };
       
       setMemberData(memberWithRelations);
