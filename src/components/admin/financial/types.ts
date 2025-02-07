@@ -28,7 +28,7 @@ export interface Payment {
   status: string;
   created_at: string;
   payment_number: string;
-  receipt_url?: string;
+  receipt_url?: string;  // Added this field
   collector_id?: string;
   member_id?: string;
   member_number?: string;
