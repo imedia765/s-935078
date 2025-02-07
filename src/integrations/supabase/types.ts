@@ -1233,6 +1233,107 @@ export type Database = {
           },
         ]
       }
+      payment_analytics_summary: {
+        Row: {
+          calculated_at: string | null
+          collector_breakdown: Json | null
+          id: string
+          payment_method_breakdown: Json | null
+          period_end: string
+          period_start: string
+          status_breakdown: Json | null
+          total_amount: number
+          total_payments: number
+        }
+        Insert: {
+          calculated_at?: string | null
+          collector_breakdown?: Json | null
+          id?: string
+          payment_method_breakdown?: Json | null
+          period_end: string
+          period_start: string
+          status_breakdown?: Json | null
+          total_amount: number
+          total_payments: number
+        }
+        Update: {
+          calculated_at?: string | null
+          collector_breakdown?: Json | null
+          id?: string
+          payment_method_breakdown?: Json | null
+          period_end?: string
+          period_start?: string
+          status_breakdown?: Json | null
+          total_amount?: number
+          total_payments?: number
+        }
+        Relationships: []
+      }
+      payment_archives: {
+        Row: {
+          archived_at: string | null
+          id: string
+          payment_data: Json
+        }
+        Insert: {
+          archived_at?: string | null
+          id?: string
+          payment_data: Json
+        }
+        Update: {
+          archived_at?: string | null
+          id?: string
+          payment_data?: Json
+        }
+        Relationships: []
+      }
+      payment_audit_logs: {
+        Row: {
+          action: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_state: Json | null
+          old_state: Json | null
+          payment_id: string
+          performed_at: string | null
+          performed_by: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_state?: Json | null
+          old_state?: Json | null
+          payment_id: string
+          performed_at?: string | null
+          performed_by: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_state?: Json | null
+          old_state?: Json | null
+          payment_id?: string
+          performed_at?: string | null
+          performed_by?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_audit_logs_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_receipts: {
         Row: {
           amount: number
@@ -1313,6 +1414,56 @@ export type Database = {
           },
         ]
       }
+      payment_reminders: {
+        Row: {
+          amount: number
+          created_at: string | null
+          due_date: string
+          id: string
+          member_id: string
+          payment_type: string
+          reminder_type: string
+          scheduled_for: string
+          sent_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          due_date: string
+          id?: string
+          member_id: string
+          payment_type: string
+          reminder_type: string
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          member_id?: string
+          payment_type?: string
+          reminder_type?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reminders_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_requests: {
         Row: {
           amount: number
@@ -1327,6 +1478,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_number: string | null
           payment_type: string
+          retention_period: unknown | null
           status: string | null
         }
         Insert: {
@@ -1342,6 +1494,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_number?: string | null
           payment_type: string
+          retention_period?: unknown | null
           status?: string | null
         }
         Update: {
@@ -1357,6 +1510,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_number?: string | null
           payment_type?: string
+          retention_period?: unknown | null
           status?: string | null
         }
         Relationships: [
@@ -2230,6 +2384,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      process_payment_retention: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       remove_user_role: {
         Args: {
           p_user_id: string
@@ -2280,6 +2438,10 @@ export type Database = {
         Returns: undefined
       }
       update_collector_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_payment_analytics_summary: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
