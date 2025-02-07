@@ -1,4 +1,3 @@
-
 export interface PaymentStats {
   totalPayments: number;
   totalAmount: number;
@@ -80,4 +79,9 @@ export interface Collector {
   updated_at?: string;
   members: CollectorMember;
   payment_requests?: Payment[];
+}
+
+export interface BatchSelectionState {
+  selectedPayments: string[];
+  isSelectAllChecked: boolean;
 }

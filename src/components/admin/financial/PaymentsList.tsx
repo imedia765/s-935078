@@ -1,6 +1,7 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileSpreadsheet, FileDown, Check, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { FileSpreadsheet, FileDown, Check, Trash2, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +27,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useState } from "react";
-import type { Payment } from "./types";
+import type { Payment, BatchSelectionState } from "./types";
+import { useToast } from "@/hooks/use-toast";
 
 interface PaymentsListProps {
   paymentsData: Payment[];
@@ -48,9 +51,12 @@ export function PaymentsList({
   setShowDeleteDialog,
   confirmDelete
 }: PaymentsListProps) {
+  const { toast } = useToast();
   const [openCollectors, setOpenCollectors] = useState<string[]>([]);
-
-  console.log('Initial paymentsData:', paymentsData);
+  const [batchSelection, setBatchSelection] = useState<BatchSelectionState>({
+    selectedPayments: [],
+    isSelectAllChecked: false
+  });
 
   const toggleCollector = (collectorId: string) => {
     setOpenCollectors(prev => 
@@ -60,10 +66,42 @@ export function PaymentsList({
     );
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    setBatchSelection({
+      selectedPayments: checked ? paymentsData.map(p => p.id) : [],
+      isSelectAllChecked: checked
+    });
+  };
+
+  const handleSelectPayment = (paymentId: string, checked: boolean) => {
+    setBatchSelection(prev => ({
+      selectedPayments: checked 
+        ? [...prev.selectedPayments, paymentId]
+        : prev.selectedPayments.filter(id => id !== paymentId),
+      isSelectAllChecked: false
+    }));
+  };
+
+  const handleBatchGenerateReceipts = () => {
+    if (batchSelection.selectedPayments.length === 0) {
+      toast({
+        title: "No payments selected",
+        description: "Please select at least one payment to generate receipts.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Generating receipts",
+      description: `Generating receipts for ${batchSelection.selectedPayments.length} payments...`,
+    });
+    // Receipt generation logic will be implemented in the next phase
+  };
+
   // Group payments by collector
   const paymentsByCollector = paymentsData.reduce((acc: Record<string, any>, payment: Payment) => {
     if (!payment.members_collectors?.id || !payment.members_collectors?.name) {
-      console.log('Skipping payment due to missing collector info:', payment);
       return acc;
     }
 
@@ -92,14 +130,21 @@ export function PaymentsList({
   const sortedCollectors = Object.values(paymentsByCollector)
     .sort((a: any, b: any) => a.name.localeCompare(b.name));
 
-  console.log('Grouped Payments:', paymentsByCollector);
-  console.log('Sorted Collectors:', sortedCollectors);
-
   return (
     <Card className="p-6 glass-card">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gradient">Payment Records by Collector</h2>
         <div className="flex gap-2">
+          {batchSelection.selectedPayments.length > 0 && (
+            <Button 
+              variant="outline"
+              onClick={handleBatchGenerateReceipts}
+              className="bg-blue-600/20 hover:bg-blue-600/30"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Generate Receipts ({batchSelection.selectedPayments.length})
+            </Button>
+          )}
           <Button 
             variant="outline"
             onClick={() => handleExport('excel')}
@@ -127,6 +172,17 @@ export function PaymentsList({
         <p className="text-center text-muted-foreground">No collectors with payments found</p>
       ) : (
         <div className="space-y-4">
+          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+            <Checkbox
+              checked={batchSelection.isSelectAllChecked}
+              onCheckedChange={handleSelectAll}
+            />
+            <span className="text-sm text-muted-foreground">
+              {batchSelection.selectedPayments.length > 0 
+                ? `${batchSelection.selectedPayments.length} payments selected`
+                : "Select all payments"}
+            </span>
+          </div>
           {sortedCollectors.map((collector: any) => (
             <Collapsible
               key={collector.id}
@@ -154,6 +210,7 @@ export function PaymentsList({
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[50px]"></TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Payment #</TableHead>
                       <TableHead>Member</TableHead>
@@ -165,6 +222,12 @@ export function PaymentsList({
                   <TableBody>
                     {collector.payments.map((payment: Payment) => (
                       <TableRow key={payment.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={batchSelection.selectedPayments.includes(payment.id)}
+                            onCheckedChange={(checked) => handleSelectPayment(payment.id, checked as boolean)}
+                          />
+                        </TableCell>
                         <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>{payment.payment_number}</TableCell>
                         <TableCell>{payment.members?.full_name}</TableCell>
