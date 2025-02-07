@@ -18,12 +18,18 @@ export function useFinancialQueries() {
           status,
           created_at,
           payment_number,
-          members!payment_requests_member_id_fkey (
+          members!payment_requests_member_number_fkey (
             full_name
           ),
           members_collectors!payment_requests_collector_id_fkey (
             id,
             name
+          ),
+          receipts (
+            id,
+            receipt_number,
+            receipt_url,
+            generated_at
           )
         `)
         .order('created_at', { ascending: false });
