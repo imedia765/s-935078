@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -96,7 +95,7 @@ const Profile = () => {
           *,
           family_members (*),
           member_notes (*),
-          payment_requests (
+          payment_requests!payment_requests_member_id_fkey (
             id,
             created_at,
             payment_type,
