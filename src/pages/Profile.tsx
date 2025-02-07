@@ -471,14 +471,14 @@ const Profile = () => {
                         </div>
                         {/* Role Badges */}
                         <div className="flex flex-wrap gap-2">
-                          {memberData?.roles?.map((role: string, index: number) => (
+                          {memberData?.user_roles?.map((role, index) => (
                             <Badge 
                               key={index} 
                               className="bg-primary/20 text-primary hover:bg-primary/30 transition-colors capitalize text-sm px-3 py-1"
                               variant="outline"
                             >
                               <Shield className="w-4 h-4 mr-2" />
-                              {role}
+                              {role.role}
                             </Badge>
                           ))}
                         </div>
@@ -700,5 +700,162 @@ const Profile = () => {
                 </div>
                 <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
                   <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                    <strong>IMPORTANT:</strong> You must use your member number ({memberData?.member_number}) as the payment
-                    reference when
+                    <strong>IMPORTANT:</strong> You must use your member number ({memberData?.member_number}) as the payment reference when making a bank transfer to ensure your payment is properly recorded.
+                  </p>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Family Member Dialog */}
+      <Dialog open={isAddFamilyMemberOpen} onOpenChange={setIsAddFamilyMemberOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Family Member</DialogTitle>
+            <DialogDescription>
+              Add a family member to your membership. They will be linked to your account.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddFamilyMember}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="full_name" className="text-right">
+                  Full Name
+                </Label>
+                <Input
+                  id="full_name"
+                  name="full_name"
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="relationship" className="text-right">
+                  Relationship
+                </Label>
+                <Select name="relationship" required>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="spouse">Spouse</SelectItem>
+                    <SelectItem value="child">Child</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                    <SelectItem value="sibling">Sibling</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date_of_birth" className="text-right">
+                  Date of Birth
+                </Label>
+                <Input
+                  id="date_of_birth"
+                  name="date_of_birth"
+                  type="date"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="gender" className="text-right">
+                  Gender
+                </Label>
+                <Select name="gender">
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Add Family Member</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Family Member Dialog */}
+      <Dialog open={isEditFamilyMemberOpen} onOpenChange={setIsEditFamilyMemberOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Family Member</DialogTitle>
+            <DialogDescription>
+              Update the details of your family member.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditFamilyMember}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="full_name" className="text-right">
+                  Full Name
+                </Label>
+                <Input
+                  id="full_name"
+                  name="full_name"
+                  defaultValue={selectedFamilyMember?.full_name}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="relationship" className="text-right">
+                  Relationship
+                </Label>
+                <Select name="relationship" defaultValue={selectedFamilyMember?.relationship} required>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="spouse">Spouse</SelectItem>
+                    <SelectItem value="child">Child</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                    <SelectItem value="sibling">Sibling</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="date_of_birth" className="text-right">
+                  Date of Birth
+                </Label>
+                <Input
+                  id="date_of_birth"
+                  name="date_of_birth"
+                  type="date"
+                  defaultValue={selectedFamilyMember?.date_of_birth}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="gender" className="text-right">
+                  Gender
+                </Label>
+                <Select name="gender" defaultValue={selectedFamilyMember?.gender}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Profile;
