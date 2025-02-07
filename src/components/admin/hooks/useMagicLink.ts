@@ -2,6 +2,7 @@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail } from "@/utils/email";
+import { getBaseUrl, isValidDomain } from "@/utils/urlUtils";
 
 interface MagicLinkResponse {
   success: boolean;
@@ -43,8 +44,15 @@ export const useMagicLink = () => {
         throw new Error(data.error || 'Failed to generate magic link');
       }
 
-      // Using window.location.origin to get the current domain
-      const magicLink = `${window.location.origin}/reset-password?token=${data.token}`;
+      const baseUrl = getBaseUrl();
+      console.log("Using base URL for magic link:", baseUrl);
+
+      if (!isValidDomain(baseUrl)) {
+        throw new Error('Invalid domain for magic link generation');
+      }
+
+      const magicLink = `${baseUrl}/reset-password?token=${data.token}`;
+      console.log("Generated magic link:", magicLink);
 
       return {
         magicLink,
