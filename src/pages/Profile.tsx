@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -173,12 +174,12 @@ const Profile = () => {
     
     try {
       const relationship = formData.get('relationship')?.toString() || '';
-      const familyMemberNumber = generateFamilyMemberNumber(memberData.member_number, relationship);
+      const familyMemberNumber = generateFamilyMemberNumber(memberData?.member_number || '', relationship);
 
       const { error } = await supabase
         .from('family_members')
         .insert({
-          member_id: memberData.id,
+          member_id: memberData?.id,
           family_member_number: familyMemberNumber,
           full_name: formData.get('full_name')?.toString() || '',
           relationship: relationship,
@@ -500,11 +501,7 @@ const Profile = () => {
                               Save
                             </Button>
                             <Button 
-                              onClick={() => {
-                                setIsEditing(false);
-                                setValidationErrors({});
-                                setEditedData(memberData);
-                              }} 
+                              onClick={handleCancel} 
                               variant="outline" 
                               size="sm" 
                               className="hover:bg-destructive/20 hover:text-destructive"
@@ -513,7 +510,7 @@ const Profile = () => {
                             </Button>
                           </>
                         ) : (
-                          <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="hover:bg-primary/20 hover:text-primary">
+                          <Button onClick={handleEdit} variant="outline" size="sm" className="hover:bg-primary/20 hover:text-primary">
                             <Edit className="w-4 h-4 mr-1" /> Edit
                           </Button>
                         )}
@@ -566,7 +563,7 @@ const Profile = () => {
                         <p className="text-sm text-muted-foreground">Address</p>
                         {isEditing ? (
                           <Input
-                            value={editedData?.address}
+                            value={editedData?.address || ''}
                             onChange={(e) => handleInputChange("address", e.target.value)}
                           />
                         ) : (
@@ -594,7 +591,7 @@ const Profile = () => {
                         <p className="text-sm text-muted-foreground">Town</p>
                         {isEditing ? (
                           <Input
-                            value={editedData?.town}
+                            value={editedData?.town || ''}
                             onChange={(e) => handleInputChange("town", e.target.value)}
                           />
                         ) : (
@@ -607,7 +604,7 @@ const Profile = () => {
                           <div className="space-y-2">
                             <Input
                               type="date"
-                              value={editedData?.date_of_birth}
+                              value={editedData?.date_of_birth || ''}
                               onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                               className={validationErrors.date_of_birth ? "border-red-500" : ""}
                             />
@@ -617,35 +614,60 @@ const Profile = () => {
                           </div>
                         ) : (
                           <p className="text-foreground hover:text-primary transition-colors">
-                            {memberData?.date_of_birth ? new Date(memberData.date_of_birth).toLocaleDateString() : 'Not set'}
+                            {memberData?.date_of_birth ? format(new Date(memberData.date_of_birth), 'dd/MM/yyyy') : 'Not set'}
                           </p>
                         )}
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Gender</p>
                         {isEditing ? (
-                          <Input
-                            value={editedData?.gender}
-                            onChange={(e) => handleInputChange("gender", e.target.value)}
-                          />
+                          <Select
+                            value={editedData?.gender || ''}
+                            onValueChange={(value) => handleInputChange("gender", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
                         ) : (
-                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.gender || 'Not set'}</p>
+                          <p className="text-foreground hover:text-primary transition-colors capitalize">
+                            {memberData?.gender || 'Not set'}
+                          </p>
                         )}
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Marital Status</p>
                         {isEditing ? (
-                          <Input
-                            value={editedData?.marital_status}
-                            onChange={(e) => handleInputChange("marital_status", e.target.value)}
-                          />
+                          <Select
+                            value={editedData?.marital_status || ''}
+                            onValueChange={(value) => handleInputChange("marital_status", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select marital status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="single">Single</SelectItem>
+                              <SelectItem value="married">Married</SelectItem>
+                              <SelectItem value="divorced">Divorced</SelectItem>
+                              <SelectItem value="widowed">Widowed</SelectItem>
+                            </SelectContent>
+                          </Select>
                         ) : (
-                          <p className="text-foreground hover:text-primary transition-colors">{memberData?.marital_status || 'Not set'}</p>
+                          <p className="text-foreground hover:text-primary transition-colors capitalize">
+                            {memberData?.marital_status || 'Not set'}
+                          </p>
                         )}
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Collector</p>
-                        <p className="text-foreground hover:text-primary transition-colors">{memberData?.collector}</p>
+                        <p className="text-foreground hover:text-primary transition-colors">
+                          {memberData?.collector || 'Not assigned'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -679,193 +701,4 @@ const Profile = () => {
                 <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
                   <p className="text-sm text-yellow-600 dark:text-yellow-400">
                     <strong>IMPORTANT:</strong> You must use your member number ({memberData?.member_number}) as the payment
-                    reference when making bank transfers.
-                  </p>
-                </div>
-              </Card>
-
-              {/* Important Documents Card */}
-              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <FileText className="text-primary" />
-                    <h2 className="text-xl font-semibold text-primary">Important Documents</h2>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="p-4 bg-black/20 rounded-lg border border-gray-800">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-200">PWA Collector Member Responsibilities</h3>
-                        <p className="text-sm text-gray-400">Last updated: 14 December 2024</p>
-                      </div>
-                      <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
-                        <FileText className="mr-2 h-4 w-4" /> View
-                      </Button>
-                    </div>
-                    <p className="text-sm text-gray-400">
-                      Guidelines for collector members regarding their responsibilities and duties.
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-black/20 rounded-lg border border-gray-800">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-200">Pakistan Welfare Association Membership Terms</h3>
-                        <p className="text-sm text-gray-400">Last updated: 14 December 2024</p>
-                      </div>
-                      <Button variant="outline" className="bg-black/40 hover:bg-primary/20">
-                        <FileText className="mr-2 h-4 w-4" /> View
-                      </Button>
-                    </div>
-                    <p className="text-sm text-gray-400">
-                      Complete terms and conditions for PWA membership.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Payment History Card */}
-              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Receipt className="text-primary" />
-                    <h2 className="text-xl font-semibold text-primary">Payment History</h2>
-                  </div>
-                </div>
-                <div className="relative overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-muted-foreground">Date</TableHead>
-                        <TableHead className="text-muted-foreground">Type</TableHead>
-                        <TableHead className="text-muted-foreground">Amount</TableHead>
-                        <TableHead className="text-muted-foreground">Status</TableHead>
-                        <TableHead className="text-muted-foreground">Reference</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paymentHistory.map((payment) => (
-                        <TableRow key={payment.id} className="hover:bg-muted/50">
-                          <TableCell className="text-foreground">
-                            {new Date(payment.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="capitalize text-foreground">{payment.payment_type}</TableCell>
-                          <TableCell className="text-foreground font-medium">£{payment.amount}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={payment.status === 'approved' ? 'default' : 'secondary'}
-                              className={payment.status === 'approved' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
-                            >
-                              {payment.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-muted-foreground">{payment.payment_number}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </Card>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Membership Details Card */}
-              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3 mb-4">
-                  <Shield className="text-primary" />
-                  <h2 className="text-xl font-semibold text-primary">Membership Details</h2>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Type</p>
-                    <p className="text-foreground capitalize font-medium">{memberData?.membership_type}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Payment Status</p>
-                    <Badge 
-                      variant={memberData?.yearly_payment_status === 'completed' ? 'default' : 'destructive'}
-                      className={memberData?.yearly_payment_status === 'completed' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
-                    >
-                      {memberData?.yearly_payment_status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Next Payment Due</p>
-                    <p className="text-foreground">
-                      {memberData?.yearly_payment_due_date ? 
-                        new Date(memberData.yearly_payment_due_date).toLocaleDateString() :
-                        'Not set'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Amount Due</p>
-                    <p className="text-foreground font-medium">£{memberData?.yearly_payment_amount || '0'}</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Family Members Card */}
-              <Card className="glass-card p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Users className="text-primary" />
-                    <h2 className="text-xl font-semibold text-primary">Family Members</h2>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-black/40"
-                    onClick={() => setIsAddFamilyMemberOpen(true)}
-                  >
-                    Add Member
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  {memberData?.family_members?.map((member: any) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-gray-800"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-200">{member.full_name}</p>
-                        <p className="text-sm text-gray-400 capitalize">{member.relationship}</p>
-                        {member.date_of_birth && (
-                          <p className="text-sm text-gray-400">
-                            DOB: {new Date(member.date_of_birth).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedFamilyMember(member);
-                            setIsEditFamilyMemberOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteFamilyMember(member.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  {(!memberData?.family_members || memberData.family_members.length === 0) && (
-                    <p className="text-gray-400 text-center py-4">No family members registered</p>
-                  )}
-                </div>
-              </Card>
-
-              {/* Add Family Member Dialog */}
-              <Dialog open={isAddFamilyMemberOpen} onOpenChange={setIsAddFamilyMemberOpen}>
-                <DialogContent className="glass-card">
-                  <DialogHeader>
-                    <
+                    reference when
