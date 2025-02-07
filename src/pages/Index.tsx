@@ -201,16 +201,21 @@ export const Index = () => {
         localStorage.removeItem("rememberedMember");
       }
 
-      // Log login activity
+      // Log login activity using audit_logs instead of login_activity
       const { error: logError } = await supabase
-        .from("login_activity")
+        .from("audit_logs")
         .insert([
           {
-            member_id: member.id,
-            login_time: new Date().toISOString(),
-            device_info: deviceInfo,
-            ip_address: "Captured server-side", // Note: actual IP should be captured server-side
-            status: "success"
+            operation: "INSERT",
+            table_name: "login_events",
+            new_values: {
+              member_id: member.id,
+              login_time: new Date().toISOString(),
+              device_info: deviceInfo,
+              ip_address: "Captured server-side", // Note: actual IP should be captured server-side
+              status: "success"
+            },
+            severity: "INFO"
           }
         ]);
 
