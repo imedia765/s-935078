@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +8,55 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { WhatsAppSupport } from "@/components/WhatsAppSupport";
+import { validateField } from "@/types/member";
 
 export const Index = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    memberNumber?: string;
+    password?: string;
+  }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Password validation rules
+  const validatePassword = (pass: string) => {
+    if (pass.length < 8) return "Password must be at least 8 characters";
+    if (!/[A-Z]/.test(pass)) return "Password must contain at least one uppercase letter";
+    if (!/[a-z]/.test(pass)) return "Password must contain at least one lowercase letter";
+    if (!/[0-9]/.test(pass)) return "Password must contain at least one number";
+    return "";
+  };
+
+  // Member number validation
+  const validateMemberNumber = (num: string) => {
+    const regex = /^[A-Z]{2}\d{5}$/;
+    if (!regex.test(num)) {
+      return "Member number must be 2 letters followed by 5 numbers (e.g., AB12345)";
+    }
+    return "";
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Reset validation errors
+    setValidationErrors({});
+
+    // Validate inputs
+    const memberNumberError = validateMemberNumber(memberNumber);
+    const passwordError = validatePassword(password);
+
+    if (memberNumberError || passwordError) {
+      setValidationErrors({
+        memberNumber: memberNumberError,
+        password: passwordError,
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -37,8 +77,22 @@ export const Index = () => {
       if (memberError || !member) {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Member number not found",
+          title: "Login Failed",
+          description: "Please check your member number and try again",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if account is locked
+      if (member.locked_until && new Date(member.locked_until) > new Date()) {
+        const waitTime = Math.ceil(
+          (new Date(member.locked_until).getTime() - new Date().getTime()) / 1000 / 60
+        );
+        toast({
+          variant: "destructive",
+          title: "Account Temporarily Locked",
+          description: `Please try again in ${waitTime} minutes or contact support`,
         });
         setIsLoading(false);
         return;
@@ -99,11 +153,16 @@ export const Index = () => {
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: signInError.message,
+          description: "Invalid credentials. Please try again.",
         });
         setIsLoading(false);
         return;
       }
+
+      // Reset failed login attempts on successful login
+      await supabase.rpc("reset_failed_login", {
+        member_number: memberNumber,
+      });
 
       // Verify session is established
       const { data: { session } } = await supabase.auth.getSession();
@@ -123,7 +182,7 @@ export const Index = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -189,12 +248,18 @@ export const Index = () => {
                 <Input
                   id="memberNumber"
                   type="text"
-                  placeholder="Enter your member number"
+                  placeholder="Enter your member number (e.g., AB12345)"
                   value={memberNumber}
-                  onChange={(e) => setMemberNumber(e.target.value)}
-                  className="bg-black/40"
+                  onChange={(e) => {
+                    setMemberNumber(e.target.value.toUpperCase());
+                    setValidationErrors((prev) => ({ ...prev, memberNumber: "" }));
+                  }}
+                  className={`bg-black/40 ${validationErrors.memberNumber ? 'border-red-500' : ''}`}
                   disabled={isLoading}
                 />
+                {validationErrors.memberNumber && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.memberNumber}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -216,10 +281,16 @@ export const Index = () => {
                   type="password"
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-black/40"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setValidationErrors((prev) => ({ ...prev, password: "" }));
+                  }}
+                  className={`bg-black/40 ${validationErrors.password ? 'border-red-500' : ''}`}
                   disabled={isLoading}
                 />
+                {validationErrors.password && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
+                )}
               </div>
 
               <div className="flex flex-col space-y-4">
