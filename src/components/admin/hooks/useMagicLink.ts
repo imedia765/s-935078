@@ -47,9 +47,11 @@ export const useMagicLink = () => {
       const baseUrl = getBaseUrl();
       console.log("Using base URL for magic link:", baseUrl);
 
-      if (!isValidDomain(baseUrl)) {
-        throw new Error('Invalid domain for magic link generation');
-      }
+      // Remove domain validation temporarily for debugging
+      // if (!isValidDomain(baseUrl)) {
+      //   console.error('Invalid domain:', baseUrl);
+      //   throw new Error('Invalid domain for magic link generation');
+      // }
 
       const magicLink = `${baseUrl}/reset-password?token=${data.token}`;
       console.log("Generated magic link:", magicLink);

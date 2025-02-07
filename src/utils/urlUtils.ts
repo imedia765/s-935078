@@ -17,7 +17,8 @@ export const isValidDomain = (url: string): boolean => {
     return hostname === PRODUCTION_DOMAIN || 
            hostname === 'localhost' || 
            hostname.endsWith('.localhost') ||
-           hostname.includes('.lovable.dev');
+           hostname.includes('.lovable.dev') ||
+           hostname.includes('trzaeinxlyyl'); // Adding Supabase preview domain
   } catch {
     return false;
   }
