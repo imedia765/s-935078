@@ -49,7 +49,32 @@ export function getPaymentReminderTemplate(payment: Payment, dueDate: string): E
   };
 }
 
-export async function sendPaymentNotification(payment: Payment, notificationType: 'confirmation' | 'reminder', dueDate?: string) {
+export function getLatePaymentTemplate(payment: Payment, daysLate: number): EmailTemplate {
+  return {
+    subject: 'Late Payment Notice',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Late Payment Notice</h2>
+        <p>Dear ${payment.members?.full_name},</p>
+        <p>Our records indicate that your payment is ${daysLate} days overdue:</p>
+        <ul>
+          <li>Payment Number: ${payment.payment_number}</li>
+          <li>Amount: £${payment.amount.toFixed(2)}</li>
+          <li>Payment Type: ${payment.payment_type}</li>
+        </ul>
+        <p>Please arrange for immediate payment to maintain your membership status.</p>
+        <p>If you have already made the payment, please disregard this notice.</p>
+        <p>Best regards,<br>PWA Burton Team</p>
+      </div>
+    `
+  };
+}
+
+export async function sendPaymentNotification(
+  payment: Payment, 
+  notificationType: 'confirmation' | 'reminder' | 'late',
+  options?: { dueDate?: string; daysLate?: number }
+) {
   if (!payment.members?.full_name || !payment.members?.email) {
     console.error('Member information or email missing from payment');
     return;
@@ -62,8 +87,12 @@ export async function sendPaymentNotification(payment: Payment, notificationType
       template = getPaymentConfirmationTemplate(payment);
       break;
     case 'reminder':
-      if (!dueDate) throw new Error('Due date required for payment reminders');
-      template = getPaymentReminderTemplate(payment, dueDate);
+      if (!options?.dueDate) throw new Error('Due date required for payment reminders');
+      template = getPaymentReminderTemplate(payment, options.dueDate);
+      break;
+    case 'late':
+      if (typeof options?.daysLate !== 'number') throw new Error('Days late required for late notices');
+      template = getLatePaymentTemplate(payment, options.daysLate);
       break;
     default:
       throw new Error('Invalid notification type');
@@ -75,3 +104,4 @@ export async function sendPaymentNotification(payment: Payment, notificationType
     html: template.html
   });
 }
+

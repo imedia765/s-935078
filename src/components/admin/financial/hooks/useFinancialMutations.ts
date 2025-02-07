@@ -55,12 +55,21 @@ export function useFinancialMutations() {
 
       // Send confirmation email
       await sendPaymentNotification(payment, 'confirmation');
+
+      // If this is a late payment, also send a late notice
+      const dueDate = new Date(payment.due_date || '');
+      if (dueDate && dueDate < new Date()) {
+        const daysLate = Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysLate > 0) {
+          await sendPaymentNotification(payment, 'late', { daysLate });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast({
         title: "Payment approved",
-        description: "The payment has been successfully approved and receipt sent.",
+        description: "The payment has been successfully approved and notifications sent.",
       });
     },
     onError: (error) => {
