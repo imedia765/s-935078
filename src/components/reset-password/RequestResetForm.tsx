@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 export const RequestResetForm = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [email, setEmail] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -28,8 +27,17 @@ export const RequestResetForm = () => {
       if (!member?.email) {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Member number not found",
+          title: "Member Not Found",
+          description: "No member found with this member number",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigator.clipboard.writeText("Member number not found")}
+            >
+              Copy
+            </Button>
+          ),
         });
         return;
       }
@@ -37,8 +45,17 @@ export const RequestResetForm = () => {
       if (member.email.toLowerCase() !== email.toLowerCase()) {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Email address does not match our records",
+          title: "Email Mismatch",
+          description: "The email address does not match our records",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigator.clipboard.writeText("Email address does not match our records")}
+            >
+              Copy
+            </Button>
+          ),
         });
         return;
       }
@@ -46,8 +63,17 @@ export const RequestResetForm = () => {
       if (!member.auth_user_id) {
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "Account Error",
           description: "No authentication record found for this member",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigator.clipboard.writeText("No authentication record found")}
+            >
+              Copy
+            </Button>
+          ),
         });
         return;
       }
@@ -73,14 +99,37 @@ export const RequestResetForm = () => {
       if (emailError) throw emailError;
 
       toast({
-        title: "Success",
-        description: "Password reset instructions have been sent to your email",
+        title: "Reset Instructions Sent",
+        description: "Please check your email for password reset instructions. The link will expire in 1 hour.",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigator.clipboard.writeText("Password reset instructions sent to your email")}
+          >
+            Copy
+          </Button>
+        ),
       });
+      
+      // Clear form after successful submission
+      setMemberNumber("");
+      setEmail("");
     } catch (error: any) {
+      console.error("Password reset request error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to send reset instructions",
+        title: "Request Failed",
+        description: error.message || "Failed to send reset instructions. Please try again.",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigator.clipboard.writeText(error.message || "Failed to send reset instructions")}
+          >
+            Copy
+          </Button>
+        ),
       });
     } finally {
       setIsLoading(false);
@@ -111,7 +160,7 @@ export const RequestResetForm = () => {
         <Input
           id="email"
           type="email"
-          placeholder="Enter your email address"
+          placeholder="Enter your registered email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="bg-black/40"
@@ -119,23 +168,8 @@ export const RequestResetForm = () => {
         />
       </div>
 
-      <div>
-        <label htmlFor="contactNumber" className="block text-sm mb-2">
-          Contact Number
-        </label>
-        <Input
-          id="contactNumber"
-          type="tel"
-          placeholder="Enter your contact number"
-          value={contactNumber}
-          onChange={(e) => setContactNumber(e.target.value)}
-          className="bg-black/40"
-          disabled={isLoading}
-        />
-      </div>
-
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Sending..." : "Send Reset Instructions"}
+        {isLoading ? "Sending Instructions..." : "Send Reset Instructions"}
       </Button>
 
       <div className="text-center">

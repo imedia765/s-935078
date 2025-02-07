@@ -21,19 +21,16 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate password length
     if (newPassword.length < 8) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Password Too Short",
         description: "Password must be at least 8 characters long",
         action: (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              navigator.clipboard.writeText("Password must be at least 8 characters long");
-            }}
+            onClick={() => navigator.clipboard.writeText("Password must be at least 8 characters long")}
           >
             Copy
           </Button>
@@ -46,15 +43,13 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     if (newPassword !== confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Passwords do not match",
+        title: "Passwords Don't Match",
+        description: "Please ensure both passwords are identical",
         action: (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              navigator.clipboard.writeText("Passwords do not match");
-            }}
+            onClick={() => navigator.clipboard.writeText("Passwords do not match")}
           >
             Copy
           </Button>
@@ -65,29 +60,22 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     }
 
     try {
-      // Try to validate the token first
       const { data: tokenData, error: tokenError } = await supabase.rpc(
         "validate_reset_token",
         { token_value: token }
       );
 
       if (tokenError || !tokenData) {
-        let errorMessage = "Invalid or expired reset token";
-        if (tokenError?.message?.includes("INVALID_TOKEN")) {
-          errorMessage = "This password reset link has expired or is invalid. Please request a new one.";
-        }
-        
+        const errorMessage = "This password reset link has expired or is invalid. Please request a new one.";
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "Invalid Reset Link",
           description: errorMessage,
           action: (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(errorMessage);
-              }}
+              onClick={() => navigator.clipboard.writeText(errorMessage)}
             >
               Copy
             </Button>
@@ -101,7 +89,8 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
       const clientInfo = {
         userAgent: window.navigator.userAgent,
         platform: window.navigator.platform,
-        language: window.navigator.language
+        language: window.navigator.language,
+        timestamp: new Date().toISOString()
       };
 
       const { error: resetError } = await supabase.rpc(
@@ -109,29 +98,26 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         {
           token_value: token,
           new_password: newPassword,
-          ip_address: window.location.hostname,
+          ip_address: window.location.origin,
           user_agent: window.navigator.userAgent,
           client_info: clientInfo
         }
       );
 
       if (resetError) {
-        let errorMessage = resetError.message || "Failed to reset password";
-        if (resetError.message?.includes("INVALID_TOKEN")) {
-          errorMessage = "This password reset link has expired or is invalid. Please request a new one.";
-        }
+        const errorMessage = resetError.message?.includes("INVALID_TOKEN")
+          ? "This password reset link has expired or is invalid. Please request a new one."
+          : "Failed to reset password. Please try again or contact support.";
         
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "Reset Failed",
           description: errorMessage,
           action: (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(errorMessage);
-              }}
+              onClick={() => navigator.clipboard.writeText(errorMessage)}
             >
               Copy
             </Button>
@@ -142,14 +128,12 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
 
       toast({
         title: "Success",
-        description: "Password has been reset successfully",
+        description: "Your password has been reset successfully. You can now log in with your new password.",
         action: (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              navigator.clipboard.writeText("Password has been reset successfully");
-            }}
+            onClick={() => navigator.clipboard.writeText("Password reset successful")}
           >
             Copy
           </Button>
@@ -157,22 +141,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
       });
       navigate("/");
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to reset password",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              navigator.clipboard.writeText(error.message || "Failed to reset password");
-            }}
-          >
-            Copy
-          </Button>
-        ),
-      });
+      console.error("Password reset error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -211,9 +180,8 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Resetting..." : "Reset Password"}
+        {isLoading ? "Resetting Password..." : "Reset Password"}
       </Button>
     </form>
   );
 };
-
