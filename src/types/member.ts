@@ -1,4 +1,3 @@
-
 export interface MemberWithRelations {
   id: string;
   full_name: string;
@@ -7,6 +6,7 @@ export interface MemberWithRelations {
   member_number: string;
   failed_login_attempts: number | null;
   user_roles: Array<{ role: string }>;
+  roles?: string[];  // Added for compatibility with existing code
   member_notes: Array<{ note_text: string; note_type: string }>;
   payment_requests: Array<{ status: string | null; amount: number; payment_type: string }>;
   status: string;
