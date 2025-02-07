@@ -35,37 +35,16 @@ export function useProfileManagement() {
         return;
       }
 
-      // Get auth email for verification
-      const { data: authData, error: authError } = await supabase
-        .from('auth_audit')
-        .select('member_number, auth_email')
+      // Get member number from email_audit table
+      const { data: emailAudit, error: emailAuditError } = await supabase
+        .from('email_audit')
+        .select('member_number')
         .eq('auth_user_id', user.id)
         .maybeSingle();
 
-      console.log("[useProfileManagement] Auth audit data:", { authData, authError });
+      console.log("[useProfileManagement] Email audit data:", { emailAudit, emailAuditError });
 
-      // Update member auth_user_id if needed
-      if (authData?.member_number) {
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ auth_user_id: user.id })
-          .eq('member_number', authData.member_number);
-
-        if (updateError) {
-          console.error("[useProfileManagement] Error updating auth_user_id:", updateError);
-        }
-      }
-
-      // Get user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      console.log("[useProfileManagement] User roles fetch result:", {
-        roles,
-        rolesError
-      });
+      let memberNumber = emailAudit?.member_number;
 
       // Then fetch member data with explicit relationship specification
       const { data: member, error: memberError } = await supabase
@@ -92,13 +71,8 @@ export function useProfileManagement() {
         userId: user.id
       });
 
-      if (memberError && memberError.code !== 'PGRST116') {
-        console.error("[useProfileManagement] Error fetching member:", memberError);
-        throw new Error("Failed to fetch member data");
-      }
-
-      if (!member && authData?.member_number) {
-        console.log("[useProfileManagement] Attempting to fetch by member number:", authData.member_number);
+      if (!member && memberNumber) {
+        console.log("[useProfileManagement] Attempting to fetch by member number:", memberNumber);
         const { data: memberByNumber, error: memberByNumberError } = await supabase
           .from("members")
           .select(`
@@ -114,13 +88,14 @@ export function useProfileManagement() {
               payment_number
             )
           `)
-          .eq("member_number", authData.member_number)
+          .eq("member_number", memberNumber)
           .maybeSingle();
 
         if (memberByNumberError) {
           console.error("[useProfileManagement] Error fetching by member number:", memberByNumberError);
         } else if (memberByNumber) {
           console.log("[useProfileManagement] Found member by number:", memberByNumber);
+          
           // Update auth_user_id
           const { error: updateError } = await supabase
             .from('members')
@@ -130,37 +105,50 @@ export function useProfileManagement() {
           if (updateError) {
             console.error("[useProfileManagement] Error updating auth_user_id:", updateError);
           } else {
-            member = memberByNumber;
+            setMemberData(memberByNumber);
+            setEditedData(memberByNumber);
+            return;
           }
         }
       }
 
-      // Transform the data to match MemberWithRelations type
-      const memberWithRelations: MemberWithRelations = {
-        ...member,
-        user_roles: roles?.map(r => ({ role: r.role })) || [],
-        roles: roles?.map(r => r.role) || [],
-        member_notes: member?.member_notes || [],
-        family_members: member?.family_members || [],
-        payment_requests: member?.payment_requests || [],
-        yearly_payment_status: member?.yearly_payment_status || null,
-        yearly_payment_due_date: member?.yearly_payment_due_date || null,
-        yearly_payment_amount: member?.yearly_payment_amount || null,
-        emergency_collection_status: member?.emergency_collection_status || null,
-        emergency_collection_amount: member?.emergency_collection_amount || null,
-        emergency_collection_due_date: member?.emergency_collection_due_date || null,
-        marital_status: member?.marital_status || null,
-        gender: member?.gender || null,
-        town: member?.town || null,
-        postcode: member?.postcode || null,
-        collector: member?.collector || null,
-        photo_url: member?.photo_url || null
-      };
-      
-      console.log("[useProfileManagement] Transformed member data:", memberWithRelations);
-      
-      setMemberData(memberWithRelations);
-      setEditedData(memberWithRelations);
+      // Get user roles
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      console.log("[useProfileManagement] User roles fetch result:", {
+        roles,
+        rolesError
+      });
+
+      if (member) {
+        // Transform the data to match MemberWithRelations type
+        const memberWithRelations: MemberWithRelations = {
+          ...member,
+          user_roles: roles?.map(r => ({ role: r.role })) || [],
+          roles: roles?.map(r => r.role) || [],
+          member_notes: member?.member_notes || [],
+          family_members: member?.family_members || [],
+          payment_requests: member?.payment_requests || [],
+          yearly_payment_status: member?.yearly_payment_status || null,
+          yearly_payment_due_date: member?.yearly_payment_due_date || null,
+          yearly_payment_amount: member?.yearly_payment_amount || null,
+          emergency_collection_status: member?.emergency_collection_status || null,
+          emergency_collection_amount: member?.emergency_collection_amount || null,
+          emergency_collection_due_date: member?.emergency_collection_due_date || null,
+          marital_status: member?.marital_status || null,
+          gender: member?.gender || null,
+          town: member?.town || null,
+          postcode: member?.postcode || null,
+          collector: member?.collector || null,
+          photo_url: member?.photo_url || null
+        };
+        
+        setMemberData(memberWithRelations);
+        setEditedData(memberWithRelations);
+      }
 
     } catch (error: any) {
       console.error("[useProfileManagement] Error in fetchData:", error);

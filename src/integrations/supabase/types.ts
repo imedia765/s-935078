@@ -48,6 +48,30 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_audit: {
+        Row: {
+          auth_email: string | null
+          auth_user_id: string
+          created_at: string | null
+          id: string
+          member_number: string
+        }
+        Insert: {
+          auth_email?: string | null
+          auth_user_id: string
+          created_at?: string | null
+          id?: string
+          member_number: string
+        }
+        Update: {
+          auth_email?: string | null
+          auth_user_id?: string
+          created_at?: string | null
+          id?: string
+          member_number?: string
+        }
+        Relationships: []
+      }
       backup_history: {
         Row: {
           backup_file_name: string | null

@@ -23,8 +23,6 @@ const Profile = () => {
     isAddFamilyMemberOpen,
     isEditFamilyMemberOpen,
     selectedFamilyMember,
-    announcements,
-    documents,
     handleInputChange,
     handleSave,
     handleCancel,
@@ -100,16 +98,12 @@ const Profile = () => {
       <Navigation />
       <div className="pt-20 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               Member Dashboard
             </h1>
           </div>
-
-          {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Member Info */}
             <div className="lg:col-span-2 space-y-6">
               <ProfileCard
                 memberData={memberData}
@@ -124,9 +118,7 @@ const Profile = () => {
                 onCancel={handleCancel}
                 onEdit={handleEdit}
               />
-
               <BankDetailsCard memberNumber={memberData?.member_number} />
-              
               <FamilyMembersCard
                 memberData={memberData}
                 onAddMember={() => setIsAddFamilyMemberOpen(true)}
@@ -136,15 +128,11 @@ const Profile = () => {
                 }}
                 onDeleteMember={handleDeleteFamilyMember}
               />
-
               <PaymentHistoryCard memberData={memberData} isLoading={false} />
             </div>
-
-            {/* Right Column - Announcements & Documents */}
             <div className="space-y-6">
-              <AnnouncementsCard announcements={announcements} />
+              <AnnouncementsCard />
               <DocumentsCard
-                documents={documents}
                 onView={handleViewDocument}
                 onDownload={handleDownloadDocument}
               />
@@ -152,7 +140,6 @@ const Profile = () => {
           </div>
         </div>
       </div>
-
       <FamilyMemberDialogs
         isAddOpen={isAddFamilyMemberOpen}
         isEditOpen={isEditFamilyMemberOpen}
