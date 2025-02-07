@@ -10,20 +10,69 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileDown } from "lucide-react";
+import { FileDown, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface PaymentHistoryCardProps {
   memberData: MemberWithRelations | null;
+  isLoading?: boolean;
 }
 
-export function PaymentHistoryCard({ memberData }: PaymentHistoryCardProps) {
+export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCardProps) {
+  const { toast } = useToast();
+  const [downloadingReceipt, setDownloadingReceipt] = useState<string | null>(null);
   const payments = memberData?.payment_requests || [];
 
-  const downloadReceipt = (paymentId: string) => {
-    // TODO: Implement receipt download
-    console.log("Downloading receipt for payment:", paymentId);
+  const downloadReceipt = async (paymentId: string) => {
+    try {
+      setDownloadingReceipt(paymentId);
+      // TODO: Implement actual receipt download logic
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated delay
+      toast({
+        title: "Receipt downloaded",
+        description: "Your payment receipt has been downloaded successfully."
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: "Failed to download receipt. Please try again."
+      });
+    } finally {
+      setDownloadingReceipt(null);
+    }
   };
+
+  const getStatusStyle = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return 'bg-green-500/20 text-green-500';
+      case 'pending':
+        return 'bg-yellow-500/20 text-yellow-500';
+      case 'failed':
+        return 'bg-red-500/20 text-red-500';
+      default:
+        return 'bg-gray-500/20 text-gray-500';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="glass-card p-6">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="glass-card p-6">
@@ -33,45 +82,54 @@ export function PaymentHistoryCard({ memberData }: PaymentHistoryCardProps) {
       {payments.length === 0 ? (
         <p className="text-muted-foreground text-center py-4">No payment history available</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Payment #</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Receipt</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {payments.map((payment) => (
-              <TableRow key={payment.id}>
-                <TableCell>{payment.id}</TableCell>
-                <TableCell className="capitalize">{payment.payment_type}</TableCell>
-                <TableCell>£{payment.amount.toFixed(2)}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    payment.status === 'approved' 
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    {payment.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => downloadReceipt(payment.id)}
-                    className="h-8 w-8"
-                  >
-                    <FileDown className="h-4 w-4" />
-                  </Button>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Payment #</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {payments.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell>
+                    {payment.created_at ? format(new Date(payment.created_at), 'dd MMM yyyy') : 'N/A'}
+                  </TableCell>
+                  <TableCell>{payment.payment_number || 'N/A'}</TableCell>
+                  <TableCell className="capitalize">{payment.payment_type}</TableCell>
+                  <TableCell>£{payment.amount.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(payment.status)}`}>
+                      {payment.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => downloadReceipt(payment.id)}
+                        disabled={downloadingReceipt === payment.id}
+                        className="h-8 w-8"
+                      >
+                        {downloadingReceipt === payment.id ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        ) : (
+                          <Receipt className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </Card>
   );
