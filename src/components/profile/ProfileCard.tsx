@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { format } from "date-fns";
 import { AvatarSection } from "./AvatarSection";
 import { RoleBadges } from "./RoleBadges";
 import { ActionButtons } from "./ActionButtons";
+import { cn } from "@/lib/utils";
 
 interface ProfileCardProps {
   memberData: MemberWithRelations | null;
@@ -36,6 +36,48 @@ export function ProfileCard({
   onCancel,
   onEdit,
 }: ProfileCardProps) {
+  const getInputClassName = (fieldName: string) => {
+    return cn(
+      "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      {
+        "border-red-500 focus-visible:ring-red-500": validationErrors[fieldName],
+        "border-input": !validationErrors[fieldName]
+      }
+    );
+  };
+
+  const renderValidationError = (fieldName: string) => {
+    if (!validationErrors[fieldName]) return null;
+    return (
+      <p className="text-sm text-red-500 mt-1" id={`${fieldName}-error`} role="alert">
+        {validationErrors[fieldName]}
+      </p>
+    );
+  };
+
+  const renderField = (fieldName: string, label: string, type: string = "text") => {
+    if (isEditing) {
+      return (
+        <div className="space-y-2">
+          <Input
+            type={type}
+            value={editedData?.[fieldName as keyof MemberWithRelations] || ''}
+            onChange={(e) => onInputChange(fieldName, e.target.value)}
+            className={getInputClassName(fieldName)}
+            aria-invalid={!!validationErrors[fieldName]}
+            aria-describedby={validationErrors[fieldName] ? `${fieldName}-error` : undefined}
+          />
+          {renderValidationError(fieldName)}
+        </div>
+      );
+    }
+    return (
+      <p className="text-foreground hover:text-primary transition-colors">
+        {memberData?.[fieldName as keyof MemberWithRelations] || 'Not set'}
+      </p>
+    );
+  };
+
   return (
     <Card className="glass-card p-6">
       <div className="flex items-start gap-6">
@@ -46,7 +88,6 @@ export function ProfileCard({
           onPhotoUpload={onPhotoUpload}
         />
         
-        {/* Member Details */}
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <div className="space-y-4">
@@ -55,15 +96,12 @@ export function ProfileCard({
                   <Input
                     value={editedData?.full_name || ''}
                     onChange={(e) => onInputChange("full_name", e.target.value)}
-                    className={validationErrors.full_name ? "border-red-500" : ""}
+                    className={getInputClassName("full_name")}
                     aria-invalid={!!validationErrors.full_name}
                     aria-describedby={validationErrors.full_name ? "full_name-error" : undefined}
+                    placeholder="Full Name"
                   />
-                  {validationErrors.full_name && (
-                    <p className="text-sm text-red-500" id="full_name-error" role="alert">
-                      {validationErrors.full_name}
-                    </p>
-                  )}
+                  {renderValidationError("full_name")}
                 </div>
               ) : (
                 <h2 className="text-2xl font-semibold text-primary">{memberData?.full_name}</h2>
@@ -84,153 +122,50 @@ export function ProfileCard({
             />
           </div>
 
-          {/* Contact Information Grid */}
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Email</p>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editedData?.email || ''}
-                    onChange={(e) => onInputChange("email", e.target.value)}
-                    className={validationErrors.email ? "border-red-500" : ""}
-                    aria-invalid={!!validationErrors.email}
-                    aria-describedby={validationErrors.email ? "email-error" : undefined}
-                  />
-                  {validationErrors.email && (
-                    <p className="text-sm text-red-500" id="email-error" role="alert">
-                      {validationErrors.email}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-foreground hover:text-primary transition-colors">{memberData?.email}</p>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Email</p>
+              {renderField("email", "Email")}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Phone</p>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editedData?.phone || ''}
-                    onChange={(e) => onInputChange("phone", e.target.value)}
-                    className={validationErrors.phone ? "border-red-500" : ""}
-                    aria-invalid={!!validationErrors.phone}
-                    aria-describedby={validationErrors.phone ? "phone-error" : undefined}
-                  />
-                  {validationErrors.phone && (
-                    <p className="text-sm text-red-500" id="phone-error" role="alert">
-                      {validationErrors.phone}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-foreground hover:text-primary transition-colors">{memberData?.phone}</p>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Phone</p>
+              {renderField("phone", "Phone")}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Address</p>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editedData?.address || ''}
-                    onChange={(e) => onInputChange("address", e.target.value)}
-                    className={validationErrors.address ? "border-red-500" : ""}
-                    aria-invalid={!!validationErrors.address}
-                    aria-describedby={validationErrors.address ? "address-error" : undefined}
-                  />
-                  {validationErrors.address && (
-                    <p className="text-sm text-red-500" id="address-error" role="alert">
-                      {validationErrors.address}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-foreground hover:text-primary transition-colors">{memberData?.address}</p>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Address</p>
+              {renderField("address", "Address")}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Postcode</p>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editedData?.postcode || ''}
-                    onChange={(e) => onInputChange("postcode", e.target.value)}
-                    className={validationErrors.postcode ? "border-red-500" : ""}
-                    aria-invalid={!!validationErrors.postcode}
-                    aria-describedby={validationErrors.postcode ? "postcode-error" : undefined}
-                  />
-                  {validationErrors.postcode && (
-                    <p className="text-sm text-red-500" id="postcode-error" role="alert">
-                      {validationErrors.postcode}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-foreground hover:text-primary transition-colors">{memberData?.postcode}</p>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Postcode</p>
+              {renderField("postcode", "Postcode")}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Town</p>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editedData?.town || ''}
-                    onChange={(e) => onInputChange("town", e.target.value)}
-                    className={validationErrors.town ? "border-red-500" : ""}
-                    aria-invalid={!!validationErrors.town}
-                    aria-describedby={validationErrors.town ? "town-error" : undefined}
-                  />
-                  {validationErrors.town && (
-                    <p className="text-sm text-red-500" id="town-error" role="alert">
-                      {validationErrors.town}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-foreground hover:text-primary transition-colors">{memberData?.town}</p>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Town</p>
+              {renderField("town", "Town")}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Date of Birth</p>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    type="date"
-                    value={editedData?.date_of_birth || ''}
-                    onChange={(e) => onInputChange("date_of_birth", e.target.value)}
-                    className={validationErrors.date_of_birth ? "border-red-500" : ""}
-                    aria-invalid={!!validationErrors.date_of_birth}
-                    aria-describedby={validationErrors.date_of_birth ? "date_of_birth-error" : undefined}
-                  />
-                  {validationErrors.date_of_birth && (
-                    <p className="text-sm text-red-500" id="date_of_birth-error" role="alert">
-                      {validationErrors.date_of_birth}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-foreground hover:text-primary transition-colors">
-                  {memberData?.date_of_birth ? format(new Date(memberData.date_of_birth), 'dd/MM/yyyy') : 'Not set'}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Date of Birth</p>
+              {renderField("date_of_birth", "Date of Birth", "date")}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Gender</p>
+              <p className="text-sm text-muted-foreground mb-1">Gender</p>
               {isEditing ? (
-                <Select
-                  value={editedData?.gender || ''}
-                  onValueChange={(value) => onInputChange("gender", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Select
+                    value={editedData?.gender || ''}
+                    onValueChange={(value) => onInputChange("gender", value)}
+                  >
+                    <SelectTrigger className={getInputClassName("gender")}>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {renderValidationError("gender")}
+                </div>
               ) : (
                 <p className="text-foreground hover:text-primary transition-colors capitalize">
                   {memberData?.gender || 'Not set'}
@@ -238,22 +173,25 @@ export function ProfileCard({
               )}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Marital Status</p>
+              <p className="text-sm text-muted-foreground mb-1">Marital Status</p>
               {isEditing ? (
-                <Select
-                  value={editedData?.marital_status || ''}
-                  onValueChange={(value) => onInputChange("marital_status", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select marital status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="single">Single</SelectItem>
-                    <SelectItem value="married">Married</SelectItem>
-                    <SelectItem value="divorced">Divorced</SelectItem>
-                    <SelectItem value="widowed">Widowed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Select
+                    value={editedData?.marital_status || ''}
+                    onValueChange={(value) => onInputChange("marital_status", value)}
+                  >
+                    <SelectTrigger className={getInputClassName("marital_status")}>
+                      <SelectValue placeholder="Select marital status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">Single</SelectItem>
+                      <SelectItem value="married">Married</SelectItem>
+                      <SelectItem value="divorced">Divorced</SelectItem>
+                      <SelectItem value="widowed">Widowed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {renderValidationError("marital_status")}
+                </div>
               ) : (
                 <p className="text-foreground hover:text-primary transition-colors capitalize">
                   {memberData?.marital_status || 'Not set'}
@@ -261,7 +199,7 @@ export function ProfileCard({
               )}
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Collector</p>
+              <p className="text-sm text-muted-foreground mb-1">Collector</p>
               <p className="text-foreground hover:text-primary transition-colors">
                 {memberData?.collector || 'Not assigned'}
               </p>

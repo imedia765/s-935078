@@ -45,6 +45,9 @@ export interface ValidationRules {
   maxLength?: number;
   required?: boolean;
   message: string;
+  enum?: string[];
+  minDate?: Date;
+  maxDate?: Date;
 }
 
 export const memberValidationRules: Record<string, ValidationRules> = {
@@ -54,7 +57,7 @@ export const memberValidationRules: Record<string, ValidationRules> = {
   },
   phone: {
     pattern: /^(\+44|0)[0-9]{10}$/,
-    message: 'Please enter a valid UK phone number (e.g., 07123456789)'
+    message: 'Please enter a valid UK phone number (e.g., 07123456789 or +447123456789)'
   },
   postcode: {
     pattern: /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i,
@@ -64,19 +67,34 @@ export const memberValidationRules: Record<string, ValidationRules> = {
     required: true,
     minLength: 2,
     maxLength: 100,
-    message: 'Full name must be between 2 and 100 characters'
+    pattern: /^[a-zA-Z\s'-]+$/,
+    message: 'Full name must be between 2 and 100 characters and contain only letters, spaces, hyphens and apostrophes'
   },
   date_of_birth: {
     pattern: /^\d{4}-\d{2}-\d{2}$/,
-    message: 'Please enter a valid date (YYYY-MM-DD)'
+    minDate: new Date(1900, 0, 1),
+    maxDate: new Date(),
+    message: 'Please enter a valid date between 1900 and today'
   },
   address: {
+    required: true,
     maxLength: 200,
-    message: 'Address must not exceed 200 characters'
+    pattern: /^[a-zA-Z0-9\s,'-]+$/,
+    message: 'Address must not exceed 200 characters and contain only letters, numbers, spaces, commas, hyphens and apostrophes'
   },
   town: {
+    required: true,
     maxLength: 100,
-    message: 'Town must not exceed 100 characters'
+    pattern: /^[a-zA-Z\s'-]+$/,
+    message: 'Town must not exceed 100 characters and contain only letters, spaces, hyphens and apostrophes'
+  },
+  gender: {
+    enum: ['male', 'female', 'other'],
+    message: 'Please select a valid gender'
+  },
+  marital_status: {
+    enum: ['single', 'married', 'divorced', 'widowed'],
+    message: 'Please select a valid marital status'
   }
 };
 
@@ -107,13 +125,39 @@ export const validateField = (
     if (rules.maxLength && value.length > rules.maxLength) {
       return rules.message;
     }
+
+    if (rules.enum && !rules.enum.includes(value)) {
+      return rules.message;
+    }
+
+    if (fieldName === 'date_of_birth' && rules.minDate && rules.maxDate) {
+      const date = new Date(value);
+      if (date < rules.minDate || date > rules.maxDate) {
+        return rules.message;
+      }
+    }
   }
 
   return null;
+};
+
+export const validateAllFields = (data: Partial<MemberWithRelations>): Record<string, string> => {
+  const errors: Record<string, string> = {};
+  
+  Object.keys(memberValidationRules).forEach((field) => {
+    const value = data[field as keyof MemberWithRelations];
+    if (typeof value === 'string') {
+      const error = validateField(field, value);
+      if (error) {
+        errors[field] = error;
+      }
+    }
+  });
+  
+  return errors;
 };
 
 export const getDisplayError = (fieldName: string, error: string | null): string => {
   if (!error) return '';
   return memberValidationRules[fieldName]?.message || error;
 };
-
