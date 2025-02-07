@@ -19,9 +19,6 @@ export function useProfileManagement() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]);
   const familyMemberRef = useRef<any>(null);
 
   const fetchData = async () => {
@@ -38,7 +35,28 @@ export function useProfileManagement() {
         return;
       }
 
-      // First get user roles
+      // Get auth email for verification
+      const { data: authData, error: authError } = await supabase
+        .from('auth_audit')
+        .select('member_number, auth_email')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+
+      console.log("[useProfileManagement] Auth audit data:", { authData, authError });
+
+      // Update member auth_user_id if needed
+      if (authData?.member_number) {
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ auth_user_id: user.id })
+          .eq('member_number', authData.member_number);
+
+        if (updateError) {
+          console.error("[useProfileManagement] Error updating auth_user_id:", updateError);
+        }
+      }
+
+      // Get user roles
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("role")
@@ -79,6 +97,44 @@ export function useProfileManagement() {
         throw new Error("Failed to fetch member data");
       }
 
+      if (!member && authData?.member_number) {
+        console.log("[useProfileManagement] Attempting to fetch by member number:", authData.member_number);
+        const { data: memberByNumber, error: memberByNumberError } = await supabase
+          .from("members")
+          .select(`
+            *,
+            family_members (*),
+            member_notes (*),
+            payment_requests!payment_requests_member_id_fkey (
+              id,
+              payment_type,
+              amount,
+              status,
+              created_at,
+              payment_number
+            )
+          `)
+          .eq("member_number", authData.member_number)
+          .maybeSingle();
+
+        if (memberByNumberError) {
+          console.error("[useProfileManagement] Error fetching by member number:", memberByNumberError);
+        } else if (memberByNumber) {
+          console.log("[useProfileManagement] Found member by number:", memberByNumber);
+          // Update auth_user_id
+          const { error: updateError } = await supabase
+            .from('members')
+            .update({ auth_user_id: user.id })
+            .eq('id', memberByNumber.id);
+
+          if (updateError) {
+            console.error("[useProfileManagement] Error updating auth_user_id:", updateError);
+          } else {
+            member = memberByNumber;
+          }
+        }
+      }
+
       // Transform the data to match MemberWithRelations type
       const memberWithRelations: MemberWithRelations = {
         ...member,
@@ -105,16 +161,6 @@ export function useProfileManagement() {
       
       setMemberData(memberWithRelations);
       setEditedData(memberWithRelations);
-
-      // Fetch announcements
-      const { data: announcements, error: announcementsError } = await supabase
-        .from("system_announcements")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
-
-      if (announcementsError) throw announcementsError;
-      setAnnouncements(announcements || []);
 
     } catch (error: any) {
       console.error("[useProfileManagement] Error in fetchData:", error);
@@ -370,8 +416,6 @@ export function useProfileManagement() {
     isAddFamilyMemberOpen,
     isEditFamilyMemberOpen,
     selectedFamilyMember: familyMemberRef.current,
-    announcements,
-    documents,
     handleInputChange,
     handleSave,
     handleCancel,
