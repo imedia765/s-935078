@@ -686,6 +686,57 @@ export type Database = {
           },
         ]
       }
+      file_retention_logs: {
+        Row: {
+          deleted_at: string | null
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          reason: string
+        }
+        Insert: {
+          deleted_at?: string | null
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          reason: string
+        }
+        Update: {
+          deleted_at?: string | null
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          reason?: string
+        }
+        Relationships: []
+      }
+      file_retention_policies: {
+        Row: {
+          created_at: string | null
+          file_type: string
+          id: string
+          retention_days: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_type: string
+          id?: string
+          retention_days: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_type?: string
+          id?: string
+          retention_days?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       git_repositories: {
         Row: {
           branch: string
@@ -1856,6 +1907,33 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_quotas: {
+        Row: {
+          bucket_name: string
+          created_at: string | null
+          id: string
+          max_size_bytes: number
+          updated_at: string | null
+          warning_threshold_percent: number
+        }
+        Insert: {
+          bucket_name: string
+          created_at?: string | null
+          id?: string
+          max_size_bytes: number
+          updated_at?: string | null
+          warning_threshold_percent?: number
+        }
+        Update: {
+          bucket_name?: string
+          created_at?: string | null
+          id?: string
+          max_size_bytes?: number
+          updated_at?: string | null
+          warning_threshold_percent?: number
+        }
+        Relationships: []
+      }
       sync_status: {
         Row: {
           error_message: string | null
@@ -2159,6 +2237,10 @@ export type Database = {
           status: string
           details: Json
         }[]
+      }
+      cleanup_expired_files: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_expired_tokens: {
         Args: Record<PropertyKey, never>
