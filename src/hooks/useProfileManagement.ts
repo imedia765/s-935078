@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +15,6 @@ export function useProfileManagement() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isAddFamilyMemberOpen, setIsAddFamilyMemberOpen] = useState(false);
   const [isEditFamilyMemberOpen, setIsEditFamilyMemberOpen] = useState(false);
-  const [selectedFamilyMember, setSelectedFamilyMember] = useState<any>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   
@@ -51,7 +51,7 @@ export function useProfileManagement() {
           *,
           family_members (*),
           member_notes (*),
-          payment_requests (
+          payment_requests!payment_requests_member_id_fkey (
             id,
             payment_type,
             amount,
