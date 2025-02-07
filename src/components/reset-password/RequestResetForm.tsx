@@ -21,7 +21,7 @@ export const RequestResetForm = () => {
     try {
       const { data: member } = await supabase
         .from("members")
-        .select("email")
+        .select("email, auth_user_id")
         .eq("member_number", memberNumber)
         .single();
 
@@ -43,9 +43,18 @@ export const RequestResetForm = () => {
         return;
       }
 
+      if (!member.auth_user_id) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No authentication record found for this member",
+        });
+        return;
+      }
+
       const { data, error: fnError } = await supabase.rpc(
         "generate_magic_link",
-        { p_member_number: memberNumber }
+        { p_user_id: member.auth_user_id }
       );
 
       if (fnError) throw fnError;
