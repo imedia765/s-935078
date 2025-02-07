@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -28,21 +27,27 @@ export function useProfileManagement() {
   const fetchData = async () => {
     try {
       setError(null);
+      console.log("[useProfileManagement] Starting profile data fetch");
+      
       const { data: { user } } = await supabase.auth.getUser();
+      console.log("[useProfileManagement] Current auth user:", user);
       
       if (!user) {
-        console.log("No user found, redirecting to login");
+        console.log("[useProfileManagement] No user found, redirecting to login");
         navigate("/");
         return;
       }
 
       // First get user roles
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
 
-      console.log("User roles:", roles);
+      console.log("[useProfileManagement] User roles fetch result:", {
+        roles,
+        rolesError
+      });
 
       // Then fetch member data with explicit relationship specification
       const { data: member, error: memberError } = await supabase
@@ -63,10 +68,14 @@ export function useProfileManagement() {
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      console.log("Member data:", member, "Error:", memberError);
+      console.log("[useProfileManagement] Member data fetch result:", {
+        member,
+        memberError,
+        userId: user.id
+      });
 
       if (memberError && memberError.code !== 'PGRST116') {
-        console.error("Error fetching member:", memberError);
+        console.error("[useProfileManagement] Error fetching member:", memberError);
         throw new Error("Failed to fetch member data");
       }
 
@@ -92,6 +101,8 @@ export function useProfileManagement() {
         photo_url: member?.photo_url || null
       };
       
+      console.log("[useProfileManagement] Transformed member data:", memberWithRelations);
+      
       setMemberData(memberWithRelations);
       setEditedData(memberWithRelations);
 
@@ -106,7 +117,7 @@ export function useProfileManagement() {
       setAnnouncements(announcements || []);
 
     } catch (error: any) {
-      console.error("Error in fetchData:", error);
+      console.error("[useProfileManagement] Error in fetchData:", error);
       setError(error.message);
       toast({
         variant: "destructive",
@@ -318,9 +329,12 @@ export function useProfileManagement() {
   useEffect(() => {
     const initializeProfile = async () => {
       try {
+        console.log("[useProfileManagement] Initializing profile");
         const { data: { session } } = await supabase.auth.getSession();
+        console.log("[useProfileManagement] Current session:", session);
+        
         if (!session) {
-          console.log("No session found, redirecting to login");
+          console.log("[useProfileManagement] No session found, redirecting to login");
           toast({
             title: "Session Expired",
             description: "Please log in again to continue",
@@ -331,7 +345,7 @@ export function useProfileManagement() {
         }
         await fetchData();
       } catch (error: any) {
-        console.error("Session check error:", error);
+        console.error("[useProfileManagement] Session check error:", error);
         toast({
           title: "Authentication Error",
           description: "Please log in again to continue",

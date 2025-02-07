@@ -14,11 +14,15 @@ interface MagicLinkResponse {
 interface ResetPasswordResponse {
   success: boolean;
   message?: string;
+  member_id?: string;
+  auth_user_id?: string;
 }
 
 interface AuthFixResponse {
   success: boolean;
   message?: string;
+  member_id?: string;
+  auth_user_id?: string;
 }
 
 export const useMagicLink = () => {
@@ -119,7 +123,10 @@ export const useMagicLink = () => {
 
   const resetPasswordToMemberNumber = async (userId: string, memberNumber: string) => {
     try {
-      console.log("Resetting password to member number for user:", userId);
+      console.log("[resetPasswordToMemberNumber] Starting password reset for:", {
+        userId,
+        memberNumber
+      });
 
       const { data: resetData, error: resetError } = await (supabase.rpc as any)('reset_password_to_member_number', {
         p_user_id: userId,
@@ -127,11 +134,11 @@ export const useMagicLink = () => {
       }) as { data: ResetPasswordResponse, error: any };
 
       if (resetError) {
-        console.error("Password reset error:", resetError);
+        console.error("[resetPasswordToMemberNumber] Password reset error:", resetError);
         throw resetError;
       }
 
-      console.log("Password reset response:", resetData);
+      console.log("[resetPasswordToMemberNumber] Password reset response:", resetData);
 
       // Verify member data immediately after reset
       const { data: memberData, error: memberError } = await supabase
@@ -140,25 +147,45 @@ export const useMagicLink = () => {
         .eq('member_number', memberNumber)
         .single();
 
+      console.log("[resetPasswordToMemberNumber] Member verification result:", {
+        memberData,
+        memberError
+      });
+
       if (memberError || !memberData) {
-        console.error("Error verifying member data after reset:", memberError);
+        console.error("[resetPasswordToMemberNumber] Error verifying member data after reset:", memberError);
         
         // Attempt to recover auth association
-        console.log("Attempting to recover auth association...");
+        console.log("[resetPasswordToMemberNumber] Attempting to recover auth association...");
         const { data: recoveryData, error: recoveryError } = await (supabase.rpc as any)('fix_member_auth_association', {
           p_member_number: memberNumber
         }) as { data: AuthFixResponse, error: any };
 
+        console.log("[resetPasswordToMemberNumber] Recovery attempt result:", {
+          recoveryData,
+          recoveryError
+        });
+
         if (recoveryError) {
-          console.error("Recovery attempt failed:", recoveryError);
+          console.error("[resetPasswordToMemberNumber] Recovery attempt failed:", recoveryError);
           throw new Error("Failed to recover member data after password reset");
         }
-
-        console.log("Recovery attempt result:", recoveryData);
 
         if (!recoveryData?.success) {
           throw new Error(recoveryData?.message || "Failed to recover member data");
         }
+
+        // Try to fetch member data one more time after recovery
+        const { data: recoveredMember, error: recoveredMemberError } = await supabase
+          .from('members')
+          .select('*')
+          .eq('member_number', memberNumber)
+          .single();
+
+        console.log("[resetPasswordToMemberNumber] Final member data after recovery:", {
+          recoveredMember,
+          recoveredMemberError
+        });
       }
 
       toast({
@@ -168,7 +195,7 @@ export const useMagicLink = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Error resetting password:', error);
+      console.error('[resetPasswordToMemberNumber] Error resetting password:', error);
       toast({
         title: "Error",
         description: error.message,
