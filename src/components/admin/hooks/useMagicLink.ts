@@ -43,8 +43,7 @@ export const useMagicLink = () => {
         throw new Error(data.error || 'Failed to generate magic link');
       }
 
-      // Use getUrl() method instead of protected supabaseUrl property
-      const magicLink = `${supabase.auth.getAuth().url}/auth/v1/verify?token=${data.token}&type=magiclink`;
+      const magicLink = `${supabase.auth.url}/verify?token=${data.token}&type=magiclink`;
 
       return {
         magicLink,
