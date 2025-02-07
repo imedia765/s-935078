@@ -36,7 +36,7 @@ export function MemberSearch() {
             amount,
             payment_type
           ),
-          family_members:family_members_parent_id_fkey (
+          family_members (
             id,
             full_name,
             relationship,
@@ -60,66 +60,13 @@ export function MemberSearch() {
       console.log("Found members:", members);
 
       const membersWithRoles = await Promise.all(
-        (members || []).map(async (member): Promise<MemberWithRelations> => {
-          if (!member.auth_user_id) {
-            return {
-              ...member,
-              user_roles: [],
-              member_notes: member.member_notes || [],
-              payment_requests: member.payment_requests || [],
-              family_members: member.family_members || [],
-              roles: [],
-              town: member.town || null,
-              postcode: member.postcode || null,
-              marital_status: member.marital_status || null,
-              gender: member.gender || null,
-              collector: member.collector || null,
-              photo_url: member.photo_url || null,
-              yearly_payment_status: member.yearly_payment_status || null,
-              yearly_payment_due_date: member.yearly_payment_due_date || null,
-              yearly_payment_amount: member.yearly_payment_amount || null,
-              emergency_collection_status: member.emergency_collection_status || null,
-              emergency_collection_amount: member.emergency_collection_amount || null,
-              emergency_collection_due_date: member.emergency_collection_due_date || null
-            };
-          }
-
-          const { data: userRoles, error: rolesError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', member.auth_user_id);
-
-          if (rolesError) {
-            console.error(`Error fetching roles for member ${member.member_number}:`, rolesError);
-            return {
-              ...member,
-              user_roles: [],
-              roles: [],
-              member_notes: member.member_notes || [],
-              payment_requests: member.payment_requests || [],
-              family_members: member.family_members || [],
-              town: member.town || null,
-              postcode: member.postcode || null,
-              marital_status: member.marital_status || null,
-              gender: member.gender || null,
-              collector: member.collector || null,
-              photo_url: member.photo_url || null,
-              yearly_payment_status: member.yearly_payment_status || null,
-              yearly_payment_due_date: member.yearly_payment_due_date || null,
-              yearly_payment_amount: member.yearly_payment_amount || null,
-              emergency_collection_status: member.emergency_collection_status || null,
-              emergency_collection_amount: member.emergency_collection_amount || null,
-              emergency_collection_due_date: member.emergency_collection_due_date || null
-            };
-          }
-
-          return {
+        (members || []).map(async (member) => {
+          const processedMember: MemberWithRelations = {
             ...member,
-            user_roles: userRoles?.map(role => ({ role: role.role })) || [],
-            roles: userRoles?.map(role => role.role) || [],
+            user_roles: [],
             member_notes: member.member_notes || [],
             payment_requests: member.payment_requests || [],
-            family_members: member.family_members || [],
+            family_members: Array.isArray(member.family_members) ? member.family_members : [],
             town: member.town || null,
             postcode: member.postcode || null,
             marital_status: member.marital_status || null,
@@ -132,6 +79,26 @@ export function MemberSearch() {
             emergency_collection_status: member.emergency_collection_status || null,
             emergency_collection_amount: member.emergency_collection_amount || null,
             emergency_collection_due_date: member.emergency_collection_due_date || null
+          };
+
+          if (!member.auth_user_id) {
+            return processedMember;
+          }
+
+          const { data: userRoles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', member.auth_user_id);
+
+          if (rolesError) {
+            console.error(`Error fetching roles for member ${member.member_number}:`, rolesError);
+            return processedMember;
+          }
+
+          return {
+            ...processedMember,
+            user_roles: userRoles?.map(role => ({ role: role.role })) || [],
+            roles: userRoles?.map(role => role.role) || []
           };
         })
       );
