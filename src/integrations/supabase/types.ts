@@ -591,6 +591,30 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          created_at: string | null
+          error_details: string | null
+          error_message: string
+          function_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_details?: string | null
+          error_message: string
+          function_name?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          error_details?: string | null
+          error_message?: string
+          function_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       family_members: {
         Row: {
           created_at: string
@@ -2140,16 +2164,24 @@ export type Database = {
             }
             Returns: Json
           }
-      handle_password_reset_with_token: {
-        Args: {
-          token_value: string
-          new_password: string
-          ip_address?: string
-          user_agent?: string
-          client_info?: Json
-        }
-        Returns: Json
-      }
+      handle_password_reset_with_token:
+        | {
+            Args: {
+              token_value: string
+              new_password: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              token_value: string
+              new_password: string
+              ip_address?: string
+              user_agent?: string
+              client_info?: Json
+            }
+            Returns: Json
+          }
       is_admin: {
         Args: {
           user_uid: string
@@ -2283,7 +2315,7 @@ export type Database = {
         Args: {
           token_value: string
         }
-        Returns: boolean
+        Returns: Json
       }
       validate_user_roles: {
         Args: Record<PropertyKey, never>
