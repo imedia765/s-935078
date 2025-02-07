@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ChevronDown,
@@ -21,7 +21,9 @@ import {
   Calendar,
   User,
   CreditCard,
-  PlusCircle
+  PlusCircle,
+  Loader2,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -72,6 +74,7 @@ interface MemberProfileCardProps {
 export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, onMove, onExportIndividual }: MemberProfileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
@@ -139,6 +142,50 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
     }
   };
 
+  const handleQuickPay = async () => {
+    try {
+      setIsProcessing(true);
+      const { data: collector } = await supabase
+        .from('members_collectors')
+        .select('id')
+        .eq('name', member.collector)
+        .single();
+
+      if (!collector) {
+        throw new Error('Collector not found');
+      }
+
+      const { data, error } = await supabase
+        .from('payment_requests')
+        .insert({
+          member_id: member.id,
+          collector_id: collector.id,
+          member_number: member.member_number,
+          amount: member.yearly_payment_amount || 40,
+          payment_type: 'yearly',
+          payment_method: 'cash',
+          status: 'pending',
+          notes: 'Quick yearly membership payment'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Payment Recorded",
+        description: "Payment has been recorded and is pending approval",
+      });
+    } catch (error) {
+      console.error('Error recording quick payment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to record payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <Card className="p-6 glass-card transition-all duration-200 hover:shadow-md">
       <div className="flex items-start justify-between">
@@ -154,6 +201,20 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
         </div>
         
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleQuickPay}
+            disabled={isProcessing}
+            className="h-8 bg-primary/20 hover:bg-primary/30 flex items-center gap-1"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4" />
+            )}
+            Quick Pay
+          </Button>
           {onEdit && (
             <Button
               variant="ghost"
@@ -191,7 +252,6 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
 
       {isExpanded && (
         <div className="mt-6 space-y-6 border-t pt-6">
-          {/* Personal Information */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-primary flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -219,7 +279,6 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
             </div>
           </div>
 
-          {/* Payment Status */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-primary flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
@@ -269,7 +328,6 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
                 </div>
               </div>
 
-              {/* Emergency Collection */}
               {member.emergency_collection_status && (
                 <div className="bg-muted/50 rounded-lg p-4 hover:bg-muted/70 transition-colors">
                   <div className="text-sm font-medium mb-2 text-primary">Emergency Collection</div>
@@ -294,7 +352,6 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
             </div>
           </div>
 
-          {/* Family Members */}
           {member.family_members && member.family_members.length > 0 && (
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-primary flex items-center gap-2">
@@ -327,7 +384,6 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
             </div>
           )}
 
-          {/* Activity Timeline */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-primary flex items-center gap-2">
               <Activity className="h-4 w-4" />
