@@ -20,23 +20,12 @@ export function MemberSearch() {
       
       console.log("Searching members with term:", searchTerm);
       
-      // First get members with their related data using explicit foreign key references
+      // Get members with all related data
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
-          id,
-          auth_user_id,
-          full_name,
-          email,
-          phone,
-          member_number,
-          status,
-          date_of_birth,
-          address,
-          membership_type,
-          payment_date,
-          failed_login_attempts,
-          member_notes:member_notes (
+          *,
+          member_notes (
             id,
             note_text,
             note_type
@@ -51,7 +40,8 @@ export function MemberSearch() {
             id,
             full_name,
             relationship,
-            date_of_birth
+            date_of_birth,
+            gender
           )
         `)
         .or(`${searchType}.ilike.%${searchTerm}%`)
@@ -69,7 +59,7 @@ export function MemberSearch() {
 
       console.log("Found members:", members);
 
-      // Then get roles for each member with auth_user_id using Promise.all for parallel requests
+      // Get roles for each member with auth_user_id
       const membersWithRoles = await Promise.all(
         (members || []).map(async (member) => {
           if (!member.auth_user_id) {
@@ -80,6 +70,8 @@ export function MemberSearch() {
               member_notes: member.member_notes || [],
               payment_requests: member.payment_requests || [],
               family_members: member.family_members || [],
+              collector: member.collector || null,
+              photo_url: member.photo_url || null,
               yearly_payment_status: member.yearly_payment_status || null,
               yearly_payment_due_date: member.yearly_payment_due_date || null,
               yearly_payment_amount: member.yearly_payment_amount || null,
@@ -100,17 +92,14 @@ export function MemberSearch() {
 
           if (rolesError) {
             console.error(`Error fetching roles for member ${member.member_number}:`, rolesError);
-            toast({
-              variant: "destructive",
-              title: "Error fetching roles",
-              description: `Failed to fetch roles for member ${member.member_number}`
-            });
             return {
               ...member,
               user_roles: [],
               member_notes: member.member_notes || [],
               payment_requests: member.payment_requests || [],
               family_members: member.family_members || [],
+              collector: member.collector || null,
+              photo_url: member.photo_url || null,
               yearly_payment_status: member.yearly_payment_status || null,
               yearly_payment_due_date: member.yearly_payment_due_date || null,
               yearly_payment_amount: member.yearly_payment_amount || null,
@@ -130,6 +119,8 @@ export function MemberSearch() {
             member_notes: member.member_notes || [],
             payment_requests: member.payment_requests || [],
             family_members: member.family_members || [],
+            collector: member.collector || null,
+            photo_url: member.photo_url || null,
             yearly_payment_status: member.yearly_payment_status || null,
             yearly_payment_due_date: member.yearly_payment_due_date || null,
             yearly_payment_amount: member.yearly_payment_amount || null,
