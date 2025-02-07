@@ -2,6 +2,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { generateReceipt, saveReceiptToStorage } from "@/utils/receiptGenerator";
+import { sendPaymentNotification } from "@/utils/emailNotifications";
+import type { Payment } from "../types";
 
 export function useFinancialMutations() {
   const { toast } = useToast();
@@ -9,22 +12,49 @@ export function useFinancialMutations() {
 
   const approveMutation = useMutation({
     mutationFn: async (paymentId: string) => {
-      const { error } = await supabase
+      // First approve the payment
+      const { data: payment, error: approvalError } = await supabase
         .from('payment_requests')
         .update({ 
           status: 'approved',
           approved_at: new Date().toISOString(),
           approved_by: (await supabase.auth.getUser()).data.user?.id
         })
-        .eq('id', paymentId);
+        .eq('id', paymentId)
+        .select(`
+          *,
+          members!payment_requests_member_id_fkey (
+            full_name,
+            email
+          ),
+          members_collectors!payment_requests_collector_id_fkey (
+            name
+          )
+        `)
+        .single();
       
-      if (error) throw error;
+      if (approvalError) throw approvalError;
+
+      // Generate and store receipt
+      const receiptBlob = await generateReceipt(payment as Payment);
+      const receiptUrl = await saveReceiptToStorage(paymentId, receiptBlob);
+
+      // Update payment with receipt URL
+      const { error: updateError } = await supabase
+        .from('payment_requests')
+        .update({ receipt_url: receiptUrl })
+        .eq('id', paymentId);
+
+      if (updateError) throw updateError;
+
+      // Send confirmation email
+      await sendPaymentNotification(payment as Payment, 'confirmation');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast({
         title: "Payment approved",
-        description: "The payment has been successfully approved.",
+        description: "The payment has been successfully approved and receipt sent.",
       });
     },
     onError: (error) => {
