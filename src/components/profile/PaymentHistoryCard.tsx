@@ -36,7 +36,6 @@ export function PaymentHistoryCard({ memberData }: PaymentHistoryCardProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
               <TableHead>Payment #</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Amount</TableHead>
@@ -47,8 +46,7 @@ export function PaymentHistoryCard({ memberData }: PaymentHistoryCardProps) {
           <TableBody>
             {payments.map((payment) => (
               <TableRow key={payment.id}>
-                <TableCell>{format(new Date(payment.created_at || ''), 'dd/MM/yyyy')}</TableCell>
-                <TableCell>{payment.payment_number || '-'}</TableCell>
+                <TableCell>{payment.id}</TableCell>
                 <TableCell className="capitalize">{payment.payment_type}</TableCell>
                 <TableCell>£{payment.amount.toFixed(2)}</TableCell>
                 <TableCell>

@@ -23,7 +23,7 @@ export function useProfileManagement() {
 
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
-  const selectedFamilyMember = useRef<any>(null);
+  const familyMemberRef = useRef<any>(null);
 
   const fetchData = async () => {
     try {
@@ -51,13 +51,11 @@ export function useProfileManagement() {
           *,
           family_members (*),
           member_notes (*),
-          payment_requests!payment_requests_member_id_fkey (
+          payment_requests (
             id,
-            created_at,
             payment_type,
             amount,
-            status,
-            payment_number
+            status
           )
         `)
         .eq("auth_user_id", user.id)
@@ -77,12 +75,7 @@ export function useProfileManagement() {
         roles: roles?.map(r => r.role) || [],
         member_notes: member?.member_notes || [],
         family_members: member?.family_members || [],
-        payment_requests: member?.payment_requests.map(pr => ({
-          id: pr.id,
-          status: pr.status,
-          amount: pr.amount,
-          payment_type: pr.payment_type
-        })) || [],
+        payment_requests: member?.payment_requests || [],
         yearly_payment_status: member?.yearly_payment_status || null,
         yearly_payment_due_date: member?.yearly_payment_due_date || null,
         yearly_payment_amount: member?.yearly_payment_amount || null,
@@ -100,11 +93,6 @@ export function useProfileManagement() {
       setMemberData(memberWithRelations);
       setEditedData(memberWithRelations);
 
-      // Set payment history from the fetched payment_requests
-      if (member?.payment_requests) {
-        setPaymentHistory(member.payment_requests);
-      }
-
       // Fetch announcements
       const { data: announcements, error: announcementsError } = await supabase
         .from("system_announcements")
@@ -114,17 +102,6 @@ export function useProfileManagement() {
 
       if (announcementsError) throw announcementsError;
       setAnnouncements(announcements || []);
-
-      // Fetch documents
-      const { data: documentsData, error: documentsError } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("member_id", member.id)
-        .order("updated_at", { ascending: false });
-
-      if (documentsError) throw documentsError;
-
-      setDocuments(documentsData || []);
 
     } catch (error: any) {
       console.error("Error in fetchData:", error);
@@ -319,14 +296,12 @@ export function useProfileManagement() {
   };
 
   const handleViewDocument = async (doc: any) => {
-    // Implementation for viewing document
     console.log("Viewing document:", doc);
     // TODO: Implement document viewer
   };
 
   const handleDownloadDocument = async (doc: any) => {
     try {
-      // Implementation for downloading document
       console.log("Downloading document:", doc);
       // TODO: Implement document download
     } catch (error: any) {
@@ -378,7 +353,7 @@ export function useProfileManagement() {
     saving,
     isAddFamilyMemberOpen,
     isEditFamilyMemberOpen,
-    selectedFamilyMember,
+    selectedFamilyMember: familyMemberRef.current,
     announcements,
     documents,
     handleInputChange,
@@ -390,6 +365,8 @@ export function useProfileManagement() {
     setIsEditFamilyMemberOpen,
     fetchData,
     handleAddFamilyMember,
+    handleViewDocument,
+    handleDownloadDocument,
     handleEditFamilyMember: async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const formData = new FormData(e.currentTarget);
@@ -403,7 +380,7 @@ export function useProfileManagement() {
             date_of_birth: formData.get('date_of_birth')?.toString() || null,
             gender: formData.get('gender')?.toString() || null
           })
-          .eq('id', selectedFamilyMember.id);
+          .eq('id', familyMemberRef.current.id);
 
         if (error) throw error;
 
@@ -413,7 +390,7 @@ export function useProfileManagement() {
         });
         
         setIsEditFamilyMemberOpen(false);
-        setSelectedFamilyMember(null);
+        familyMemberRef.current = null;
         fetchData(); // Refresh data
       } catch (error: any) {
         toast({
