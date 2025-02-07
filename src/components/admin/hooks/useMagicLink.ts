@@ -128,6 +128,34 @@ export const useMagicLink = () => {
         memberNumber
       });
 
+      // First, verify the member exists
+      const { data: memberData, error: memberLookupError } = await supabase
+        .from('members')
+        .select('id, auth_user_id')
+        .eq('member_number', memberNumber)
+        .single();
+
+      if (memberLookupError) {
+        console.error("[resetPasswordToMemberNumber] Member lookup error:", memberLookupError);
+        throw new Error('Member not found');
+      }
+
+      console.log("[resetPasswordToMemberNumber] Found member:", memberData);
+
+      // Update auth_user_id in members table first
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ auth_user_id: userId })
+        .eq('id', memberData.id);
+
+      if (updateError) {
+        console.error("[resetPasswordToMemberNumber] Failed to update member auth_user_id:", updateError);
+        throw updateError;
+      }
+
+      console.log("[resetPasswordToMemberNumber] Updated member auth_user_id");
+
+      // Now perform the password reset
       const { data: resetData, error: resetError } = await (supabase.rpc as any)('reset_password_to_member_number', {
         p_user_id: userId,
         p_member_number: memberNumber
@@ -141,19 +169,19 @@ export const useMagicLink = () => {
       console.log("[resetPasswordToMemberNumber] Password reset response:", resetData);
 
       // Verify member data immediately after reset
-      const { data: memberData, error: memberError } = await supabase
+      const { data: verifyMember, error: verifyError } = await supabase
         .from('members')
         .select('*')
         .eq('member_number', memberNumber)
         .single();
 
       console.log("[resetPasswordToMemberNumber] Member verification result:", {
-        memberData,
-        memberError
+        verifyMember,
+        verifyError
       });
 
-      if (memberError || !memberData) {
-        console.error("[resetPasswordToMemberNumber] Error verifying member data after reset:", memberError);
+      if (verifyError || !verifyMember) {
+        console.error("[resetPasswordToMemberNumber] Error verifying member data after reset:", verifyError);
         
         // Attempt to recover auth association
         console.log("[resetPasswordToMemberNumber] Attempting to recover auth association...");
@@ -174,18 +202,6 @@ export const useMagicLink = () => {
         if (!recoveryData?.success) {
           throw new Error(recoveryData?.message || "Failed to recover member data");
         }
-
-        // Try to fetch member data one more time after recovery
-        const { data: recoveredMember, error: recoveredMemberError } = await supabase
-          .from('members')
-          .select('*')
-          .eq('member_number', memberNumber)
-          .single();
-
-        console.log("[resetPasswordToMemberNumber] Final member data after recovery:", {
-          recoveredMember,
-          recoveredMemberError
-        });
       }
 
       toast({
