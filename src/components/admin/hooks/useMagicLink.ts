@@ -18,7 +18,7 @@ export const useMagicLink = () => {
       console.log("Generating magic link for user:", userId);
 
       const { data, error } = await supabase.rpc('generate_magic_link', {
-        p_user_id: userId as unknown as `${string}-${string}-${string}-${string}-${string}`
+        p_user_id: userId
       });
 
       if (error) {
@@ -98,6 +98,7 @@ export const useMagicLink = () => {
         description: "Failed to copy link to clipboard",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
