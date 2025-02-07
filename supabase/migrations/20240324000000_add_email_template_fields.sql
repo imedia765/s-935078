@@ -1,4 +1,7 @@
 
+-- Wrap everything in a transaction
+BEGIN;
+
 -- First ensure the table exists
 CREATE TABLE IF NOT EXISTS email_templates (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -22,11 +25,22 @@ CREATE TYPE email_template_category AS ENUM ('payment', 'notification', 'system'
 -- Drop the columns if they exist
 DO $$ 
 BEGIN
-    ALTER TABLE email_templates DROP COLUMN IF EXISTS category;
-    ALTER TABLE email_templates DROP COLUMN IF EXISTS is_system;
-EXCEPTION
-    WHEN undefined_column THEN 
-        NULL;
+    -- Try to drop the columns if they exist
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'email_templates' AND column_name = 'category'
+    ) THEN
+        ALTER TABLE email_templates DROP COLUMN category;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'email_templates' AND column_name = 'is_system'
+    ) THEN
+        ALTER TABLE email_templates DROP COLUMN is_system;
+    END IF;
 END $$;
 
 -- Add the columns with proper type constraints
@@ -38,3 +52,5 @@ ADD COLUMN is_system boolean NOT NULL DEFAULT false;
 UPDATE email_templates 
 SET category = 'custom', is_system = false;
 
+-- Commit the transaction
+COMMIT;
