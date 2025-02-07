@@ -43,7 +43,8 @@ export const useMagicLink = () => {
         throw new Error(data.error || 'Failed to generate magic link');
       }
 
-      const magicLink = `${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink`;
+      // Use the Supabase client's URL directly instead of environment variable
+      const magicLink = `${supabase.supabaseUrl}/auth/v1/verify?token=${data.token}&type=magiclink`;
 
       return {
         magicLink,
@@ -66,7 +67,7 @@ export const useMagicLink = () => {
       await sendEmail({
         to: email,
         subject: 'Your Login Link',
-        html: `<p>Here's your magic login link: ${link}</p>`,
+        html: `<p>Here's your magic login link: <a href="${link}">${link}</a></p>`,
       });
 
       toast({
