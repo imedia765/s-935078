@@ -11,6 +11,7 @@ import Profile from "./pages/Profile"
 import Admin from "./pages/Admin"
 import Members from "./pages/Members"
 import Financials from "./pages/Financials"
+import Documentation from "./pages/Documentation"
 import ResetPassword from "./pages/ResetPassword"
 import NotFound from "./pages/NotFound"
 import { useQuery } from "@tanstack/react-query"
@@ -67,6 +68,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/documentation" element={<Documentation />} />
                 <Route 
                   path="/admin" 
                   element={

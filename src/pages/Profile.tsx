@@ -12,6 +12,7 @@ import { Navigation } from "@/components/Navigation";
 import { Camera } from "lucide-react";
 import { captureAndSaveScreenshot } from "@/utils/screenshotUtils";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -42,7 +43,6 @@ const Profile = () => {
     handleDownloadDocument
   } = useProfileManagement();
 
-  // Mock data for announcements and documents
   const announcements = [
     {
       id: '1',
