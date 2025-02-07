@@ -121,6 +121,17 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
       toast({
         title: "Success",
         description: "Password has been reset successfully",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText("Password has been reset successfully");
+            }}
+          >
+            Copy
+          </Button>
+        ),
       });
       navigate("/");
     } catch (error: any) {
