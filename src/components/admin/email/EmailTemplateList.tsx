@@ -116,26 +116,19 @@ export function EmailTemplateList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('email_templates')
-        .select(`
-          id,
-          name,
-          subject,
-          body,
-          is_active,
-          created_at,
-          updated_at,
-          created_by,
-          variables,
-          version
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching templates:', error);
+        throw error;
+      }
       
+      // Transform the data to ensure all required fields are present
       return (data || []).map(template => ({
         ...template,
-        category: 'custom', // Default value until migration is complete
-        is_system: false // Default value until migration is complete
+        category: template.category || 'custom',
+        is_system: template.is_system || false
       })) as EmailTemplate[];
     }
   });
