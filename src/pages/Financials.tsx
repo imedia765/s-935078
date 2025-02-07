@@ -10,6 +10,7 @@ import { useFinancialMutations } from "@/components/admin/financial/hooks/useFin
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, generatePDF } from "@/utils/exportUtils";
 import { PaymentArchive } from "@/components/admin/financial/PaymentArchive";
+import { TemplateManager } from '@/components/admin/financial/templates/TemplateManager';
 
 export default function Financials() {
   const { toast } = useToast();
@@ -101,6 +102,7 @@ export default function Financials() {
           <TabsTrigger value="archive">Archive</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="stats">Member Stats</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -142,6 +144,12 @@ export default function Financials() {
         <TabsContent value="stats">
           <Card className="p-6 glass-card">
             <MemberStats />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <Card className="p-6 glass-card">
+            <TemplateManager />
           </Card>
         </TabsContent>
       </Tabs>
