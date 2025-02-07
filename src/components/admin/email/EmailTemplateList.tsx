@@ -4,7 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Pencil, Trash2, Eye, Send, Copy } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -91,6 +99,7 @@ export function EmailTemplateList() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [testEmailDialogOpen, setTestEmailDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<keyof typeof previewStyles>("default");
   const [smtpError, setSmtpError] = useState<string | null>(null);
 
@@ -377,6 +386,19 @@ export function EmailTemplateList() {
     }
   };
 
+  const handleDeleteClick = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedTemplate) {
+      deleteMutation.mutate(selectedTemplate.id);
+      setDeleteDialogOpen(false);
+      setSelectedTemplate(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -393,7 +415,7 @@ export function EmailTemplateList() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-primary hover:bg-primary/90">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 New Template
               </Button>
@@ -506,29 +528,37 @@ export function EmailTemplateList() {
 
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
+          <TableRow className="bg-muted/50">
+            <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Category</TableHead>
+            <TableHead className="font-semibold">Type</TableHead>
+            <TableHead className="font-semibold">Status</TableHead>
+            <TableHead className="font-semibold">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+              <TableCell colSpan={5} className="text-center py-8">
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 rounded-full animate-pulse bg-primary/60"></div>
+                  <div className="w-4 h-4 rounded-full animate-pulse bg-primary/60 animation-delay-200"></div>
+                  <div className="w-4 h-4 rounded-full animate-pulse bg-primary/60 animation-delay-400"></div>
+                </div>
+              </TableCell>
             </TableRow>
           ) : templates?.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center">No templates found</TableCell>
+              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                No templates found
+              </TableCell>
             </TableRow>
           ) : (
             templates?.map((template) => (
-              <TableRow key={template.id}>
-                <TableCell>{template.name}</TableCell>
+              <TableRow key={template.id} className="hover:bg-muted/30 transition-colors">
+                <TableCell className="font-medium">{template.name}</TableCell>
                 <TableCell>
-                  <Badge variant={template.category === "system" ? "secondary" : "default"}>
+                  <Badge variant={template.category === "system" ? "secondary" : "default"} className="capitalize">
                     {template.category}
                   </Badge>
                 </TableCell>
@@ -540,11 +570,16 @@ export function EmailTemplateList() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <span className={`px-2 py-1 rounded ${
-                    template.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                  }`}>
+                  <Badge 
+                    variant={template.is_active ? "success" : "destructive"}
+                    className={`${
+                      template.is_active 
+                        ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' 
+                        : 'bg-red-500/20 text-red-700 hover:bg-red-500/30'
+                    }`}
+                  >
                     {template.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
@@ -555,6 +590,7 @@ export function EmailTemplateList() {
                         setSelectedTemplate(template);
                         setTestEmailDialogOpen(true);
                       }}
+                      className="hover:bg-primary/10 hover:text-primary"
                     >
                       <Send className="h-4 w-4" />
                     </Button>
@@ -562,6 +598,7 @@ export function EmailTemplateList() {
                       variant="ghost" 
                       size="sm"
                       onClick={() => handlePreview(template)}
+                      className="hover:bg-primary/10 hover:text-primary"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -569,6 +606,7 @@ export function EmailTemplateList() {
                       variant="ghost" 
                       size="sm"
                       onClick={() => duplicateTemplate(template)}
+                      className="hover:bg-primary/10 hover:text-primary"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -578,13 +616,15 @@ export function EmailTemplateList() {
                           variant="ghost" 
                           size="sm"
                           onClick={() => handleEdit(template)}
+                          className="hover:bg-primary/10 hover:text-primary"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => handleDelete(template.id)}
+                          onClick={() => handleDeleteClick(template)}
+                          className="hover:bg-destructive/10 hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -597,6 +637,36 @@ export function EmailTemplateList() {
           )}
         </TableBody>
       </Table>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Delete Template</DialogTitle>
+            <DialogDescription className="pt-4">
+              Are you sure you want to delete the template "{selectedTemplate?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setSelectedTemplate(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
         <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
