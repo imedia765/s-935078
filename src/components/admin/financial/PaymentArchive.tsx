@@ -14,7 +14,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, Download, Filter } from "lucide-react";
-import { Payment } from './types';
+import type { Payment } from './types';
 
 export function PaymentArchive() {
   const { data: archivedPayments, isLoading } = useQuery({
@@ -31,15 +31,17 @@ export function PaymentArchive() {
             name
           ),
           receipts (
+            id,
             receipt_number,
-            receipt_url
+            receipt_url,
+            generated_at
           )
         `)
         .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Payment[];
+      return data as unknown as Payment[];
     }
   });
 
@@ -87,14 +89,14 @@ export function PaymentArchive() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleViewReceipt(payment.receipts[0].receipt_url)}
+                        onClick={() => handleViewReceipt(payment.receipts![0].receipt_url)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleViewReceipt(payment.receipts[0].receipt_url)}
+                        onClick={() => handleViewReceipt(payment.receipts![0].receipt_url)}
                       >
                         <Download className="h-4 w-4" />
                       </Button>
