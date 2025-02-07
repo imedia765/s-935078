@@ -105,8 +105,16 @@ export function useProfileManagement() {
           if (updateError) {
             console.error("[useProfileManagement] Error updating auth_user_id:", updateError);
           } else {
-            setMemberData(memberByNumber);
-            setEditedData(memberByNumber);
+            const memberWithRoles: MemberWithRelations = {
+              ...memberByNumber,
+              user_roles: [],
+              roles: [],
+              member_notes: memberByNumber.member_notes || [],
+              family_members: memberByNumber.family_members || [],
+              payment_requests: memberByNumber.payment_requests || []
+            };
+            setMemberData(memberWithRoles);
+            setEditedData(memberWithRoles);
             return;
           }
         }
@@ -129,21 +137,21 @@ export function useProfileManagement() {
           ...member,
           user_roles: roles?.map(r => ({ role: r.role })) || [],
           roles: roles?.map(r => r.role) || [],
-          member_notes: member?.member_notes || [],
-          family_members: member?.family_members || [],
-          payment_requests: member?.payment_requests || [],
-          yearly_payment_status: member?.yearly_payment_status || null,
-          yearly_payment_due_date: member?.yearly_payment_due_date || null,
-          yearly_payment_amount: member?.yearly_payment_amount || null,
-          emergency_collection_status: member?.emergency_collection_status || null,
-          emergency_collection_amount: member?.emergency_collection_amount || null,
-          emergency_collection_due_date: member?.emergency_collection_due_date || null,
-          marital_status: member?.marital_status || null,
-          gender: member?.gender || null,
-          town: member?.town || null,
-          postcode: member?.postcode || null,
-          collector: member?.collector || null,
-          photo_url: member?.photo_url || null
+          member_notes: member.member_notes || [],
+          family_members: member.family_members || [],
+          payment_requests: member.payment_requests || [],
+          yearly_payment_status: member.yearly_payment_status || null,
+          yearly_payment_due_date: member.yearly_payment_due_date || null,
+          yearly_payment_amount: member.yearly_payment_amount || null,
+          emergency_collection_status: member.emergency_collection_status || null,
+          emergency_collection_amount: member.emergency_collection_amount || null,
+          emergency_collection_due_date: member.emergency_collection_due_date || null,
+          marital_status: member.marital_status || null,
+          gender: member.gender || null,
+          town: member.town || null,
+          postcode: member.postcode || null,
+          collector: member.collector || null,
+          photo_url: member.photo_url || null
         };
         
         setMemberData(memberWithRelations);
