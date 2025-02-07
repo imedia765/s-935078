@@ -1,4 +1,3 @@
-
 import { useProfileManagement } from "@/hooks/useProfileManagement";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { BankDetailsCard } from "@/components/profile/BankDetailsCard";
@@ -10,8 +9,12 @@ import { FamilyMemberDialogs } from "@/components/profile/FamilyMemberDialogs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
+import { Camera } from "lucide-react";
+import { captureAndSaveScreenshot } from "@/utils/screenshotUtils";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
+  const { toast } = useToast();
   const {
     memberData,
     loading,
@@ -60,6 +63,36 @@ const Profile = () => {
       url: '#'
     }
   ];
+
+  const handleScreenshot = async (elementId: string, section: string) => {
+    try {
+      const url = await captureAndSaveScreenshot(elementId, `profile-${section}`);
+      toast({
+        title: "Screenshot captured",
+        description: "The screenshot has been saved successfully.",
+      });
+      
+      // Update documentation with the screenshot
+      const { error } = await supabase
+        .from('documentation_screenshots')
+        .insert([
+          {
+            section,
+            url,
+            created_at: new Date().toISOString(),
+          }
+        ]);
+
+      if (error) throw error;
+
+    } catch (error) {
+      toast({
+        title: "Screenshot failed",
+        description: "Failed to capture screenshot. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -128,38 +161,103 @@ const Profile = () => {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <ProfileCard
-                memberData={memberData}
-                editedData={editedData}
-                isEditing={isEditing}
-                validationErrors={validationErrors}
-                uploadingPhoto={uploadingPhoto}
-                saving={saving}
-                onPhotoUpload={handlePhotoUpload}
-                onInputChange={handleInputChange}
-                onSave={handleSave}
-                onCancel={handleCancel}
-                onEdit={handleEdit}
-              />
-              <BankDetailsCard memberNumber={memberData?.member_number} />
-              <FamilyMembersCard
-                memberData={memberData}
-                onAddMember={() => setIsAddFamilyMemberOpen(true)}
-                onEditMember={(member) => {
-                  selectedFamilyMember.current = member;
-                  setIsEditFamilyMemberOpen(true);
-                }}
-                onDeleteMember={handleDeleteFamilyMember}
-              />
-              <PaymentHistoryCard memberData={memberData} isLoading={false} />
+              <div id="profile-section" className="relative">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => handleScreenshot('profile-section', 'profile')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <ProfileCard
+                  memberData={memberData}
+                  editedData={editedData}
+                  isEditing={isEditing}
+                  validationErrors={validationErrors}
+                  uploadingPhoto={uploadingPhoto}
+                  saving={saving}
+                  onPhotoUpload={handlePhotoUpload}
+                  onInputChange={handleInputChange}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                  onEdit={handleEdit}
+                />
+              </div>
+              
+              <div id="bank-details-section" className="relative">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => handleScreenshot('bank-details-section', 'bank-details')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <BankDetailsCard memberNumber={memberData?.member_number} />
+              </div>
+              
+              <div id="family-members-section" className="relative">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => handleScreenshot('family-members-section', 'family-members')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <FamilyMembersCard
+                  memberData={memberData}
+                  onAddMember={() => setIsAddFamilyMemberOpen(true)}
+                  onEditMember={(member) => {
+                    selectedFamilyMember.current = member;
+                    setIsEditFamilyMemberOpen(true);
+                  }}
+                  onDeleteMember={handleDeleteFamilyMember}
+                />
+              </div>
+              
+              <div id="payment-history-section" className="relative">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => handleScreenshot('payment-history-section', 'payment-history')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <PaymentHistoryCard memberData={memberData} isLoading={false} />
+              </div>
             </div>
+            
             <div className="space-y-6">
-              <AnnouncementsCard announcements={announcements} />
-              <DocumentsCard
-                documents={documents}
-                onView={handleViewDocument}
-                onDownload={handleDownloadDocument}
-              />
+              <div id="announcements-section" className="relative">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => handleScreenshot('announcements-section', 'announcements')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <AnnouncementsCard announcements={announcements} />
+              </div>
+              
+              <div id="documents-section" className="relative">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => handleScreenshot('documents-section', 'documents')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <DocumentsCard
+                  documents={documents}
+                  onView={handleViewDocument}
+                  onDownload={handleDownloadDocument}
+                />
+              </div>
             </div>
           </div>
         </div>
