@@ -99,6 +99,19 @@ export const useUserRoles = () => {
     queryFn: async () => {
       console.log("Fetching users and roles data...");
       
+      // First fetch the auth user ID from the members table
+      const { data: authUserData, error: authError } = await supabase
+        .from('members')
+        .select('auth_user_id')
+        .eq('member_number', 'MT05079')
+        .single();
+
+      if (authError) {
+        console.error("Auth user fetch error:", authError);
+      } else {
+        console.log("Found auth user data:", authUserData);
+      }
+
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
@@ -128,6 +141,8 @@ export const useUserRoles = () => {
         throw membersError;
       }
 
+      console.log("Fetched members:", members);
+
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
@@ -137,8 +152,17 @@ export const useUserRoles = () => {
         throw rolesError;
       }
 
-      console.log("Fetched members:", members);
       console.log("Fetched user roles:", userRoles);
+
+      // Log specific member details for MT05079
+      const mt05079Member = members.find(m => m.member_number === 'MT05079');
+      console.log("MT05079 member details:", mt05079Member);
+      
+      if (mt05079Member) {
+        console.log("MT05079 auth_user_id:", mt05079Member.auth_user_id);
+        const mt05079Roles = userRoles.filter(r => r.user_id === mt05079Member.auth_user_id);
+        console.log("MT05079 roles:", mt05079Roles);
+      }
 
       const rolesByUser = userRoles.reduce((acc: { [key: string]: { role: UserRole }[] }, role: any) => {
         if (!acc[role.user_id]) {
@@ -157,6 +181,12 @@ export const useUserRoles = () => {
         full_name: member.full_name,
         user_roles: rolesByUser[member.auth_user_id] || []
       }));
+
+      console.log("Processed users with roles:", usersWithRoles);
+      
+      // Log specific user details for MT05079
+      const mt05079User = usersWithRoles.find(u => u.member_number === 'MT05079');
+      console.log("MT05079 final user data:", mt05079User);
 
       return usersWithRoles;
     }
