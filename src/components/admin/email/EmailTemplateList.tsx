@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { sendEmail } from "@/utils/email";
 import {
   getPaymentConfirmationTemplate,
   getPaymentReminderTemplate,
@@ -28,6 +29,18 @@ const templateCategories = [
   "system",
   "custom"
 ] as const;
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  is_active: boolean;
+  category: typeof templateCategories[number];
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 interface EmailTemplateFormData {
   name: string;
@@ -71,7 +84,7 @@ const previewStyles = {
 export function EmailTemplateList() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [testEmailDialogOpen, setTestEmailDialogOpen] = useState(false);
@@ -104,7 +117,7 @@ export function EmailTemplateList() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as EmailTemplate[];
     }
   });
 
@@ -124,22 +137,25 @@ export function EmailTemplateList() {
     const systemTemplates = [
       {
         name: "Payment Confirmation",
-        ...getPaymentConfirmationTemplate(samplePayment as any),
-        category: "payment",
+        subject: getPaymentConfirmationTemplate(samplePayment as any).subject,
+        body: getPaymentConfirmationTemplate(samplePayment as any).html,
+        category: "payment" as const,
         is_system: true,
         is_active: true
       },
       {
         name: "Payment Reminder",
-        ...getPaymentReminderTemplate(samplePayment as any, new Date().toISOString()),
-        category: "payment",
+        subject: getPaymentReminderTemplate(samplePayment as any, new Date().toISOString()).subject,
+        body: getPaymentReminderTemplate(samplePayment as any, new Date().toISOString()).html,
+        category: "payment" as const,
         is_system: true,
         is_active: true
       },
       {
         name: "Late Payment Notice",
-        ...getLatePaymentTemplate(samplePayment as any, 7),
-        category: "payment",
+        subject: getLatePaymentTemplate(samplePayment as any, 7).subject,
+        body: getLatePaymentTemplate(samplePayment as any, 7).html,
+        category: "payment" as const,
         is_system: true,
         is_active: true
       }
@@ -165,6 +181,53 @@ export function EmailTemplateList() {
       title: "Success",
       description: "System templates imported successfully",
     });
+  };
+
+  const sendTestEmailMutation = useMutation({
+    mutationFn: async ({ to }: TestEmailFormData) => {
+      if (!selectedTemplate) throw new Error("No template selected");
+      await sendEmail({
+        to,
+        subject: selectedTemplate.subject,
+        html: selectedTemplate.body
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Test email sent successfully",
+      });
+      setTestEmailDialogOpen(false);
+      testEmailForm.reset();
+    },
+    onError: (error: Error) => {
+      setSmtpError(error.message);
+    }
+  });
+
+  const handleSendTestEmail = (data: TestEmailFormData) => {
+    sendTestEmailMutation.mutate(data);
+  };
+
+  const handlePreview = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+    setPreviewDialogOpen(true);
+  };
+
+  const handleEdit = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+    form.reset({
+      name: template.name,
+      subject: template.subject,
+      body: template.body,
+      is_active: template.is_active,
+      category: template.category
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
 
   const createMutation = useMutation({
