@@ -46,9 +46,7 @@ export function useFinancialMutations() {
       // Update payment with receipt URL
       const { error: updateError } = await supabase
         .from('payment_requests')
-        .update({ 
-          receipt_url: receiptUrl 
-        })
+        .update({ receipt_url: receiptUrl })
         .eq('id', paymentId);
 
       if (updateError) throw updateError;
