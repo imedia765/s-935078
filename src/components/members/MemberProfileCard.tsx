@@ -65,9 +65,11 @@ interface MemberProfileCardProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onToggleStatus?: () => void;
+  onMove?: () => void;
+  onExportIndividual?: () => void;
 }
 
-export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus }: MemberProfileCardProps) {
+export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, onMove, onExportIndividual }: MemberProfileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
   const { toast } = useToast();
