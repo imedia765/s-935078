@@ -40,6 +40,9 @@ interface EmailTemplate {
   is_system: boolean;
   created_at: string;
   updated_at: string;
+  created_by?: string;
+  variables?: unknown;
+  version?: number;
 }
 
 interface EmailTemplateFormData {
@@ -117,7 +120,12 @@ export function EmailTemplateList() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as EmailTemplate[];
+      
+      return (data || []).map(template => ({
+        ...template,
+        category: template.category || 'custom',
+        is_system: template.is_system || false
+      })) as EmailTemplate[];
     }
   });
 
