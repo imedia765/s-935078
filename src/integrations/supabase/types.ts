@@ -2142,9 +2142,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           daily_quota: number | null
+          degraded_threshold: number | null
           encryption_type: string | null
+          failing_threshold: number | null
           failover_config: Json | null
           from_address: string
+          health_check_enabled: boolean | null
           health_check_interval: unknown | null
           host: string
           id: string
@@ -2166,9 +2169,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           daily_quota?: number | null
+          degraded_threshold?: number | null
           encryption_type?: string | null
+          failing_threshold?: number | null
           failover_config?: Json | null
           from_address: string
+          health_check_enabled?: boolean | null
           health_check_interval?: unknown | null
           host: string
           id?: string
@@ -2190,9 +2196,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           daily_quota?: number | null
+          degraded_threshold?: number | null
           encryption_type?: string | null
+          failing_threshold?: number | null
           failover_config?: Json | null
           from_address?: string
+          health_check_enabled?: boolean | null
           health_check_interval?: unknown | null
           host?: string
           id?: string
@@ -2210,6 +2219,50 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      smtp_health_checks: {
+        Row: {
+          check_timestamp: string
+          configuration_id: string | null
+          created_at: string
+          error_details: Json | null
+          id: string
+          quota_remaining: number | null
+          response_time: number | null
+          status: string
+          success_rate: number | null
+        }
+        Insert: {
+          check_timestamp?: string
+          configuration_id?: string | null
+          created_at?: string
+          error_details?: Json | null
+          id?: string
+          quota_remaining?: number | null
+          response_time?: number | null
+          status: string
+          success_rate?: number | null
+        }
+        Update: {
+          check_timestamp?: string
+          configuration_id?: string | null
+          created_at?: string
+          error_details?: Json | null
+          id?: string
+          quota_remaining?: number | null
+          response_time?: number | null
+          status?: string
+          success_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smtp_health_checks_configuration_id_fkey"
+            columns: ["configuration_id"]
+            isOneToOne: false
+            referencedRelation: "smtp_configurations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       storage_metrics: {
         Row: {

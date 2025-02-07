@@ -30,3 +30,16 @@ export interface SmtpHealth {
     quota_remaining: number;
   };
 }
+
+export interface SmtpHealthCheck {
+  id: string;
+  configuration_id: string;
+  status: 'healthy' | 'degraded' | 'failing';
+  check_timestamp: string;
+  response_time: number;
+  success_rate: number;
+  quota_remaining: number;
+  error_details: Record<string, any>;
+  created_at: string;
+}
+
