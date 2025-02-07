@@ -7,6 +7,7 @@ create or replace function reset_password_to_member_number(
 returns json
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_hashed_password text;
@@ -43,5 +44,22 @@ exception
 end;
 $$;
 
--- Grant execute permission to authenticated users
+-- Create the API endpoint
+create or replace function http_reset_password_to_member_number(req json)
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return reset_password_to_member_number(
+    (req->>'user_id')::uuid,
+    req->>'member_number'
+  );
+end;
+$$;
+
+-- Grant execute permissions
 grant execute on function reset_password_to_member_number to authenticated;
+grant execute on function http_reset_password_to_member_number to authenticated;
+
