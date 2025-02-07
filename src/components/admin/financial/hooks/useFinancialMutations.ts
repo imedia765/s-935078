@@ -37,19 +37,16 @@ export function useFinancialMutations() {
       if (approvalError) throw approvalError;
       if (!paymentData) throw new Error('No payment data returned');
 
-      const payment = paymentData as unknown as Payment;
+      const payment = paymentData as Payment;
 
       // Generate and store receipt
       const receiptBlob = await generateReceipt(payment);
       const receiptUrl = await saveReceiptToStorage(paymentId, receiptBlob);
 
-      // Update payment with receipt URL using a separate update call
+      // Update payment with receipt URL
       const { error: updateError } = await supabase
         .from('payment_requests')
-        .update({
-          // Cast to any to bypass TypeScript checking since we know the field exists
-          receipt_url: receiptUrl as any
-        })
+        .update({ receipt_url: receiptUrl })
         .eq('id', paymentId);
 
       if (updateError) throw updateError;
@@ -103,4 +100,3 @@ export function useFinancialMutations() {
     deleteMutation
   };
 }
-

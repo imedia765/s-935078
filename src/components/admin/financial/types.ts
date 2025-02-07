@@ -29,6 +29,12 @@ export interface Payment {
   created_at: string;
   payment_number: string;
   receipt_url?: string;
+  collector_id?: string;
+  member_id?: string;
+  member_number?: string;
+  notes?: string;
+  approved_at?: string;
+  approved_by?: string;
   members?: {
     full_name: string;
     email: string;
