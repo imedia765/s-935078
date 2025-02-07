@@ -81,7 +81,7 @@ const previewStyles = {
     header: "bg-white/90 backdrop-blur-sm p-6 rounded-t-lg border-b border-gray-200",
     body: "bg-white/95 backdrop-blur-sm p-6 rounded-b-lg text-gray-800",
     title: "text-3xl font-arabic mb-4 text-gray-900 font-semibold",
-    text: "text-gray-800 leading-relaxed"
+    text: "text-gray-900 leading-relaxed"
   },
   professional: {
     container: "bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 p-8 rounded-lg shadow-xl max-w-2xl mx-auto",
@@ -170,33 +170,209 @@ export function EmailTemplateList() {
       }
     };
 
+    const emailWrapper = (content: string) => `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa;">
+        <!-- Header -->
+        <div style="background-color: #6C5DD3; padding: 20px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">PWA Burton</h1>
+        </div>
+        
+        <!-- Bismillah -->
+        <div style="text-align: center; padding: 20px; font-size: 24px; color: #333; font-family: 'Traditional Arabic', serif;">
+          بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ
+        </div>
+        
+        <!-- Main Content -->
+        <div style="background-color: white; padding: 30px; border-radius: 8px; margin: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          ${content}
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center; padding: 20px; color: #666; font-size: 14px; background-color: #f1f1f1;">
+          <p>Professional Women's Association Burton</p>
+          <p>Supporting and empowering women in our community</p>
+          <p>Contact us: <a href="mailto:burtonpwa@gmail.com" style="color: #6C5DD3;">burtonpwa@gmail.com</a></p>
+        </div>
+      </div>
+    `;
+
     const systemTemplates = [
       {
         name: "Payment Confirmation",
         subject: getPaymentConfirmationTemplate(samplePayment as any).subject,
-        body: getPaymentConfirmationTemplate(samplePayment as any).html,
+        body: emailWrapper(`
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Payment Confirmation</h2>
+          <p style="color: #34495e;">Dear {member_name},</p>
+          <p style="color: #34495e;">We are pleased to confirm that we have received your payment successfully.</p>
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #2c3e50; margin-bottom: 10px;">Payment Details</h3>
+            <ul style="list-style: none; padding: 0; color: #34495e;">
+              <li style="margin-bottom: 8px;">📝 Payment Number: {payment_number}</li>
+              <li style="margin-bottom: 8px;">💷 Amount: £{amount}</li>
+              <li style="margin-bottom: 8px;">📅 Date: {payment_date}</li>
+              <li style="margin-bottom: 8px;">💳 Payment Method: {payment_method}</li>
+            </ul>
+          </div>
+          <p style="color: #34495e;">Thank you for your continued support of PWA Burton. Your contribution helps us maintain and improve our services for the community.</p>
+          <p style="color: #34495e;">Best regards,<br>PWA Burton Team</p>
+        `),
         category: "payment" as const,
         is_system: true,
-        is_active: true
+        is_active: true,
+        variables: {
+          member_name: "string",
+          payment_number: "string",
+          amount: "number",
+          payment_date: "date",
+          payment_method: "string"
+        }
       },
       {
         name: "Payment Reminder",
-        subject: getPaymentReminderTemplate(samplePayment as any, new Date().toISOString()).subject,
-        body: getPaymentReminderTemplate(samplePayment as any, new Date().toISOString()).html,
+        subject: "Payment Reminder - PWA Burton Membership",
+        body: emailWrapper(`
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Payment Reminder</h2>
+          <p style="color: #34495e;">Dear {member_name},</p>
+          <p style="color: #34495e;">This is a friendly reminder about an upcoming payment for your PWA Burton membership.</p>
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #2c3e50; margin-bottom: 10px;">Payment Details</h3>
+            <ul style="list-style: none; padding: 0; color: #34495e;">
+              <li style="margin-bottom: 8px;">💷 Amount Due: £{amount}</li>
+              <li style="margin-bottom: 8px;">📅 Due Date: {due_date}</li>
+              <li style="margin-bottom: 8px;">📋 Payment Type: {payment_type}</li>
+            </ul>
+          </div>
+          <p style="color: #34495e;">Please ensure your payment is made by the due date to maintain your membership benefits.</p>
+          <p style="color: #34495e;">If you have any questions or concerns, please don't hesitate to contact us.</p>
+          <p style="color: #34495e;">Best regards,<br>PWA Burton Team</p>
+        `),
         category: "payment" as const,
         is_system: true,
-        is_active: true
+        is_active: true,
+        variables: {
+          member_name: "string",
+          amount: "number",
+          due_date: "date",
+          payment_type: "string"
+        }
       },
       {
         name: "Late Payment Notice",
-        subject: getLatePaymentTemplate(samplePayment as any, 7).subject,
-        body: getLatePaymentTemplate(samplePayment as any, 7).html,
+        subject: "Important: Outstanding Payment Notice - PWA Burton",
+        body: emailWrapper(`
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Outstanding Payment Notice</h2>
+          <p style="color: #34495e;">Dear {member_name},</p>
+          <p style="color: #34495e;">We noticed that a payment is currently overdue by {days_late} days.</p>
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #2c3e50; margin-bottom: 10px;">Payment Details</h3>
+            <ul style="list-style: none; padding: 0; color: #34495e;">
+              <li style="margin-bottom: 8px;">📝 Payment Number: {payment_number}</li>
+              <li style="margin-bottom: 8px;">💷 Amount: £{amount}</li>
+              <li style="margin-bottom: 8px;">📋 Payment Type: {payment_type}</li>
+            </ul>
+          </div>
+          <p style="color: #34495e;">To maintain your membership status and continue accessing PWA Burton's services, please arrange for the payment to be made at your earliest convenience.</p>
+          <p style="color: #34495e;">If you have already made the payment, please disregard this notice and accept our thanks.</p>
+          <p style="color: #34495e;">If you're experiencing any difficulties or need to discuss payment arrangements, please don't hesitate to contact us.</p>
+          <p style="color: #34495e;">Best regards,<br>PWA Burton Team</p>
+        `),
         category: "payment" as const,
         is_system: true,
-        is_active: true
+        is_active: true,
+        variables: {
+          member_name: "string",
+          days_late: "number",
+          payment_number: "string",
+          amount: "number",
+          payment_type: "string"
+        }
+      },
+      {
+        name: "Welcome Email",
+        subject: "Welcome to PWA Burton",
+        body: emailWrapper(`
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Welcome to PWA Burton! 🎉</h2>
+          <p style="color: #34495e;">Dear {member_name},</p>
+          <p style="color: #34495e;">Welcome to the Professional Women's Association Burton! We're delighted to have you as a member of our community.</p>
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #2c3e50; margin-bottom: 10px;">Your Membership Details</h3>
+            <ul style="list-style: none; padding: 0; color: #34495e;">
+              <li style="margin-bottom: 8px;">👤 Member Number: {member_number}</li>
+              <li style="margin-bottom: 8px;">📅 Join Date: {join_date}</li>
+            </ul>
+          </div>
+          <p style="color: #34495e;">We look forward to supporting you and growing together as a community.</p>
+          <p style="color: #34495e;">Best regards,<br>PWA Burton Team</p>
+        `),
+        category: "custom" as const,
+        is_system: false,
+        is_active: true,
+        variables: {
+          member_name: "string",
+          member_number: "string",
+          join_date: "date"
+        }
+      },
+      {
+        name: "Account Verification",
+        subject: "Verify Your PWA Burton Account",
+        body: emailWrapper(`
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Verify Your Account 🔐</h2>
+          <p style="color: #34495e;">Dear {member_name},</p>
+          <p style="color: #34495e;">Thank you for registering with PWA Burton. To complete your account setup, please verify your email address.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="{verification_link}" style="background-color: #6C5DD3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email Address</a>
+          </div>
+          <p style="color: #34495e;">If you didn't request this verification, please ignore this email.</p>
+          <p style="color: #34495e;">Best regards,<br>PWA Burton Team</p>
+        `),
+        category: "custom" as const,
+        is_system: false,
+        is_active: true,
+        variables: {
+          member_name: "string",
+          verification_link: "string"
+        }
+      },
+      {
+        name: "Password Reset",
+        subject: "Reset Your PWA Burton Password",
+        body: emailWrapper(`
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Password Reset Request 🔑</h2>
+          <p style="color: #34495e;">Dear {member_name},</p>
+          <p style="color: #34495e;">We received a request to reset your PWA Burton account password.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="{reset_link}" style="background-color: #6C5DD3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+          </div>
+          <p style="color: #34495e;">This link will expire in 1 hour. If you didn't request a password reset, please ignore this email.</p>
+          <p style="color: #34495e;">Best regards,<br>PWA Burton Team</p>
+        `),
+        category: "custom" as const,
+        is_system: false,
+        is_active: true,
+        variables: {
+          member_name: "string",
+          reset_link: "string"
+        }
       }
     ];
 
+    // First, delete existing system templates to avoid duplicates
+    const { error: deleteError } = await supabase
+      .from('email_templates')
+      .delete()
+      .eq('is_system', true);
+    
+    if (deleteError) {
+      toast({
+        title: "Error",
+        description: "Failed to clean up existing system templates",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Then insert new templates
     for (const template of systemTemplates) {
       const { error } = await supabase
         .from('email_templates')
@@ -391,9 +567,26 @@ export function EmailTemplateList() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedTemplate) {
-      deleteMutation.mutate(selectedTemplate.id);
+      const { error } = await supabase
+        .from('email_templates')
+        .delete()
+        .eq('id', selectedTemplate.id);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete template: " + error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Template deleted successfully",
+        });
+        queryClient.invalidateQueries({ queryKey: ['emailTemplates'] });
+      }
       setDeleteDialogOpen(false);
       setSelectedTemplate(null);
     }
