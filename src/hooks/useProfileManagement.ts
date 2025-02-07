@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,6 @@ export function useProfileManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<MemberWithRelations | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -22,6 +20,10 @@ export function useProfileManagement() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const selectedFamilyMember = useRef<any>(null);
 
   const fetchData = async () => {
     try {
@@ -112,6 +114,17 @@ export function useProfileManagement() {
 
       if (announcementsError) throw announcementsError;
       setAnnouncements(announcements || []);
+
+      // Fetch documents
+      const { data: documentsData, error: documentsError } = await supabase
+        .from("documents")
+        .select("*")
+        .eq("member_id", member.id)
+        .order("updated_at", { ascending: false });
+
+      if (documentsError) throw documentsError;
+
+      setDocuments(documentsData || []);
 
     } catch (error: any) {
       console.error("Error in fetchData:", error);
@@ -305,6 +318,26 @@ export function useProfileManagement() {
     setIsEditing(true);
   };
 
+  const handleViewDocument = async (doc: any) => {
+    // Implementation for viewing document
+    console.log("Viewing document:", doc);
+    // TODO: Implement document viewer
+  };
+
+  const handleDownloadDocument = async (doc: any) => {
+    try {
+      // Implementation for downloading document
+      console.log("Downloading document:", doc);
+      // TODO: Implement document download
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to download document"
+      });
+    }
+  };
+
   useEffect(() => {
     const initializeProfile = async () => {
       try {
@@ -346,6 +379,8 @@ export function useProfileManagement() {
     isAddFamilyMemberOpen,
     isEditFamilyMemberOpen,
     selectedFamilyMember,
+    announcements,
+    documents,
     handleInputChange,
     handleSave,
     handleCancel,

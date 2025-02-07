@@ -2,6 +2,10 @@
 import { useProfileManagement } from "@/hooks/useProfileManagement";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { BankDetailsCard } from "@/components/profile/BankDetailsCard";
+import { PaymentHistoryCard } from "@/components/profile/PaymentHistoryCard";
+import { FamilyMembersCard } from "@/components/profile/FamilyMembersCard";
+import { AnnouncementsCard } from "@/components/profile/AnnouncementsCard";
+import { DocumentsCard } from "@/components/profile/DocumentsCard";
 import { FamilyMemberDialogs } from "@/components/profile/FamilyMemberDialogs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +24,8 @@ const Profile = () => {
     isAddFamilyMemberOpen,
     isEditFamilyMemberOpen,
     selectedFamilyMember,
+    announcements,
+    documents,
     handleInputChange,
     handleSave,
     handleCancel,
@@ -30,7 +36,9 @@ const Profile = () => {
     fetchData,
     handleAddFamilyMember,
     handleEditFamilyMember,
-    handleDeleteFamilyMember
+    handleDeleteFamilyMember,
+    handleViewDocument,
+    handleDownloadDocument
   } = useProfileManagement();
 
   if (loading) {
@@ -84,6 +92,28 @@ const Profile = () => {
               />
 
               <BankDetailsCard memberNumber={memberData?.member_number} />
+              
+              <FamilyMembersCard
+                memberData={memberData}
+                onAddMember={() => setIsAddFamilyMemberOpen(true)}
+                onEditMember={(member) => {
+                  selectedFamilyMember.current = member;
+                  setIsEditFamilyMemberOpen(true);
+                }}
+                onDeleteMember={handleDeleteFamilyMember}
+              />
+
+              <PaymentHistoryCard memberData={memberData} />
+            </div>
+
+            {/* Right Column - Announcements & Documents */}
+            <div className="space-y-6">
+              <AnnouncementsCard announcements={announcements} />
+              <DocumentsCard
+                documents={documents}
+                onView={handleViewDocument}
+                onDownload={handleDownloadDocument}
+              />
             </div>
           </div>
         </div>
