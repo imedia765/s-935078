@@ -111,30 +111,19 @@ export const useMagicLink = () => {
     try {
       console.log("Resetting password to member number for user:", userId);
 
-      const { data, error } = await supabase.functions.invoke('reset-password-to-member-number', {
-        body: {
-          user_id: userId,
-          member_number: memberNumber
-        }
+      const { data: resetData, error: resetError } = await supabase.rpc('reset_password_to_member_number', {
+        p_user_id: userId,
+        p_member_number: memberNumber
       });
 
-      if (error) {
-        console.error("Password reset error:", error);
-        throw error;
+      if (resetError) {
+        console.error("Password reset error:", resetError);
+        throw resetError;
       }
 
-      // Log the action in audit_logs
-      await supabase.from('audit_logs').insert([{
-        table_name: 'auth.users',
-        operation: 'UPDATE',
-        record_id: userId,
-        new_values: {
-          action: 'password_reset_to_member_number',
-          member_number: memberNumber
-        }
-      }]);
+      console.log("Password reset response:", resetData);
 
-      // Verify the member record is still correctly associated
+      // Verify member data immediately after reset
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('*')
@@ -143,7 +132,23 @@ export const useMagicLink = () => {
 
       if (memberError || !memberData) {
         console.error("Error verifying member data after reset:", memberError);
-        throw new Error("Failed to verify member data after password reset");
+        
+        // Attempt to recover auth association
+        console.log("Attempting to recover auth association...");
+        const { data: recoveryData, error: recoveryError } = await supabase.rpc('fix_member_auth_association', {
+          p_member_number: memberNumber
+        });
+
+        if (recoveryError) {
+          console.error("Recovery attempt failed:", recoveryError);
+          throw new Error("Failed to recover member data after password reset");
+        }
+
+        console.log("Recovery attempt result:", recoveryData);
+
+        if (!recoveryData.success) {
+          throw new Error(recoveryData.message || "Failed to recover member data");
+        }
       }
 
       toast({
