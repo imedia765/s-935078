@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, Bell, CreditCard } from "lucide-react";
@@ -8,17 +8,48 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { WhatsAppSupport } from "@/components/WhatsAppSupport";
 import { validateField } from "@/types/member";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Index = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastLogin, setLastLogin] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{
     memberNumber?: string;
     password?: string;
   }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Load remembered credentials on mount
+  useEffect(() => {
+    const rememberedMember = localStorage.getItem("rememberedMember");
+    if (rememberedMember) {
+      setMemberNumber(rememberedMember);
+      setRememberMe(true);
+    }
+    const lastLoginTime = localStorage.getItem("lastLoginTime");
+    if (lastLoginTime) {
+      setLastLogin(lastLoginTime);
+    }
+  }, []);
+
+  // Enable browser auto-fill by using proper input names
+  const getInputProps = (type: "memberNumber" | "password") => {
+    const baseProps = {
+      memberNumber: {
+        name: "username",
+        autoComplete: "username",
+      },
+      password: {
+        name: "current-password",
+        autoComplete: "current-password",
+      },
+    };
+    return baseProps[type];
+  };
 
   // Simplified password validation for login - no requirements
   const validatePassword = (pass: string) => {
@@ -61,6 +92,14 @@ export const Index = () => {
       
       console.log("Attempting login for member:", memberNumber);
       
+      // Get device information
+      const deviceInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        screenResolution: `${window.screen.width}x${window.screen.height}`,
+      };
+
       // Check if member exists and is active
       const { data: member, error: memberError } = await supabase
         .from("members")
@@ -155,10 +194,34 @@ export const Index = () => {
         return;
       }
 
-      // Reset failed login attempts on successful login
-      await supabase.rpc("reset_failed_login", {
-        member_number: memberNumber,
-      });
+      // Handle remember me
+      if (rememberMe) {
+        localStorage.setItem("rememberedMember", memberNumber);
+      } else {
+        localStorage.removeItem("rememberedMember");
+      }
+
+      // Log login activity
+      const { error: logError } = await supabase
+        .from("login_activity")
+        .insert([
+          {
+            member_id: member.id,
+            login_time: new Date().toISOString(),
+            device_info: deviceInfo,
+            ip_address: "Captured server-side", // Note: actual IP should be captured server-side
+            status: "success"
+          }
+        ]);
+
+      if (logError) {
+        console.error("Error logging login activity:", logError);
+      }
+
+      // Update last login time
+      const currentTime = new Date().toISOString();
+      localStorage.setItem("lastLoginTime", currentTime);
+      setLastLogin(currentTime);
 
       // Verify session is established
       const { data: { session } } = await supabase.auth.getSession();
@@ -246,6 +309,7 @@ export const Index = () => {
                   type="text"
                   placeholder="Enter your member number (e.g., AB12345)"
                   value={memberNumber}
+                  {...getInputProps("memberNumber")}
                   onChange={(e) => {
                     setMemberNumber(e.target.value.toUpperCase());
                     setValidationErrors((prev) => ({ ...prev, memberNumber: "" }));
@@ -277,6 +341,7 @@ export const Index = () => {
                   type="password"
                   placeholder="Enter your password"
                   value={password}
+                  {...getInputProps("password")}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setValidationErrors((prev) => ({ ...prev, password: "" }));
@@ -288,6 +353,26 @@ export const Index = () => {
                   <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
                 )}
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Remember me
+                </label>
+              </div>
+
+              {lastLogin && (
+                <p className="text-sm text-gray-400">
+                  Last login: {new Date(lastLogin).toLocaleString()}
+                </p>
+              )}
 
               <div className="flex flex-col space-y-4">
                 <Button 
