@@ -65,28 +65,36 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     }
 
     try {
+      // Try to validate the token first
       const { data: tokenData, error: tokenError } = await supabase.rpc(
         "validate_reset_token",
         { token_value: token }
       );
 
       if (tokenError || !tokenData) {
+        let errorMessage = "Invalid or expired reset token";
+        if (tokenError?.message?.includes("INVALID_TOKEN")) {
+          errorMessage = "This password reset link has expired or is invalid. Please request a new one.";
+        }
+        
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Invalid or expired reset token",
+          description: errorMessage,
           action: (
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText("Invalid or expired reset token");
+                navigator.clipboard.writeText(errorMessage);
               }}
             >
               Copy
             </Button>
           ),
         });
+        setIsLoading(false);
+        navigate("/reset-password");
         return;
       }
 
@@ -108,16 +116,21 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
       );
 
       if (resetError) {
+        let errorMessage = resetError.message || "Failed to reset password";
+        if (resetError.message?.includes("INVALID_TOKEN")) {
+          errorMessage = "This password reset link has expired or is invalid. Please request a new one.";
+        }
+        
         toast({
           variant: "destructive",
           title: "Error",
-          description: resetError.message || "Failed to reset password",
+          description: errorMessage,
           action: (
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                navigator.clipboard.writeText(resetError.message || "Failed to reset password");
+                navigator.clipboard.writeText(errorMessage);
               }}
             >
               Copy
@@ -203,3 +216,4 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     </form>
   );
 };
+
