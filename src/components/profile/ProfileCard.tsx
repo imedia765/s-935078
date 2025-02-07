@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Edit, Save, X, Upload, Loader2 } from "lucide-react";
 import { MemberWithRelations } from "@/types/member";
 import { format } from "date-fns";
+import { AvatarSection } from "./AvatarSection";
+import { RoleBadges } from "./RoleBadges";
+import { ActionButtons } from "./ActionButtons";
 
 interface ProfileCardProps {
   memberData: MemberWithRelations | null;
@@ -38,36 +38,12 @@ export function ProfileCard({
   return (
     <Card className="glass-card p-6">
       <div className="flex items-start gap-6">
-        {/* Avatar Section */}
-        <div className="relative group">
-          <Avatar className="h-20 w-20">
-            {memberData?.photo_url ? (
-              <AvatarImage src={memberData.photo_url} alt={memberData?.full_name} />
-            ) : (
-              <AvatarFallback className="bg-primary/20">
-                <span className="text-2xl">{memberData?.full_name?.[0]}</span>
-              </AvatarFallback>
-            )}
-          </Avatar>
-          <label 
-            htmlFor="photo-upload" 
-            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
-          >
-            {uploadingPhoto ? (
-              <Loader2 className="h-6 w-6 text-white animate-spin" />
-            ) : (
-              <Upload className="h-6 w-6 text-white" />
-            )}
-          </label>
-          <input
-            id="photo-upload"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={onPhotoUpload}
-            disabled={uploadingPhoto}
-          />
-        </div>
+        <AvatarSection
+          photoUrl={memberData?.photo_url}
+          fullName={memberData?.full_name}
+          uploadingPhoto={uploadingPhoto}
+          onPhotoUpload={onPhotoUpload}
+        />
         
         {/* Member Details */}
         <div className="flex-1">
@@ -94,58 +70,17 @@ export function ProfileCard({
               <div className="flex items-center gap-2">
                 <p className="text-muted-foreground font-mono">Member #{memberData?.member_number}</p>
               </div>
-              {/* Role Badges */}
-              <div className="flex flex-wrap gap-2">
-                {memberData?.user_roles?.map((role, index) => (
-                  <Badge 
-                    key={index} 
-                    className="bg-primary/20 text-primary hover:bg-primary/30 transition-colors capitalize text-sm px-3 py-1"
-                    variant="outline"
-                  >
-                    <Shield className="w-4 h-4 mr-2" />
-                    {role.role}
-                  </Badge>
-                ))}
-              </div>
+              <RoleBadges roles={memberData?.user_roles} />
             </div>
             
-            <div className="flex gap-2">
-              {isEditing ? (
-                <>
-                  <Button 
-                    onClick={onSave} 
-                    size="sm" 
-                    className="bg-primary/20 hover:bg-primary/30 text-primary"
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-1" />
-                    )}
-                    Save
-                  </Button>
-                  <Button 
-                    onClick={onCancel} 
-                    variant="outline" 
-                    size="sm" 
-                    className="hover:bg-destructive/20 hover:text-destructive"
-                  >
-                    <X className="h-4 w-4 mr-1" /> Cancel
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={onEdit} variant="outline" size="sm" className="hover:bg-primary/20 hover:text-primary">
-                  <Edit className="w-4 h-4 mr-1" /> Edit
-                </Button>
-              )}
-              <Badge 
-                variant={memberData?.status === 'active' ? 'default' : 'destructive'}
-                className={memberData?.status === 'active' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
-              >
-                {memberData?.status}
-              </Badge>
-            </div>
+            <ActionButtons
+              isEditing={isEditing}
+              saving={saving}
+              status={memberData?.status}
+              onSave={onSave}
+              onCancel={onCancel}
+              onEdit={onEdit}
+            />
           </div>
 
           {/* Contact Information Grid */}
