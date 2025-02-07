@@ -10,9 +10,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { useMagicLink } from "../hooks/useMagicLink";
+import { UserRole } from "@/types/auth";
 
 interface UserTableProps {
   users: User[];
@@ -23,6 +25,7 @@ export const UserTable = ({ users }: UserTableProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const { generateMagicLink, sendMagicLinkEmail, copyToClipboard } = useMagicLink();
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
   const handleResetLoginState = async (memberNumber: string | undefined) => {
     if (!memberNumber) {
@@ -151,6 +154,30 @@ export const UserTable = ({ users }: UserTableProps) => {
     }
   };
 
+  const handleRoleChange = async (userId: string, role: UserRole) => {
+    try {
+      setIsLoading(userId);
+      await supabase.rpc('update_user_role', { 
+        p_user_id: userId,
+        p_role: role
+      });
+      
+      toast({
+        title: "Success",
+        description: `Role updated to ${role}`,
+      });
+    } catch (error: any) {
+      console.error('Role change error:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -186,6 +213,30 @@ export const UserTable = ({ users }: UserTableProps) => {
                         size="sm"
                         disabled={isLoading === user.id}
                       >
+                        <Shield className="h-4 w-4 mr-2" />
+                        Manage Role
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleRoleChange(user.id, "admin")}>
+                        Set as Admin
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleRoleChange(user.id, "collector")}>
+                        Set as Collector
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleRoleChange(user.id, "member")}>
+                        Set as Member
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isLoading === user.id}
+                      >
                         <Key className="h-4 w-4 mr-2" />
                         Magic Link
                       </Button>
@@ -201,29 +252,32 @@ export const UserTable = ({ users }: UserTableProps) => {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleResetLoginState(user.member_number)}
-                  >
-                    <UserCog className="h-4 w-4 mr-2" />
-                    Reset Login
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCleanupFailedAttempts(user.member_number)}
-                  >
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    Clear Attempts
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickFix(user.member_number)}
-                  >
-                    Quick Fix
-                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                      >
+                        <UserCog className="h-4 w-4 mr-2" />
+                        Login Actions
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleResetLoginState(user.member_number)}>
+                        <UserCog className="h-4 w-4 mr-2" />
+                        Reset Login
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleCleanupFailedAttempts(user.member_number)}>
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Clear Attempts
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleQuickFix(user.member_number)}>
+                        Quick Fix All
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </TableCell>
             </TableRow>
