@@ -15,7 +15,7 @@ import { useMagicLink } from "../hooks/useMagicLink";
 
 interface UserTableProps {
   users: User[];
-  generateMagicLink: (userId: string) => Promise<void>;
+  generateMagicLink: (userId: string) => Promise<{ magicLink: string; email: string; token: string; }>;
 }
 
 export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
