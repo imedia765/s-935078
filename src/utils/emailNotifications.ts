@@ -104,4 +104,3 @@ export async function sendPaymentNotification(
     html: template.html
   });
 }
-
