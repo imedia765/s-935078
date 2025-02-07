@@ -90,11 +90,20 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         return;
       }
 
+      const clientInfo = {
+        userAgent: window.navigator.userAgent,
+        platform: window.navigator.platform,
+        language: window.navigator.language
+      };
+
       const { error: resetError } = await supabase.rpc(
         "handle_password_reset_with_token",
         {
           token_value: token,
           new_password: newPassword,
+          ip_address: window.location.hostname,
+          user_agent: window.navigator.userAgent,
+          client_info: clientInfo
         }
       );
 
