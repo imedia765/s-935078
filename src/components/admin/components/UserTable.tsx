@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { User } from "../types/role-types";
@@ -18,9 +19,10 @@ interface UserTableProps {
   generateMagicLink: (userId: string) => Promise<{ magicLink: string; email: string; token: string; }>;
 }
 
-export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
+export const UserTable = ({ users }: UserTableProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const { generateMagicLink, sendMagicLinkEmail, copyToClipboard } = useMagicLink();
 
   const handleResetLoginState = async (memberNumber: string | undefined) => {
     if (!memberNumber) {
@@ -130,17 +132,20 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
   const handleMagicLinkAction = async (userId: string, action: 'email' | 'copy') => {
     try {
       setIsLoading(userId);
-      const { generateMagicLink, sendMagicLinkEmail, copyToClipboard } = useMagicLink();
-      
       const result = await generateMagicLink(userId);
       
       if (action === 'email') {
-        await sendMagicLinkEmail(result.email!, result.magicLink);
+        await sendMagicLinkEmail(result.email, result.magicLink);
       } else {
         await copyToClipboard(result.magicLink);
       }
     } catch (error) {
       console.error('Magic link action error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate magic link",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(null);
     }
