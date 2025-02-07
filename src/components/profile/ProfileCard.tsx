@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -55,27 +56,37 @@ export function ProfileCard({
     );
   };
 
-  const renderField = (fieldName: string, label: string, type: string = "text") => {
+  const renderField = (fieldName: keyof MemberWithRelations, label: string, type: string = "text") => {
     if (isEditing) {
+      const value = editedData?.[fieldName];
+      // Only render input if value is string or number
+      if (typeof value === 'string' || typeof value === 'number' || value === null) {
+        return (
+          <div className="space-y-2">
+            <Input
+              type={type}
+              value={value?.toString() || ''}
+              onChange={(e) => onInputChange(fieldName, e.target.value)}
+              className={getInputClassName(fieldName)}
+              aria-invalid={!!validationErrors[fieldName]}
+              aria-describedby={validationErrors[fieldName] ? `${fieldName}-error` : undefined}
+            />
+            {renderValidationError(fieldName)}
+          </div>
+        );
+      }
+      return null;
+    }
+    
+    const value = memberData?.[fieldName];
+    if (typeof value === 'string' || typeof value === 'number' || value === null) {
       return (
-        <div className="space-y-2">
-          <Input
-            type={type}
-            value={editedData?.[fieldName as keyof MemberWithRelations] || ''}
-            onChange={(e) => onInputChange(fieldName, e.target.value)}
-            className={getInputClassName(fieldName)}
-            aria-invalid={!!validationErrors[fieldName]}
-            aria-describedby={validationErrors[fieldName] ? `${fieldName}-error` : undefined}
-          />
-          {renderValidationError(fieldName)}
-        </div>
+        <p className="text-foreground hover:text-primary transition-colors">
+          {value?.toString() || 'Not set'}
+        </p>
       );
     }
-    return (
-      <p className="text-foreground hover:text-primary transition-colors">
-        {memberData?.[fieldName as keyof MemberWithRelations] || 'Not set'}
-      </p>
-    );
+    return null;
   };
 
   return (
