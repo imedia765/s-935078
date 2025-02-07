@@ -11,6 +11,16 @@ interface MagicLinkResponse {
   error?: string;
 }
 
+interface ResetPasswordResponse {
+  success: boolean;
+  message?: string;
+}
+
+interface AuthFixResponse {
+  success: boolean;
+  message?: string;
+}
+
 export const useMagicLink = () => {
   const { toast } = useToast();
 
@@ -114,7 +124,7 @@ export const useMagicLink = () => {
       const { data: resetData, error: resetError } = await supabase.rpc('reset_password_to_member_number', {
         p_user_id: userId,
         p_member_number: memberNumber
-      });
+      }) as { data: ResetPasswordResponse, error: any };
 
       if (resetError) {
         console.error("Password reset error:", resetError);
@@ -137,7 +147,7 @@ export const useMagicLink = () => {
         console.log("Attempting to recover auth association...");
         const { data: recoveryData, error: recoveryError } = await supabase.rpc('fix_member_auth_association', {
           p_member_number: memberNumber
-        });
+        }) as { data: AuthFixResponse, error: any };
 
         if (recoveryError) {
           console.error("Recovery attempt failed:", recoveryError);
@@ -146,8 +156,8 @@ export const useMagicLink = () => {
 
         console.log("Recovery attempt result:", recoveryData);
 
-        if (!recoveryData.success) {
-          throw new Error(recoveryData.message || "Failed to recover member data");
+        if (!recoveryData?.success) {
+          throw new Error(recoveryData?.message || "Failed to recover member data");
         }
       }
 
@@ -175,4 +185,3 @@ export const useMagicLink = () => {
     resetPasswordToMemberNumber 
   };
 };
-
