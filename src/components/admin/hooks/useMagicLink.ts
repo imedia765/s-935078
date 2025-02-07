@@ -58,7 +58,8 @@ export const useMagicLink = () => {
         throw new Error(data.error || 'Failed to generate magic link');
       }
 
-      const baseUrl = getBaseUrl();
+      // Always use production URL for magic links
+      const baseUrl = getBaseUrl(true);
       console.log("Using base URL for magic link:", baseUrl);
 
       const magicLink = `${baseUrl}/reset-password?token=${data.token}`;

@@ -1,10 +1,12 @@
-
 const PRODUCTION_DOMAIN = 'pwaburton.co.uk';
 const PRODUCTION_URL = `https://${PRODUCTION_DOMAIN}`;
 
-export const getBaseUrl = (): string => {
-  // Simple check: if we're in production domain, use HTTPS, otherwise use current origin
-  return window.location.hostname === PRODUCTION_DOMAIN ? PRODUCTION_URL : window.location.origin;
+export const getBaseUrl = (forceProduction: boolean = false): string => {
+  // Always return production URL for auth-related operations (forceProduction = true)
+  // Otherwise, use current domain for regular operations
+  return forceProduction ? PRODUCTION_URL : (
+    window.location.hostname === PRODUCTION_DOMAIN ? PRODUCTION_URL : window.location.origin
+  );
 };
 
 export const isValidDomain = (url: string): boolean => {
