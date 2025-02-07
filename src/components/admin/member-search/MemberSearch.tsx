@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +21,6 @@ export function MemberSearch() {
       
       console.log("Searching members with term:", searchTerm);
       
-      // Get members with all related data
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
@@ -59,17 +59,20 @@ export function MemberSearch() {
 
       console.log("Found members:", members);
 
-      // Get roles for each member with auth_user_id
       const membersWithRoles = await Promise.all(
-        (members || []).map(async (member) => {
+        (members || []).map(async (member): Promise<MemberWithRelations> => {
           if (!member.auth_user_id) {
-            console.log(`No auth_user_id for member ${member.member_number}`);
             return {
               ...member,
               user_roles: [],
               member_notes: member.member_notes || [],
               payment_requests: member.payment_requests || [],
               family_members: member.family_members || [],
+              roles: [],
+              town: member.town || null,
+              postcode: member.postcode || null,
+              marital_status: member.marital_status || null,
+              gender: member.gender || null,
               collector: member.collector || null,
               photo_url: member.photo_url || null,
               yearly_payment_status: member.yearly_payment_status || null,
@@ -77,12 +80,8 @@ export function MemberSearch() {
               yearly_payment_amount: member.yearly_payment_amount || null,
               emergency_collection_status: member.emergency_collection_status || null,
               emergency_collection_amount: member.emergency_collection_amount || null,
-              emergency_collection_due_date: member.emergency_collection_due_date || null,
-              marital_status: member.marital_status || null,
-              gender: member.gender || null,
-              town: member.town || null,
-              postcode: member.postcode || null
-            } as MemberWithRelations;
+              emergency_collection_due_date: member.emergency_collection_due_date || null
+            };
           }
 
           const { data: userRoles, error: rolesError } = await supabase
@@ -95,9 +94,14 @@ export function MemberSearch() {
             return {
               ...member,
               user_roles: [],
+              roles: [],
               member_notes: member.member_notes || [],
               payment_requests: member.payment_requests || [],
               family_members: member.family_members || [],
+              town: member.town || null,
+              postcode: member.postcode || null,
+              marital_status: member.marital_status || null,
+              gender: member.gender || null,
               collector: member.collector || null,
               photo_url: member.photo_url || null,
               yearly_payment_status: member.yearly_payment_status || null,
@@ -105,20 +109,21 @@ export function MemberSearch() {
               yearly_payment_amount: member.yearly_payment_amount || null,
               emergency_collection_status: member.emergency_collection_status || null,
               emergency_collection_amount: member.emergency_collection_amount || null,
-              emergency_collection_due_date: member.emergency_collection_due_date || null,
-              marital_status: member.marital_status || null,
-              gender: member.gender || null,
-              town: member.town || null,
-              postcode: member.postcode || null
-            } as MemberWithRelations;
+              emergency_collection_due_date: member.emergency_collection_due_date || null
+            };
           }
 
           return {
             ...member,
             user_roles: userRoles?.map(role => ({ role: role.role })) || [],
+            roles: userRoles?.map(role => role.role) || [],
             member_notes: member.member_notes || [],
             payment_requests: member.payment_requests || [],
             family_members: member.family_members || [],
+            town: member.town || null,
+            postcode: member.postcode || null,
+            marital_status: member.marital_status || null,
+            gender: member.gender || null,
             collector: member.collector || null,
             photo_url: member.photo_url || null,
             yearly_payment_status: member.yearly_payment_status || null,
@@ -126,12 +131,8 @@ export function MemberSearch() {
             yearly_payment_amount: member.yearly_payment_amount || null,
             emergency_collection_status: member.emergency_collection_status || null,
             emergency_collection_amount: member.emergency_collection_amount || null,
-            emergency_collection_due_date: member.emergency_collection_due_date || null,
-            marital_status: member.marital_status || null,
-            gender: member.gender || null,
-            town: member.town || null,
-            postcode: member.postcode || null
-          } as MemberWithRelations;
+            emergency_collection_due_date: member.emergency_collection_due_date || null
+          };
         })
       );
 
