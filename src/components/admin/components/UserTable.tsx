@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { User } from "../types/role-types";
@@ -15,6 +16,7 @@ import { useMagicLink } from "../hooks/useMagicLink";
 
 interface UserTableProps {
   users: User[];
+  generateMagicLink?: (userId: string) => Promise<{ magicLink: string; email: string; token: string; }>;
 }
 
 export const UserTable = ({ users }: UserTableProps) => {
