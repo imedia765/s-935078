@@ -1,7 +1,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { generateReceipt, saveReceiptToStorage } from "@/utils/receiptGenerator";
 import { sendPaymentNotification } from "@/utils/emailNotifications";
 import type { Payment } from "../types";
@@ -37,18 +37,16 @@ export function useFinancialMutations() {
       if (approvalError) throw approvalError;
       if (!paymentData) throw new Error('No payment data returned');
 
-      const payment = paymentData as Payment;
+      const payment = paymentData as unknown as Payment;
 
       // Generate and store receipt
       const receiptBlob = await generateReceipt(payment);
-      const receiptUrl = await saveReceiptToStorage(paymentId, receiptBlob);
+      const receiptUrl = await saveReceiptToStorage(payment, receiptBlob);
 
       // Update payment with receipt URL
       const { error: updateError } = await supabase
         .from('payment_requests')
-        .update({ 
-          receipt_url: receiptUrl 
-        } as Partial<Payment>)
+        .update({ receipt_url: receiptUrl })
         .eq('id', paymentId);
 
       if (updateError) throw updateError;
@@ -57,11 +55,13 @@ export function useFinancialMutations() {
       await sendPaymentNotification(payment, 'confirmation');
 
       // If this is a late payment, also send a late notice
-      const dueDate = new Date(payment.due_date || '');
-      if (dueDate && dueDate < new Date()) {
-        const daysLate = Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysLate > 0) {
-          await sendPaymentNotification(payment, 'late', { daysLate });
+      if (payment.due_date) {
+        const dueDate = new Date(payment.due_date);
+        if (dueDate < new Date()) {
+          const daysLate = Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysLate > 0) {
+            await sendPaymentNotification(payment, 'late', { daysLate });
+          }
         }
       }
     },
@@ -72,7 +72,7 @@ export function useFinancialMutations() {
         description: "The payment has been successfully approved and notifications sent.",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         variant: "destructive",
         title: "Error",

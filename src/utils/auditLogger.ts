@@ -1,8 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-type AuditOperation = 'create' | 'update' | 'delete' | 'view';
-type AuditSeverity = 'info' | 'warning' | 'error';
+type AuditOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE';
+type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 
 interface AuditLogParams {
   operation: AuditOperation;
@@ -29,13 +29,13 @@ export async function logAuditEvent({
     const { error } = await supabase
       .from('audit_logs')
       .insert({
-        user_id: user?.id,
-        operation,
+        operation: operation.toUpperCase(),
         table_name: tableName,
         record_id: recordId,
         old_values: oldValues,
         new_values: newValues,
         severity,
+        user_id: user?.id,
         metadata: {
           ...metadata,
           user_agent: navigator.userAgent,
