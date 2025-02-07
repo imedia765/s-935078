@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail } from "@/utils/email";
@@ -113,5 +112,51 @@ export const useMagicLink = () => {
     }
   };
 
-  return { generateMagicLink, sendMagicLinkEmail, copyToClipboard };
+  const resetPasswordToMemberNumber = async (userId: string, memberNumber: string) => {
+    try {
+      console.log("Resetting password to member number for user:", userId);
+
+      const { data, error } = await supabase.rpc('reset_password_to_member_number', {
+        p_user_id: userId,
+        p_member_number: memberNumber
+      });
+
+      if (error) {
+        console.error("Password reset error:", error);
+        throw error;
+      }
+
+      // Log the action in audit_logs
+      await supabase.from('audit_logs').insert([{
+        table_name: 'auth.users',
+        operation: 'UPDATE',
+        record_id: userId,
+        new_values: {
+          action: 'password_reset_to_member_number'
+        }
+      }]);
+
+      toast({
+        title: "Success",
+        description: "Password has been reset to member number",
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  return { 
+    generateMagicLink, 
+    sendMagicLinkEmail, 
+    copyToClipboard,
+    resetPasswordToMemberNumber 
+  };
 };
