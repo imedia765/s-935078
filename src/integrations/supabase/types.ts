@@ -2133,6 +2133,13 @@ export type Database = {
           details: Json
         }[]
       }
+      check_storage_quota: {
+        Args: {
+          p_bucket_name: string
+          p_file_size: number
+        }
+        Returns: boolean
+      }
       check_system_performance: {
         Args: Record<PropertyKey, never>
         Returns: {
