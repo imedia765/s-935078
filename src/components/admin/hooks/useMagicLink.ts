@@ -43,7 +43,7 @@ export const useMagicLink = () => {
         throw new Error(data.error || 'Failed to generate magic link');
       }
 
-      const magicLink = `${supabase.auth.url}/verify?token=${data.token}&type=magiclink`;
+      const magicLink = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink`;
 
       return {
         magicLink,
