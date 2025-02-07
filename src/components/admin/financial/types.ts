@@ -28,13 +28,14 @@ export interface Payment {
   status: string;
   created_at: string;
   payment_number: string;
-  receipt_url?: string;  // Added this field
+  receipt_url?: string;
   collector_id?: string;
   member_id?: string;
   member_number?: string;
   notes?: string;
   approved_at?: string;
   approved_by?: string;
+  due_date?: string;  // Added this field
   members?: {
     full_name: string;
     email: string;
@@ -66,3 +67,4 @@ export interface Collector {
   members: CollectorMember;
   payment_requests?: Payment[];
 }
+
