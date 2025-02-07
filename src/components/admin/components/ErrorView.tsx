@@ -8,7 +8,7 @@ import { ValidationDetails, UserRole } from "../types/role-types";
 
 interface ErrorViewProps {
   validations: any[];
-  generateMagicLink: (userId: string) => Promise<void>;
+  generateMagicLink: (userId: string) => Promise<{ magicLink: string; email: string; token: string; }>;
   handleFixRoleError: (userId: string | undefined, checkType: string, fixType: UserRole | 'remove_role') => Promise<void>;
   handleRoleChange: (userId: string, newRole: UserRole) => Promise<void>;
 }
