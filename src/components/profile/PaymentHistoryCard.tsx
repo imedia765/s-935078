@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileDown, Receipt } from "lucide-react";
+import { Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,7 +46,9 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
     }
   };
 
-  const getStatusStyle = (status: string) => {
+  const getStatusStyle = (status: string | null) => {
+    if (!status) return 'bg-gray-500/20 text-gray-500';
+    
     switch (status.toLowerCase()) {
       case 'approved':
         return 'bg-green-500/20 text-green-500';
@@ -105,7 +107,7 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
                   <TableCell>£{payment.amount.toFixed(2)}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(payment.status)}`}>
-                      {payment.status}
+                      {payment.status || 'Unknown'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
