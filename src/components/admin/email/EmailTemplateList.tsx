@@ -571,7 +571,7 @@ export function EmailTemplateList() {
                 </TableCell>
                 <TableCell>
                   <Badge 
-                    variant={template.is_active ? "success" : "destructive"}
+                    variant={template.is_active ? "default" : "destructive"}
                     className={`${
                       template.is_active 
                         ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' 
