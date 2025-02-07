@@ -47,12 +47,6 @@ export const useMagicLink = () => {
       const baseUrl = getBaseUrl();
       console.log("Using base URL for magic link:", baseUrl);
 
-      // Remove domain validation temporarily for debugging
-      // if (!isValidDomain(baseUrl)) {
-      //   console.error('Invalid domain:', baseUrl);
-      //   throw new Error('Invalid domain for magic link generation');
-      // }
-
       const magicLink = `${baseUrl}/reset-password?token=${data.token}`;
       console.log("Generated magic link:", magicLink);
 
@@ -135,9 +129,22 @@ export const useMagicLink = () => {
         operation: 'UPDATE',
         record_id: userId,
         new_values: {
-          action: 'password_reset_to_member_number'
+          action: 'password_reset_to_member_number',
+          member_number: memberNumber
         }
       }]);
+
+      // Verify the member record is still correctly associated
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .select('*')
+        .eq('member_number', memberNumber)
+        .single();
+
+      if (memberError || !memberData) {
+        console.error("Error verifying member data after reset:", memberError);
+        throw new Error("Failed to verify member data after password reset");
+      }
 
       toast({
         title: "Success",
@@ -163,3 +170,4 @@ export const useMagicLink = () => {
     resetPasswordToMemberNumber 
   };
 };
+
