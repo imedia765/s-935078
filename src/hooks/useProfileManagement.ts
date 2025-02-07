@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -55,7 +54,9 @@ export function useProfileManagement() {
             id,
             payment_type,
             amount,
-            status
+            status,
+            created_at,
+            payment_number
           )
         `)
         .eq("auth_user_id", user.id)
@@ -123,7 +124,7 @@ export function useProfileManagement() {
     Object.keys(data).forEach((field) => {
       const value = data[field as keyof MemberWithRelations];
       if (typeof value === 'string') {
-        const error = validateField(field, value);
+        const const error = validateField(field, value);
         if (error) {
           errors[field] = error;
         }

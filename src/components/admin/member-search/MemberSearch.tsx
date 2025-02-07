@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -34,7 +33,9 @@ export function MemberSearch() {
             id,
             status,
             amount,
-            payment_type
+            payment_type,
+            created_at,
+            payment_number
           ),
           family_members (
             id,
