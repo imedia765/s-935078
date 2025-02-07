@@ -114,21 +114,36 @@ export function EmailTemplateList() {
   const { data: templates, isLoading } = useQuery({
     queryKey: ['emailTemplates'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: basicData, error: basicError } = await supabase
         .from('email_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, name, subject, body, is_active, created_at, updated_at');
 
-      if (error) {
-        console.error('Error fetching templates:', error);
-        throw error;
+      if (basicError) {
+        console.error('Error fetching basic template data:', basicError);
+        throw basicError;
       }
-      
-      // Transform the data to ensure all required fields are present
-      return (data || []).map((template: Partial<EmailTemplate>) => ({
+
+      try {
+        const { data: fullData, error: fullError } = await supabase
+          .from('email_templates')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!fullError) {
+          return (fullData || []).map((template: Partial<EmailTemplate>) => ({
+            ...template,
+            category: template.category || 'custom',
+            is_system: template.is_system || false
+          })) as EmailTemplate[];
+        }
+      } catch (e) {
+        console.warn('New columns not yet available:', e);
+      }
+
+      return (basicData || []).map((template: Partial<EmailTemplate>) => ({
         ...template,
-        category: template.category || 'custom',
-        is_system: template.is_system || false
+        category: 'custom' as const,
+        is_system: false
       })) as EmailTemplate[];
     }
   });
