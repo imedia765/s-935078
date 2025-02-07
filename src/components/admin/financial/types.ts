@@ -1,3 +1,4 @@
+
 export interface PaymentStats {
   totalPayments: number;
   totalAmount: number;
@@ -27,8 +28,10 @@ export interface Payment {
   status: string;
   created_at: string;
   payment_number: string;
+  receipt_url?: string;
   members?: {
     full_name: string;
+    email: string;
   };
   members_collectors?: {
     id: string;

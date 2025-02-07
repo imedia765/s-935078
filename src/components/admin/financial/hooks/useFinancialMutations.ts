@@ -13,7 +13,7 @@ export function useFinancialMutations() {
   const approveMutation = useMutation({
     mutationFn: async (paymentId: string) => {
       // First approve the payment
-      const { data: payment, error: approvalError } = await supabase
+      const { data: paymentData, error: approvalError } = await supabase
         .from('payment_requests')
         .update({ 
           status: 'approved',
@@ -28,15 +28,19 @@ export function useFinancialMutations() {
             email
           ),
           members_collectors!payment_requests_collector_id_fkey (
+            id,
             name
           )
         `)
         .single();
       
       if (approvalError) throw approvalError;
+      if (!paymentData) throw new Error('No payment data returned');
+
+      const payment = paymentData as unknown as Payment;
 
       // Generate and store receipt
-      const receiptBlob = await generateReceipt(payment as Payment);
+      const receiptBlob = await generateReceipt(payment);
       const receiptUrl = await saveReceiptToStorage(paymentId, receiptBlob);
 
       // Update payment with receipt URL
@@ -48,7 +52,7 @@ export function useFinancialMutations() {
       if (updateError) throw updateError;
 
       // Send confirmation email
-      await sendPaymentNotification(payment as Payment, 'confirmation');
+      await sendPaymentNotification(payment, 'confirmation');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });

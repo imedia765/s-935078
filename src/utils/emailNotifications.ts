@@ -50,8 +50,8 @@ export function getPaymentReminderTemplate(payment: Payment, dueDate: string): E
 }
 
 export async function sendPaymentNotification(payment: Payment, notificationType: 'confirmation' | 'reminder', dueDate?: string) {
-  if (!payment.members?.full_name) {
-    console.error('Member information missing from payment');
+  if (!payment.members?.full_name || !payment.members?.email) {
+    console.error('Member information or email missing from payment');
     return;
   }
 
@@ -70,7 +70,7 @@ export async function sendPaymentNotification(payment: Payment, notificationType
   }
 
   await sendEmail({
-    to: payment.members?.email || '',
+    to: payment.members.email,
     subject: template.subject,
     html: template.html
   });
