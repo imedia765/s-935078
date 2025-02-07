@@ -1,7 +1,7 @@
 
 import { useProfileManagement } from "@/hooks/useProfileManagement";
 import { ProfileCard } from "@/components/profile/ProfileCard";
-import { BankDetailsCard } from "@/components/profile/BankDetailsCard";
+import { BankDetailsCard } from "@/components/profile/BankDetailsCard"; 
 import { PaymentHistoryCard } from "@/components/profile/PaymentHistoryCard";
 import { FamilyMembersCard } from "@/components/profile/FamilyMembersCard";
 import { AnnouncementsCard } from "@/components/profile/AnnouncementsCard";
@@ -10,6 +10,10 @@ import { FamilyMemberDialogs } from "@/components/profile/FamilyMemberDialogs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
+import { useRef } from 'react';
+import { Camera } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const {
@@ -38,6 +42,52 @@ const Profile = () => {
     handleViewDocument,
     handleDownloadDocument
   } = useProfileManagement();
+
+  const profileCardRef = useRef<HTMLDivElement>(null);
+  const bankDetailsRef = useRef<HTMLDivElement>(null);
+  const familyMembersRef = useRef<HTMLDivElement>(null);
+  const paymentHistoryRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const captureScreenshot = async (elementRef: React.RefObject<HTMLElement>, name: string) => {
+    try {
+      if (!elementRef.current) return;
+
+      // Use html2canvas (you'll need to install this package)
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(elementRef.current);
+      
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          resolve(blob as Blob);
+        }, 'image/png');
+      });
+
+      // Upload to Supabase storage
+      const fileName = `${name}_${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from('profile_screenshots')
+        .upload(fileName, blob);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      toast({
+        title: "Screenshot captured",
+        description: `Successfully captured screenshot of ${name}`,
+      });
+
+    } catch (error) {
+      console.error('Screenshot error:', error);
+      toast({
+        variant: "destructive",
+        title: "Screenshot failed",
+        description: "Failed to capture screenshot",
+      });
+    }
+  };
 
   // Mock data for announcements and documents
   const announcements = [
@@ -128,30 +178,70 @@ const Profile = () => {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <ProfileCard
-                memberData={memberData}
-                editedData={editedData}
-                isEditing={isEditing}
-                validationErrors={validationErrors}
-                uploadingPhoto={uploadingPhoto}
-                saving={saving}
-                onPhotoUpload={handlePhotoUpload}
-                onInputChange={handleInputChange}
-                onSave={handleSave}
-                onCancel={handleCancel}
-                onEdit={handleEdit}
-              />
-              <BankDetailsCard memberNumber={memberData?.member_number} />
-              <FamilyMembersCard
-                memberData={memberData}
-                onAddMember={() => setIsAddFamilyMemberOpen(true)}
-                onEditMember={(member) => {
-                  selectedFamilyMember.current = member;
-                  setIsEditFamilyMemberOpen(true);
-                }}
-                onDeleteMember={handleDeleteFamilyMember}
-              />
-              <PaymentHistoryCard memberData={memberData} isLoading={false} />
+              <div ref={profileCardRef} className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => captureScreenshot(profileCardRef, 'profile_card')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <ProfileCard
+                  memberData={memberData}
+                  editedData={editedData}
+                  isEditing={isEditing}
+                  validationErrors={validationErrors}
+                  uploadingPhoto={uploadingPhoto}
+                  saving={saving}
+                  onPhotoUpload={handlePhotoUpload}
+                  onInputChange={handleInputChange}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                  onEdit={handleEdit}
+                />
+              </div>
+              <div ref={bankDetailsRef} className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => captureScreenshot(bankDetailsRef, 'bank_details')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <BankDetailsCard memberNumber={memberData?.member_number} />
+              </div>
+              <div ref={familyMembersRef} className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => captureScreenshot(familyMembersRef, 'family_members')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <FamilyMembersCard
+                  memberData={memberData}
+                  onAddMember={() => setIsAddFamilyMemberOpen(true)}
+                  onEditMember={(member) => {
+                    selectedFamilyMember.current = member;
+                    setIsEditFamilyMemberOpen(true);
+                  }}
+                  onDeleteMember={handleDeleteFamilyMember}
+                />
+              </div>
+              <div ref={paymentHistoryRef} className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="absolute top-2 right-2 z-10"
+                  onClick={() => captureScreenshot(paymentHistoryRef, 'payment_history')}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <PaymentHistoryCard memberData={memberData} isLoading={false} />
+              </div>
             </div>
             <div className="space-y-6">
               <AnnouncementsCard announcements={announcements} />
