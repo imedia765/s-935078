@@ -1,4 +1,5 @@
 
+-- Add the reset_password_to_member_number function
 create or replace function reset_password_to_member_number(
   p_user_id uuid,
   p_member_number text
@@ -41,3 +42,6 @@ exception
     );
 end;
 $$;
+
+-- Grant execute permission to authenticated users
+grant execute on function reset_password_to_member_number to authenticated;

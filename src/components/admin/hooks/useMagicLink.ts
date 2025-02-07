@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEmail } from "@/utils/email";
@@ -116,10 +117,15 @@ export const useMagicLink = () => {
     try {
       console.log("Resetting password to member number for user:", userId);
 
-      const { data, error } = await supabase.rpc('reset_password_to_member_number', {
-        p_user_id: userId,
-        p_member_number: memberNumber
-      });
+      // Use a direct POST request to the function endpoint instead of rpc
+      const { data, error } = await supabase
+        .from('rpc')
+        .select('*')
+        .filter('function_name', 'eq', 'reset_password_to_member_number')
+        .execute({
+          p_user_id: userId,
+          p_member_number: memberNumber
+        });
 
       if (error) {
         console.error("Password reset error:", error);
