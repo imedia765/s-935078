@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -123,8 +122,6 @@ export function EmailTemplateList() {
           subject,
           body,
           is_active,
-          category,
-          is_system,
           created_at,
           updated_at,
           created_by,
@@ -137,8 +134,8 @@ export function EmailTemplateList() {
       
       return (data || []).map(template => ({
         ...template,
-        category: template.category || 'custom',
-        is_system: template.is_system || false
+        category: 'custom', // Default value until migration is complete
+        is_system: false // Default value until migration is complete
       })) as EmailTemplate[];
     }
   });

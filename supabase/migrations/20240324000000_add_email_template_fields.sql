@@ -1,4 +1,5 @@
 
+-- Add category and is_system columns
 ALTER TABLE email_templates 
 ADD COLUMN IF NOT EXISTS category text DEFAULT 'custom',
 ADD COLUMN IF NOT EXISTS is_system boolean DEFAULT false;
