@@ -9,42 +9,147 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      archive_settings: {
+        Row: {
+          archive_criteria: Json | null
+          auto_archive_enabled: boolean | null
+          created_at: string | null
+          id: string
+          last_archive_run: string | null
+          notification_emails: Json | null
+          retention_period_days: number
+          updated_at: string | null
+        }
+        Insert: {
+          archive_criteria?: Json | null
+          auto_archive_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_archive_run?: string | null
+          notification_emails?: Json | null
+          retention_period_days?: number
+          updated_at?: string | null
+        }
+        Update: {
+          archive_criteria?: Json | null
+          auto_archive_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          last_archive_run?: string | null
+          notification_emails?: Json | null
+          retention_period_days?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      audit_analytics: {
+        Row: {
+          analysis_date: string
+          anomaly_detections: Json | null
+          created_at: string | null
+          id: string
+          trending_activities: Json | null
+          user_action_summary: Json
+        }
+        Insert: {
+          analysis_date: string
+          anomaly_detections?: Json | null
+          created_at?: string | null
+          id?: string
+          trending_activities?: Json | null
+          user_action_summary: Json
+        }
+        Update: {
+          analysis_date?: string
+          anomaly_detections?: Json | null
+          created_at?: string | null
+          id?: string
+          trending_activities?: Json | null
+          user_action_summary?: Json
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
+          anomaly_score: number | null
+          category: string | null
           compressed: boolean | null
           id: string
+          impact_level: string | null
           new_values: Json | null
           old_values: Json | null
           operation: Database["public"]["Enums"]["audit_operation"]
           record_id: string | null
+          related_entities: Json | null
           severity: Database["public"]["Enums"]["severity_level"] | null
           table_name: string
           timestamp: string | null
           user_id: string | null
         }
         Insert: {
+          anomaly_score?: number | null
+          category?: string | null
           compressed?: boolean | null
           id?: string
+          impact_level?: string | null
           new_values?: Json | null
           old_values?: Json | null
           operation: Database["public"]["Enums"]["audit_operation"]
           record_id?: string | null
+          related_entities?: Json | null
           severity?: Database["public"]["Enums"]["severity_level"] | null
           table_name: string
           timestamp?: string | null
           user_id?: string | null
         }
         Update: {
+          anomaly_score?: number | null
+          category?: string | null
           compressed?: boolean | null
           id?: string
+          impact_level?: string | null
           new_values?: Json | null
           old_values?: Json | null
           operation?: Database["public"]["Enums"]["audit_operation"]
           record_id?: string | null
+          related_entities?: Json | null
           severity?: Database["public"]["Enums"]["severity_level"] | null
           table_name?: string
           timestamp?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      audit_report_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          last_generated: string | null
+          name: string
+          report_type: string
+          template_config: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_generated?: string | null
+          name: string
+          report_type: string
+          template_config: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_generated?: string | null
+          name?: string
+          report_type?: string
+          template_config?: Json
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1694,8 +1799,83 @@ export type Database = {
         }
         Relationships: []
       }
+      receipt_email_tracking: {
+        Row: {
+          delivery_attempts: number | null
+          email_sent_at: string | null
+          email_status: string
+          id: string
+          last_error: string | null
+          metadata: Json | null
+          receipt_id: string | null
+          recipient_email: string
+        }
+        Insert: {
+          delivery_attempts?: number | null
+          email_sent_at?: string | null
+          email_status: string
+          id?: string
+          last_error?: string | null
+          metadata?: Json | null
+          receipt_id?: string | null
+          recipient_email: string
+        }
+        Update: {
+          delivery_attempts?: number | null
+          email_sent_at?: string | null
+          email_status?: string
+          id?: string
+          last_error?: string | null
+          metadata?: Json | null
+          receipt_id?: string | null
+          recipient_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_email_tracking_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipt_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          organization_settings: Json | null
+          template_data: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          organization_settings?: Json | null
+          template_data: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          organization_settings?: Json | null
+          template_data?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       receipts: {
         Row: {
+          created_at: string | null
           generated_at: string | null
           id: string
           metadata: Json | null
@@ -1703,8 +1883,10 @@ export type Database = {
           receipt_number: string
           receipt_url: string | null
           template_version: string | null
+          updated_at: string | null
         }
         Insert: {
+          created_at?: string | null
           generated_at?: string | null
           id?: string
           metadata?: Json | null
@@ -1712,8 +1894,10 @@ export type Database = {
           receipt_number: string
           receipt_url?: string | null
           template_version?: string | null
+          updated_at?: string | null
         }
         Update: {
+          created_at?: string | null
           generated_at?: string | null
           id?: string
           metadata?: Json | null
@@ -1721,6 +1905,7 @@ export type Database = {
           receipt_number?: string
           receipt_url?: string | null
           template_version?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
