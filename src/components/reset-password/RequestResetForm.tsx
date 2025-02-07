@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ export const RequestResetForm = () => {
       }
 
       const { data, error: fnError } = await supabase.rpc(
-        "generate_magic_link_token",
+        "generate_magic_link",
         { p_member_number: memberNumber }
       );
 
