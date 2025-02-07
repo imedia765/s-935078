@@ -154,17 +154,29 @@ export const UserTable = ({ users }: UserTableProps) => {
     }
   };
 
-  const handleRoleChange = async (userId: string, role: UserRole) => {
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
       setIsLoading(userId);
-      await supabase.rpc('update_user_role', { 
+      
+      // First, remove existing roles
+      const { error: removeError } = await supabase.rpc('remove_user_role', { 
         p_user_id: userId,
-        p_role: role
+        p_role: 'member' // We remove all roles by specifying any role
       });
+      
+      if (removeError) throw removeError;
+
+      // Then add the new role
+      const { error: addError } = await supabase.rpc('add_user_role', {
+        p_user_id: userId,
+        p_role: newRole
+      });
+      
+      if (addError) throw addError;
       
       toast({
         title: "Success",
-        description: `Role updated to ${role}`,
+        description: `Role updated to ${newRole}`,
       });
     } catch (error: any) {
       console.error('Role change error:', error);
@@ -287,3 +299,4 @@ export const UserTable = ({ users }: UserTableProps) => {
     </div>
   );
 };
+
