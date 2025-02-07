@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,17 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // Validate password length
+    if (newPassword.length < 8) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Password must be at least 8 characters long",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     if (newPassword !== confirmPassword) {
       toast({
@@ -80,7 +92,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         <Input
           id="newPassword"
           type="password"
-          placeholder="Enter new password"
+          placeholder="Enter new password (minimum 8 characters)"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           className="bg-black/40"

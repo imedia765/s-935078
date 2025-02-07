@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,12 +20,9 @@ export const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Password validation rules
+  // Simplified password validation for login - no requirements
   const validatePassword = (pass: string) => {
-    if (pass.length < 8) return "Password must be at least 8 characters";
-    if (!/[A-Z]/.test(pass)) return "Password must contain at least one uppercase letter";
-    if (!/[a-z]/.test(pass)) return "Password must contain at least one lowercase letter";
-    if (!/[0-9]/.test(pass)) return "Password must contain at least one number";
+    if (!pass.trim()) return "Password is required";
     return "";
   };
 
