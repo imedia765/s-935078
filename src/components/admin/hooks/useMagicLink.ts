@@ -117,15 +117,12 @@ export const useMagicLink = () => {
     try {
       console.log("Resetting password to member number for user:", userId);
 
-      const { data, error } = await supabase.auth.client.post(
-        '/reset-password-to-member-number',
-        {
-          body: JSON.stringify({
-            user_id: userId,
-            member_number: memberNumber
-          })
+      const { data, error } = await supabase.functions.invoke('reset-password-to-member-number', {
+        body: {
+          user_id: userId,
+          member_number: memberNumber
         }
-      );
+      });
 
       if (error) {
         console.error("Password reset error:", error);
