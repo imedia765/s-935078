@@ -121,7 +121,7 @@ export const useMagicLink = () => {
     try {
       console.log("Resetting password to member number for user:", userId);
 
-      const { data: resetData, error: resetError } = await supabase.rpc('reset_password_to_member_number', {
+      const { data: resetData, error: resetError } = await (supabase.rpc as any)('reset_password_to_member_number', {
         p_user_id: userId,
         p_member_number: memberNumber
       }) as { data: ResetPasswordResponse, error: any };
@@ -145,7 +145,7 @@ export const useMagicLink = () => {
         
         // Attempt to recover auth association
         console.log("Attempting to recover auth association...");
-        const { data: recoveryData, error: recoveryError } = await supabase.rpc('fix_member_auth_association', {
+        const { data: recoveryData, error: recoveryError } = await (supabase.rpc as any)('fix_member_auth_association', {
           p_member_number: memberNumber
         }) as { data: AuthFixResponse, error: any };
 
