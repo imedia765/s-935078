@@ -552,10 +552,12 @@ export type Database = {
       email_templates: {
         Row: {
           body: string
+          category: Database["public"]["Enums"]["email_template_category"]
           created_at: string
           created_by: string | null
           id: string
           is_active: boolean | null
+          is_system: boolean
           name: string
           subject: string
           updated_at: string
@@ -564,10 +566,12 @@ export type Database = {
         }
         Insert: {
           body: string
+          category?: Database["public"]["Enums"]["email_template_category"]
           created_at?: string
           created_by?: string | null
           id?: string
           is_active?: boolean | null
+          is_system?: boolean
           name: string
           subject: string
           updated_at?: string
@@ -576,10 +580,12 @@ export type Database = {
         }
         Update: {
           body?: string
+          category?: Database["public"]["Enums"]["email_template_category"]
           created_at?: string
           created_by?: string | null
           id?: string
           is_active?: boolean | null
+          is_system?: boolean
           name?: string
           subject?: string
           updated_at?: string
@@ -2623,6 +2629,7 @@ export type Database = {
         | "failed"
         | "created"
       email_status: "pending" | "sent" | "delivered" | "failed" | "bounced"
+      email_template_category: "payment" | "notification" | "system" | "custom"
       email_type:
         | "password_reset"
         | "welcome"
