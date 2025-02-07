@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -12,7 +13,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  PlusCircle
+  PlusCircle,
+  Loader2
 } from "lucide-react";
 import { MemberProfileCard } from "./MemberProfileCard";
 import {
@@ -23,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface MembersTableProps {
@@ -51,6 +53,7 @@ export function MembersTable({
 }: MembersTableProps) {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
+  const [isRecordingPayments, setIsRecordingPayments] = useState(false);
   const { toast } = useToast();
 
   const handleSelectAll = (checked: boolean) => {
@@ -71,6 +74,7 @@ export function MembersTable({
 
   const handleBulkPayment = async () => {
     try {
+      setIsRecordingPayments(true);
       const payments = selectedMembers.map(async (memberId) => {
         const member = members.find(m => m.id === memberId);
         const { data: collector } = await supabase
@@ -107,13 +111,15 @@ export function MembersTable({
       });
 
       setSelectedMembers([]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error recording bulk payments:', error);
       toast({
         title: "Error",
-        description: "Failed to record payments. Please try again.",
+        description: "Failed to record payments: " + error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsRecordingPayments(false);
     }
   };
 
@@ -140,10 +146,15 @@ export function MembersTable({
             variant="outline"
             size="sm"
             onClick={handleBulkPayment}
+            disabled={isRecordingPayments}
             className="bg-primary/20 hover:bg-primary/30"
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Record Payments
+            {isRecordingPayments ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <PlusCircle className="h-4 w-4 mr-2" />
+            )}
+            {isRecordingPayments ? "Recording..." : "Record Payments"}
           </Button>
         </div>
       )}
@@ -160,6 +171,9 @@ export function MembersTable({
                 member={member}
                 onEdit={() => onEdit(member)}
                 onDelete={() => onDelete(member)}
+                onToggleStatus={() => onToggleStatus(member)}
+                onMove={() => onMove(member)}
+                onExportIndividual={() => onExportIndividual(member)}
               />
             </div>
           </div>

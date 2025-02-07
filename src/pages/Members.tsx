@@ -3,12 +3,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF, exportToExcel } from "@/utils/exportUtils";
 import { MembersToolbar } from "@/components/members/MembersToolbar";
 import { MembersTable } from "@/components/members/MembersTable";
 import { EditMemberDialog } from "@/components/members/EditMemberDialog";
 import { MoveMemberDialog } from "@/components/members/MoveMemberDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MemberFormData {
   full_name: string;
@@ -19,6 +31,8 @@ interface MemberFormData {
   status: string;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -28,6 +42,9 @@ export default function Members() {
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any>(null);
   const [movingMember, setMovingMember] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [deleteConfirmMember, setDeleteConfirmMember] = useState<any>(null);
+  const [statusConfirmMember, setStatusConfirmMember] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -69,7 +86,7 @@ export default function Members() {
   const collectorId = !isAdmin ? userInfo?.collectorId : null;
 
   // Get collectors for the dropdown
-  const { data: collectors } = useQuery({
+  const { data: collectors, isLoading: loadingCollectors } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -82,9 +99,9 @@ export default function Members() {
     }
   });
 
-  // Get members based on user role and filters
-  const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: ["members", selectedCollector, debouncedSearchTerm, sortField, sortDirection, collectorId],
+  // Get members based on user role and filters with pagination
+  const { data: membersData, isLoading: loadingMembers } = useQuery({
+    queryKey: ["members", selectedCollector, debouncedSearchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
       let query = supabase
         .from("members")
@@ -95,7 +112,7 @@ export default function Members() {
             number,
             active
           )
-        `);
+        `, { count: 'exact' });
 
       // If user is a collector, only show their members
       if (collectorId) {
@@ -111,20 +128,28 @@ export default function Members() {
         query = query.order(sortField, { ascending: sortDirection === 'asc' });
       }
 
-      const { data, error } = await query;
+      // Add pagination
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      query = query.range(from, from + ITEMS_PER_PAGE - 1);
+
+      const { data, error, count } = await query;
       if (error) throw error;
 
       // If there's a search term, filter the results
+      let filteredData = data;
       if (debouncedSearchTerm) {
         const searchLower = debouncedSearchTerm.toLowerCase();
-        return data.filter((member: any) => 
+        filteredData = data.filter((member: any) => 
           member.full_name?.toLowerCase().includes(searchLower) ||
           member.email?.toLowerCase().includes(searchLower) ||
           member.member_number?.toLowerCase().includes(searchLower)
         );
       }
 
-      return data;
+      return {
+        members: filteredData,
+        totalCount: count || 0
+      };
     }
   });
 
@@ -187,7 +212,7 @@ export default function Members() {
     },
   });
 
-  // Delete member mutation
+  // Delete member mutation with proper error handling
   const deleteMemberMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -203,17 +228,18 @@ export default function Members() {
         title: "Success",
         description: "Member deleted successfully",
       });
+      setDeleteConfirmMember(null);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete member: " + error.message,
+        description: `Failed to delete member: ${error.message}`,
         variant: "destructive",
       });
     },
   });
 
-  // Toggle member status mutation
+  // Toggle member status mutation with proper error handling
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
       const newStatus = currentStatus === 'active' ? 'paused' : 'active';
@@ -229,15 +255,16 @@ export default function Members() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['members'] });
+      setStatusConfirmMember(null);
       toast({
         title: "Success",
         description: `Member ${data.status === 'active' ? 'activated' : 'paused'} successfully`,
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to update member status: " + error.message,
+        description: `Failed to update member status: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -283,13 +310,23 @@ export default function Members() {
     }
   };
 
-  if (loadingMembers) {
+  if (loadingMembers || loadingCollectors) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-[200px]" />
+          <Skeleton className="h-10 w-[150px]" />
+        </div>
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-6">
+            <Skeleton className="h-[120px] w-full" />
+          </Card>
+        ))}
       </div>
     );
   }
+
+  const totalPages = Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -298,9 +335,9 @@ export default function Members() {
           onSearch={setDebouncedSearchTerm}
           selectedCollector={selectedCollector}
           onCollectorChange={setSelectedCollector}
-          onExportCSV={() => exportToCSV(members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
-          onExportPDF={() => generatePDF(members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)}
-          onExportExcel={() => exportToExcel(members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
+          onExportCSV={() => exportToCSV(membersData?.members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
+          onExportPDF={() => generatePDF(membersData?.members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)}
+          onExportExcel={() => exportToExcel(membersData?.members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
           onAddMember={(data) => addMemberMutation.mutate(data)}
           collectors={collectors || []}
           isAdmin={isAdmin}
@@ -308,7 +345,7 @@ export default function Members() {
 
         <Card className="glass-card p-6">
           <MembersTable
-            members={members || []}
+            members={membersData?.members || []}
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
@@ -316,17 +353,41 @@ export default function Members() {
               setEditingMember(member);
               setIsEditDialogOpen(true);
             }}
-            onToggleStatus={(member) => toggleStatusMutation.mutate({
-              id: member.id,
-              currentStatus: member.status
-            })}
+            onToggleStatus={(member) => setStatusConfirmMember(member)}
             onMove={(member) => {
               setMovingMember(member);
               setIsMoveDialogOpen(true);
             }}
             onExportIndividual={generateIndividualMemberPDF}
-            onDelete={(member) => deleteMemberMutation.mutate(member.id)}
+            onDelete={(member) => setDeleteConfirmMember(member)}
           />
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing {((page - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(page * ITEMS_PER_PAGE, membersData?.totalCount || 0)} of {membersData?.totalCount} members
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-sm">
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </Card>
 
         <EditMemberDialog
@@ -345,6 +406,48 @@ export default function Members() {
           member={movingMember}
           collectors={collectors || []}
         />
+
+        <AlertDialog open={!!deleteConfirmMember} onOpenChange={() => setDeleteConfirmMember(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Member</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {deleteConfirmMember?.full_name}? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => deleteMemberMutation.mutate(deleteConfirmMember.id)}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!statusConfirmMember} onOpenChange={() => setStatusConfirmMember(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Change Member Status</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to {statusConfirmMember?.status === 'active' ? 'pause' : 'activate'} {statusConfirmMember?.full_name}?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => toggleStatusMutation.mutate({
+                  id: statusConfirmMember.id,
+                  currentStatus: statusConfirmMember.status
+                })}
+              >
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
