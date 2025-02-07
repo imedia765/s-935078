@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -77,8 +76,21 @@ export function MemberSearch() {
             console.log(`No auth_user_id for member ${member.member_number}`);
             return {
               ...member,
-              user_roles: []
-            };
+              user_roles: [],
+              member_notes: member.member_notes || [],
+              payment_requests: member.payment_requests || [],
+              family_members: member.family_members || [],
+              yearly_payment_status: member.yearly_payment_status || null,
+              yearly_payment_due_date: member.yearly_payment_due_date || null,
+              yearly_payment_amount: member.yearly_payment_amount || null,
+              emergency_collection_status: member.emergency_collection_status || null,
+              emergency_collection_amount: member.emergency_collection_amount || null,
+              emergency_collection_due_date: member.emergency_collection_due_date || null,
+              marital_status: member.marital_status || null,
+              gender: member.gender || null,
+              town: member.town || null,
+              postcode: member.postcode || null
+            } as MemberWithRelations;
           }
 
           const { data: userRoles, error: rolesError } = await supabase
@@ -95,23 +107,44 @@ export function MemberSearch() {
             });
             return {
               ...member,
-              user_roles: []
-            };
+              user_roles: [],
+              member_notes: member.member_notes || [],
+              payment_requests: member.payment_requests || [],
+              family_members: member.family_members || [],
+              yearly_payment_status: member.yearly_payment_status || null,
+              yearly_payment_due_date: member.yearly_payment_due_date || null,
+              yearly_payment_amount: member.yearly_payment_amount || null,
+              emergency_collection_status: member.emergency_collection_status || null,
+              emergency_collection_amount: member.emergency_collection_amount || null,
+              emergency_collection_due_date: member.emergency_collection_due_date || null,
+              marital_status: member.marital_status || null,
+              gender: member.gender || null,
+              town: member.town || null,
+              postcode: member.postcode || null
+            } as MemberWithRelations;
           }
-
-          console.log(`Roles for member ${member.member_number}:`, userRoles);
 
           return {
             ...member,
-            user_roles: userRoles || [],
+            user_roles: userRoles?.map(role => ({ role: role.role })) || [],
             member_notes: member.member_notes || [],
             payment_requests: member.payment_requests || [],
-            family_members: member.family_members || []
-          };
+            family_members: member.family_members || [],
+            yearly_payment_status: member.yearly_payment_status || null,
+            yearly_payment_due_date: member.yearly_payment_due_date || null,
+            yearly_payment_amount: member.yearly_payment_amount || null,
+            emergency_collection_status: member.emergency_collection_status || null,
+            emergency_collection_amount: member.emergency_collection_amount || null,
+            emergency_collection_due_date: member.emergency_collection_due_date || null,
+            marital_status: member.marital_status || null,
+            gender: member.gender || null,
+            town: member.town || null,
+            postcode: member.postcode || null
+          } as MemberWithRelations;
         })
       );
 
-      return membersWithRoles as MemberWithRelations[];
+      return membersWithRoles;
     },
     enabled: searchTerm.length > 2,
     meta: {

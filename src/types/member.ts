@@ -33,6 +33,9 @@ export interface MemberWithRelations {
     date_of_birth: string | null;
     gender: string | null;
   }>;
+  auth_user_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ValidationRules {

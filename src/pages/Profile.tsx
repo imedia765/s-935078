@@ -112,9 +112,29 @@ const Profile = () => {
         console.error("Error fetching member:", memberError);
         throw new Error("Failed to fetch member data");
       }
+
+      // Transform the data to match MemberWithRelations type
+      const memberWithRelations: MemberWithRelations = {
+        ...member,
+        user_roles: roles?.map(r => ({ role: r.role })) || [],
+        roles: roles?.map(r => r.role) || [],
+        member_notes: member?.member_notes || [],
+        family_members: member?.family_members || [],
+        payment_requests: member?.payment_requests || [],
+        yearly_payment_status: member?.yearly_payment_status || null,
+        yearly_payment_due_date: member?.yearly_payment_due_date || null,
+        yearly_payment_amount: member?.yearly_payment_amount || null,
+        emergency_collection_status: member?.emergency_collection_status || null,
+        emergency_collection_amount: member?.emergency_collection_amount || null,
+        emergency_collection_due_date: member?.emergency_collection_due_date || null,
+        marital_status: member?.marital_status || null,
+        gender: member?.gender || null,
+        town: member?.town || null,
+        postcode: member?.postcode || null
+      };
       
-      setMemberData({ ...member, roles: roles?.map(r => r.role) });
-      setEditedData({ ...member, roles: roles?.map(r => r.role) });
+      setMemberData(memberWithRelations);
+      setEditedData(memberWithRelations);
 
       // Set payment history from the fetched payment_requests
       if (member?.payment_requests) {
