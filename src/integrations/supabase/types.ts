@@ -446,57 +446,72 @@ export type Database = {
       }
       email_logs: {
         Row: {
+          bounce_type: string | null
           created_at: string
           daily_counter: number | null
           delivered_at: string | null
+          delivery_meta: Json | null
           email_category: string | null
           email_type: Database["public"]["Enums"]["email_type"]
           error_message: string | null
           id: string
           member_number: string | null
           metadata: Json | null
+          next_retry_at: string | null
           priority: string | null
+          processing_duration: unknown | null
           queued_for_date: string | null
           recipient_email: string
           resend_id: string | null
+          retry_count: number | null
           sent_at: string | null
           status: Database["public"]["Enums"]["email_status"]
           subject: string
           updated_at: string
         }
         Insert: {
+          bounce_type?: string | null
           created_at?: string
           daily_counter?: number | null
           delivered_at?: string | null
+          delivery_meta?: Json | null
           email_category?: string | null
           email_type: Database["public"]["Enums"]["email_type"]
           error_message?: string | null
           id?: string
           member_number?: string | null
           metadata?: Json | null
+          next_retry_at?: string | null
           priority?: string | null
+          processing_duration?: unknown | null
           queued_for_date?: string | null
           recipient_email: string
           resend_id?: string | null
+          retry_count?: number | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["email_status"]
           subject: string
           updated_at?: string
         }
         Update: {
+          bounce_type?: string | null
           created_at?: string
           daily_counter?: number | null
           delivered_at?: string | null
+          delivery_meta?: Json | null
           email_category?: string | null
           email_type?: Database["public"]["Enums"]["email_type"]
           error_message?: string | null
           id?: string
           member_number?: string | null
           metadata?: Json | null
+          next_retry_at?: string | null
           priority?: string | null
+          processing_duration?: unknown | null
           queued_for_date?: string | null
           recipient_email?: string
           resend_id?: string | null
+          retry_count?: number | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["email_status"]
           subject?: string
@@ -518,6 +533,30 @@ export type Database = {
             referencedColumns: ["member_number"]
           },
         ]
+      }
+      email_metrics: {
+        Row: {
+          details: Json | null
+          id: string
+          metric_name: string
+          metric_value: number
+          recorded_at: string
+        }
+        Insert: {
+          details?: Json | null
+          id?: string
+          metric_name: string
+          metric_value: number
+          recorded_at?: string
+        }
+        Update: {
+          details?: Json | null
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          recorded_at?: string
+        }
+        Relationships: []
       }
       email_migration_backup: {
         Row: {
@@ -576,6 +615,48 @@ export type Database = {
           old_value?: Json | null
           operation?: string
           success?: boolean | null
+        }
+        Relationships: []
+      }
+      email_monitoring_rules: {
+        Row: {
+          cooldown_minutes: number | null
+          created_at: string
+          id: string
+          message_template: string | null
+          metric_name: string
+          name: string
+          notification_channels: Json | null
+          operator: string
+          severity: string
+          threshold: number
+          updated_at: string
+        }
+        Insert: {
+          cooldown_minutes?: number | null
+          created_at?: string
+          id?: string
+          message_template?: string | null
+          metric_name: string
+          name: string
+          notification_channels?: Json | null
+          operator: string
+          severity: string
+          threshold: number
+          updated_at?: string
+        }
+        Update: {
+          cooldown_minutes?: number | null
+          created_at?: string
+          id?: string
+          message_template?: string | null
+          metric_name?: string
+          name?: string
+          notification_channels?: Json | null
+          operator?: string
+          severity?: string
+          threshold?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2057,50 +2138,74 @@ export type Database = {
       }
       smtp_configurations: {
         Row: {
+          cool_down_period: unknown | null
           created_at: string
           created_by: string | null
+          daily_quota: number | null
           encryption_type: string | null
+          failover_config: Json | null
           from_address: string
+          health_check_interval: unknown | null
           host: string
           id: string
           is_active: boolean | null
           is_default: boolean | null
+          last_health_check: string | null
+          max_concurrent_sends: number | null
           name: string
           port: number
           provider: string | null
           secret_key: string
+          security_settings: Json | null
+          throttle_threshold: number | null
           updated_at: string
           username: string
         }
         Insert: {
+          cool_down_period?: unknown | null
           created_at?: string
           created_by?: string | null
+          daily_quota?: number | null
           encryption_type?: string | null
+          failover_config?: Json | null
           from_address: string
+          health_check_interval?: unknown | null
           host: string
           id?: string
           is_active?: boolean | null
           is_default?: boolean | null
+          last_health_check?: string | null
+          max_concurrent_sends?: number | null
           name: string
           port: number
           provider?: string | null
           secret_key: string
+          security_settings?: Json | null
+          throttle_threshold?: number | null
           updated_at?: string
           username: string
         }
         Update: {
+          cool_down_period?: unknown | null
           created_at?: string
           created_by?: string | null
+          daily_quota?: number | null
           encryption_type?: string | null
+          failover_config?: Json | null
           from_address?: string
+          health_check_interval?: unknown | null
           host?: string
           id?: string
           is_active?: boolean | null
           is_default?: boolean | null
+          last_health_check?: string | null
+          max_concurrent_sends?: number | null
           name?: string
           port?: number
           provider?: string | null
           secret_key?: string
+          security_settings?: Json | null
+          throttle_threshold?: number | null
           updated_at?: string
           username?: string
         }
@@ -2390,6 +2495,10 @@ export type Database = {
           status: string
           details: Json
         }[]
+      }
+      calculate_email_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       can_access_during_maintenance: {
         Args: {
@@ -2901,6 +3010,7 @@ export type Database = {
         | "completed"
         | "failed"
         | "created"
+      email_priority: "critical" | "high" | "normal" | "low" | "bulk"
       email_status: "pending" | "sent" | "delivered" | "failed" | "bounced"
       email_template_category: "payment" | "notification" | "system" | "custom"
       email_type:

@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailTemplateList } from "./EmailTemplateList";
 import { SmtpConfigList } from "./SmtpConfigList";
 import { EmailQueueStatus } from "./EmailQueueStatus";
+import { EmailMetrics } from "./EmailMetrics";
 
 export function EmailServerDashboard() {
   const { data: emailStats, isLoading } = useQuery({
@@ -52,12 +54,17 @@ export function EmailServerDashboard() {
         </Card>
       </div>
 
-      <Tabs defaultValue="templates" className="w-full">
+      <Tabs defaultValue="metrics" className="w-full">
         <TabsList className="w-full justify-start bg-black/40 backdrop-blur-xl border border-white/10">
+          <TabsTrigger value="metrics">Metrics</TabsTrigger>
           <TabsTrigger value="templates">Email Templates</TabsTrigger>
           <TabsTrigger value="smtp">SMTP Config</TabsTrigger>
           <TabsTrigger value="queue">Queue Status</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="metrics">
+          <EmailMetrics />
+        </TabsContent>
 
         <TabsContent value="templates">
           <EmailTemplateList />
