@@ -550,7 +550,7 @@ const Profile = () => {
                           </Button>
                         )}
                         <Badge 
-                          variant={memberData?.status === 'active' ? 'default' : 'destructive'}
+                          variant={memberData?.status === 'active' ? 'default' : 'destructive'}\
                           className={memberData?.status === 'active' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
                         >
                           {memberData?.status}
@@ -891,4 +891,4 @@ const Profile = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className
+              <div
