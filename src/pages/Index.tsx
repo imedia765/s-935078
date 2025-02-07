@@ -194,30 +194,29 @@ export const Index = () => {
         return;
       }
 
-      // Handle remember me
+      // If rememberMe is checked, store the member number
       if (rememberMe) {
         localStorage.setItem("rememberedMember", memberNumber);
       } else {
         localStorage.removeItem("rememberedMember");
       }
 
-      // Log login activity using audit_logs instead of login_activity
+      // Log login activity using audit_logs
       const { error: logError } = await supabase
         .from("audit_logs")
-        .insert([
-          {
-            operation: "INSERT",
-            table_name: "login_events",
-            new_values: {
-              member_id: member.id,
-              login_time: new Date().toISOString(),
-              device_info: deviceInfo,
-              ip_address: "Captured server-side", // Note: actual IP should be captured server-side
-              status: "success"
-            },
-            severity: "INFO"
-          }
-        ]);
+        .insert({
+          operation: "INSERT",
+          table_name: "login_events",
+          new_values: {
+            member_id: member.id,
+            login_time: new Date().toISOString(),
+            device_info: deviceInfo,
+            ip_address: "Captured server-side", // Note: actual IP should be captured server-side
+            status: "success"
+          },
+          severity: "info",
+          timestamp: new Date().toISOString()
+        });
 
       if (logError) {
         console.error("Error logging login activity:", logError);
