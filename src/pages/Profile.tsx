@@ -20,19 +20,23 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { MemberWithRelations, validateField } from "@/types/member";
+import { format } from "date-fns";
 
 const Profile = () => {
-  const [memberData, setMemberData] = useState<any>(null);
+  const [memberData, setMemberData] = useState<MemberWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState<any>(null);
+  const [editedData, setEditedData] = useState<MemberWithRelations | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isAddFamilyMemberOpen, setIsAddFamilyMemberOpen] = useState(false);
   const [isEditFamilyMemberOpen, setIsEditFamilyMemberOpen] = useState(false);
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<any>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -139,6 +143,24 @@ const Profile = () => {
     }
   };
 
+  const validateForm = (data: Partial<MemberWithRelations>): boolean => {
+    const errors: Record<string, string> = {};
+    
+    // Validate each field
+    Object.keys(data).forEach((field) => {
+      const value = data[field as keyof MemberWithRelations];
+      if (typeof value === 'string') {
+        const error = validateField(field, value);
+        if (error) {
+          errors[field] = error;
+        }
+      }
+    });
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const generateFamilyMemberNumber = (parentMemberNumber: string, relationship: string) => {
     const base = parentMemberNumber;
     const prefix = relationship === 'spouse' ? 'S' : 'D';
@@ -189,8 +211,18 @@ const Profile = () => {
     setUploadingPhoto(true);
 
     try {
+      // Validate file size
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('File size must be less than 5MB');
+      }
+
+      // Validate file type
+      if (!['image/jpeg', 'image/png'].includes(file.type)) {
+        throw new Error('Only JPEG and PNG files are allowed');
+      }
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${memberData.member_number}-${Math.random()}.${fileExt}`;
+      const fileName = `${memberData?.member_number}-${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -206,11 +238,11 @@ const Profile = () => {
       const { error: updateError } = await supabase
         .from('members')
         .update({ photo_url: publicUrl })
-        .eq('id', memberData.id);
+        .eq('id', memberData?.id);
 
       if (updateError) throw updateError;
 
-      setMemberData({ ...memberData, photo_url: publicUrl });
+      setMemberData(prev => prev ? { ...prev, photo_url: publicUrl } : null);
       toast({
         title: "Success",
         description: "Profile photo updated successfully"
@@ -218,7 +250,7 @@ const Profile = () => {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Error uploading photo",
         description: error.message
       });
     } finally {
@@ -227,18 +259,36 @@ const Profile = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setEditedData((prev: any) => ({
-      ...prev,
-      [field]: value
-    }));
+    setEditedData(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, [field]: value };
+      const error = validateField(field, value);
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: error || ''
+      }));
+      return updated;
+    });
   };
 
   const handleSave = async () => {
+    if (!editedData) return;
+
+    if (!validateForm(editedData)) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please correct the errors before saving"
+      });
+      return;
+    }
+
+    setSaving(true);
     try {
       const { error } = await supabase
         .from('members')
         .update(editedData)
-        .eq('id', memberData.id);
+        .eq('id', memberData?.id);
 
       if (error) throw error;
 
@@ -254,6 +304,8 @@ const Profile = () => {
         title: "Error",
         description: error.message
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -400,11 +452,16 @@ const Profile = () => {
                     <div className="flex justify-between items-start">
                       <div className="space-y-4">
                         {isEditing ? (
-                          <Input
-                            value={editedData?.full_name}
-                            onChange={(e) => handleInputChange("full_name", e.target.value)}
-                            className="mb-2"
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              value={editedData?.full_name || ''}
+                              onChange={(e) => handleInputChange("full_name", e.target.value)}
+                              className={validationErrors.full_name ? "border-red-500" : ""}
+                            />
+                            {validationErrors.full_name && (
+                              <p className="text-sm text-red-500">{validationErrors.full_name}</p>
+                            )}
+                          </div>
                         ) : (
                           <h2 className="text-2xl font-semibold text-primary">{memberData?.full_name}</h2>
                         )}
@@ -429,15 +486,34 @@ const Profile = () => {
                       <div className="flex gap-2">
                         {isEditing ? (
                           <>
-                            <Button onClick={handleSave} size="sm" className="bg-primary/20 hover:bg-primary/30 text-primary">
-                              <Save className="w-4 h-4 mr-1" /> Save
+                            <Button 
+                              onClick={handleSave} 
+                              size="sm" 
+                              className="bg-primary/20 hover:bg-primary/30 text-primary"
+                              disabled={saving}
+                            >
+                              {saving ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                              ) : (
+                                <Save className="h-4 w-4 mr-1" />
+                              )}
+                              Save
                             </Button>
-                            <Button onClick={handleCancel} variant="outline" size="sm" className="hover:bg-destructive/20 hover:text-destructive">
-                              <X className="w-4 h-4 mr-1" /> Cancel
+                            <Button 
+                              onClick={() => {
+                                setIsEditing(false);
+                                setValidationErrors({});
+                                setEditedData(memberData);
+                              }} 
+                              variant="outline" 
+                              size="sm" 
+                              className="hover:bg-destructive/20 hover:text-destructive"
+                            >
+                              <X className="h-4 w-4 mr-1" /> Cancel
                             </Button>
                           </>
                         ) : (
-                          <Button onClick={handleEdit} variant="outline" size="sm" className="hover:bg-primary/20 hover:text-primary">
+                          <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="hover:bg-primary/20 hover:text-primary">
                             <Edit className="w-4 h-4 mr-1" /> Edit
                           </Button>
                         )}
@@ -455,10 +531,16 @@ const Profile = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Email</p>
                         {isEditing ? (
-                          <Input
-                            value={editedData?.email}
-                            onChange={(e) => handleInputChange("email", e.target.value)}
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              value={editedData?.email || ''}
+                              onChange={(e) => handleInputChange("email", e.target.value)}
+                              className={validationErrors.email ? "border-red-500" : ""}
+                            />
+                            {validationErrors.email && (
+                              <p className="text-sm text-red-500">{validationErrors.email}</p>
+                            )}
+                          </div>
                         ) : (
                           <p className="text-foreground hover:text-primary transition-colors">{memberData?.email}</p>
                         )}
@@ -466,10 +548,16 @@ const Profile = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Phone</p>
                         {isEditing ? (
-                          <Input
-                            value={editedData?.phone}
-                            onChange={(e) => handleInputChange("phone", e.target.value)}
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              value={editedData?.phone || ''}
+                              onChange={(e) => handleInputChange("phone", e.target.value)}
+                              className={validationErrors.phone ? "border-red-500" : ""}
+                            />
+                            {validationErrors.phone && (
+                              <p className="text-sm text-red-500">{validationErrors.phone}</p>
+                            )}
+                          </div>
                         ) : (
                           <p className="text-foreground hover:text-primary transition-colors">{memberData?.phone}</p>
                         )}
@@ -488,10 +576,16 @@ const Profile = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Postcode</p>
                         {isEditing ? (
-                          <Input
-                            value={editedData?.postcode}
-                            onChange={(e) => handleInputChange("postcode", e.target.value)}
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              value={editedData?.postcode || ''}
+                              onChange={(e) => handleInputChange("postcode", e.target.value)}
+                              className={validationErrors.postcode ? "border-red-500" : ""}
+                            />
+                            {validationErrors.postcode && (
+                              <p className="text-sm text-red-500">{validationErrors.postcode}</p>
+                            )}
+                          </div>
                         ) : (
                           <p className="text-foreground hover:text-primary transition-colors">{memberData?.postcode}</p>
                         )}
@@ -510,11 +604,17 @@ const Profile = () => {
                       <div>
                         <p className="text-sm text-muted-foreground">Date of Birth</p>
                         {isEditing ? (
-                          <Input
-                            type="date"
-                            value={editedData?.date_of_birth}
-                            onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              type="date"
+                              value={editedData?.date_of_birth}
+                              onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
+                              className={validationErrors.date_of_birth ? "border-red-500" : ""}
+                            />
+                            {validationErrors.date_of_birth && (
+                              <p className="text-sm text-red-500">{validationErrors.date_of_birth}</p>
+                            )}
+                          </div>
                         ) : (
                           <p className="text-foreground hover:text-primary transition-colors">
                             {memberData?.date_of_birth ? new Date(memberData.date_of_birth).toLocaleDateString() : 'Not set'}
@@ -768,153 +868,4 @@ const Profile = () => {
               <Dialog open={isAddFamilyMemberOpen} onOpenChange={setIsAddFamilyMemberOpen}>
                 <DialogContent className="glass-card">
                   <DialogHeader>
-                    <DialogTitle>Add Family Member</DialogTitle>
-                    <DialogDescription>
-                      Add a new family member to your profile
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleAddFamilyMember} className="space-y-4">
-                    <div className="grid gap-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="full_name" className="text-right">
-                          Full Name
-                        </Label>
-                        <Input
-                          id="full_name"
-                          name="full_name"
-                          className="col-span-3"
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="relationship" className="text-right">
-                          Relationship
-                        </Label>
-                        <Select name="relationship" required>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select relationship" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="spouse">Spouse</SelectItem>
-                            <SelectItem value="child">Child</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
-                            <SelectItem value="sibling">Sibling</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="date_of_birth" className="text-right">
-                          Date of Birth
-                        </Label>
-                        <Input
-                          id="date_of_birth"
-                          name="date_of_birth"
-                          type="date"
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="gender" className="text-right">
-                          Gender
-                        </Label>
-                        <Select name="gender">
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit">Add Family Member</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-
-              {/* Edit Family Member Dialog */}
-              <Dialog open={isEditFamilyMemberOpen} onOpenChange={setIsEditFamilyMemberOpen}>
-                <DialogContent className="glass-card">
-                  <DialogHeader>
-                    <DialogTitle>Edit Family Member</DialogTitle>
-                    <DialogDescription>
-                      Update family member details
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleEditFamilyMember} className="space-y-4">
-                    <div className="grid gap-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="full_name" className="text-right">
-                          Full Name
-                        </Label>
-                        <Input
-                          id="full_name"
-                          name="full_name"
-                          className="col-span-3"
-                          defaultValue={selectedFamilyMember?.full_name}
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="relationship" className="text-right">
-                          Relationship
-                        </Label>
-                        <Select name="relationship" defaultValue={selectedFamilyMember?.relationship} required>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select relationship" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="spouse">Spouse</SelectItem>
-                            <SelectItem value="child">Child</SelectItem>
-                            <SelectItem value="parent">Parent</SelectItem>
-                            <SelectItem value="sibling">Sibling</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="date_of_birth" className="text-right">
-                          Date of Birth
-                        </Label>
-                        <Input
-                          id="date_of_birth"
-                          name="date_of_birth"
-                          type="date"
-                          className="col-span-3"
-                          defaultValue={selectedFamilyMember?.date_of_birth}
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="gender" className="text-right">
-                          Gender
-                        </Label>
-                        <Select name="gender" defaultValue={selectedFamilyMember?.gender}>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit">Update Family Member</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Profile;
+                    <
