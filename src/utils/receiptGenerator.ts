@@ -5,10 +5,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { Payment } from '@/components/admin/financial/types';
 import { format } from 'date-fns';
 
+async function generateReceiptNumber(): Promise<string> {
+  const { data: receipt, error } = await supabase
+    .from('receipts')
+    .select('receipt_number')
+    .order('generated_at', { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+
+  const lastNumber = receipt?.[0]?.receipt_number?.slice(3) || '0';
+  const nextNumber = (parseInt(lastNumber) + 1).toString().padStart(6, '0');
+  return `REC${nextNumber}`;
+}
+
 export async function generateReceipt(payment: Payment): Promise<Blob> {
   const doc = new jsPDF();
   
-  // Add header
+  // Add header with logo
   doc.setFontSize(20);
   doc.text('Payment Receipt', 105, 20, { align: 'center' });
   
@@ -45,21 +59,65 @@ export async function generateReceipt(payment: Payment): Promise<Blob> {
   return doc.output('blob');
 }
 
-export async function saveReceiptToStorage(paymentId: string, receiptBlob: Blob): Promise<string> {
-  const fileName = `receipts/${paymentId}-${Date.now()}.pdf`;
+export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob): Promise<string> {
+  // Generate unique receipt number
+  const receiptNumber = await generateReceiptNumber();
   
-  const { data, error } = await supabase.storage
+  // Save to storage
+  const fileName = `receipts/${receiptNumber}.pdf`;
+  const { data: storageData, error: storageError } = await supabase.storage
     .from('receipts')
     .upload(fileName, receiptBlob, {
       contentType: 'application/pdf',
       upsert: true
     });
     
-  if (error) throw error;
-  
+  if (storageError) throw storageError;
+
+  // Get public URL
   const { data: { publicUrl } } = supabase.storage
     .from('receipts')
     .getPublicUrl(fileName);
+
+  // Create receipt record
+  const { error: dbError } = await supabase
+    .from('receipts')
+    .insert({
+      payment_id: payment.id,
+      receipt_number: receiptNumber,
+      receipt_url: publicUrl,
+      metadata: {
+        payment_number: payment.payment_number,
+        member_name: payment.members?.full_name,
+        amount: payment.amount,
+        generated_by: (await supabase.auth.getUser()).data.user?.id
+      }
+    });
+
+  if (dbError) throw dbError;
+
+  // Update payment record
+  await supabase
+    .from('payment_requests')
+    .update({
+      receipt_metadata: {
+        receipt_number: receiptNumber,
+        generated_at: new Date().toISOString()
+      }
+    })
+    .eq('id', payment.id);
     
   return publicUrl;
 }
+
+export async function getPaymentReceipt(paymentId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('receipts')
+    .select('receipt_url')
+    .eq('payment_id', paymentId)
+    .single();
+
+  if (error) throw error;
+  return data?.receipt_url || null;
+}
+

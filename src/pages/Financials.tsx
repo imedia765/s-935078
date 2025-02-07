@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
@@ -10,6 +9,7 @@ import { useFinancialQueries } from "@/components/admin/financial/hooks/useFinan
 import { useFinancialMutations } from "@/components/admin/financial/hooks/useFinancialMutations";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, generatePDF } from "@/utils/exportUtils";
+import { PaymentArchive } from "@/components/admin/financial/PaymentArchive";
 
 export default function Financials() {
   const { toast } = useToast();
@@ -98,6 +98,7 @@ export default function Financials() {
         <TabsList className="w-full justify-start bg-black/40 backdrop-blur-xl border border-white/10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="archive">Archive</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="stats">Member Stats</TabsTrigger>
         </TabsList>
@@ -120,6 +121,12 @@ export default function Financials() {
               setShowDeleteDialog={setShowDeleteDialog}
               confirmDelete={confirmDelete}
             />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="archive">
+          <Card className="p-6 glass-card">
+            <PaymentArchive />
           </Card>
         </TabsContent>
 
