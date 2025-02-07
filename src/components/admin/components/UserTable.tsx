@@ -1,10 +1,17 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { User } from "../types/role-types";
-import { Shield, Key, UserCog, UserCheck } from "lucide-react";
+import { Shield, Key, UserCog, UserCheck, Mail, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { useMagicLink } from "../hooks/useMagicLink";
 
 interface UserTableProps {
   users: User[];
@@ -13,6 +20,7 @@ interface UserTableProps {
 
 export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState<string | null>(null);
 
   const handleResetLoginState = async (memberNumber: string | undefined) => {
     if (!memberNumber) {
@@ -119,6 +127,25 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
     }
   };
 
+  const handleMagicLinkAction = async (userId: string, action: 'email' | 'copy') => {
+    try {
+      setIsLoading(userId);
+      const { generateMagicLink, sendMagicLinkEmail, copyToClipboard } = useMagicLink();
+      
+      const result = await generateMagicLink(userId);
+      
+      if (action === 'email') {
+        await sendMagicLinkEmail(result.email!, result.magicLink);
+      } else {
+        await copyToClipboard(result.magicLink);
+      }
+    } catch (error) {
+      console.error('Magic link action error:', error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -147,14 +174,28 @@ export const UserTable = ({ users, generateMagicLink }: UserTableProps) => {
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generateMagicLink(user.id)}
-                  >
-                    <Key className="h-4 w-4 mr-2" />
-                    Magic Link
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isLoading === user.id}
+                      >
+                        <Key className="h-4 w-4 mr-2" />
+                        Magic Link
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleMagicLinkAction(user.id, 'email')}>
+                        <Mail className="h-4 w-4 mr-2" />
+                        Send via Email
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleMagicLinkAction(user.id, 'copy')}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Link
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     variant="outline"
                     size="sm"

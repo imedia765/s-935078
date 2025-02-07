@@ -17,9 +17,8 @@ export const useMagicLink = () => {
     try {
       console.log("Generating magic link for user:", userId);
 
-      // Cast userId as UUID by using explicit parameter name
       const { data, error } = await supabase.rpc('generate_magic_link', {
-        p_user_id: userId as unknown as `${string}-${string}-${string}-${string}-${string}` // TypeScript UUID format
+        p_user_id: userId as unknown as `${string}-${string}-${string}-${string}-${string}`
       });
 
       if (error) {
@@ -27,18 +26,15 @@ export const useMagicLink = () => {
         throw error;
       }
 
-      // Safely type check and validate the response structure
       if (!data || typeof data !== 'object' || Array.isArray(data)) {
         throw new Error('Invalid response format from magic link generation');
       }
 
-      // Type guard function to validate response shape
       const isMagicLinkResponse = (obj: unknown): obj is MagicLinkResponse => {
         const response = obj as Partial<MagicLinkResponse>;
         return typeof response.success === 'boolean';
       };
 
-      // Cast to unknown first, then validate
       if (!isMagicLinkResponse(data)) {
         throw new Error('Invalid magic link response format');
       }
@@ -47,18 +43,13 @@ export const useMagicLink = () => {
         throw new Error(data.error || 'Failed to generate magic link');
       }
 
-      // Send the magic link email
-      await sendEmail({
-        to: data.email!,
-        subject: 'Your Login Link',
-        html: `<p>Here's your magic login link: ${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink</p>`,
-      });
+      const magicLink = `${process.env.VITE_SUPABASE_URL}/auth/v1/verify?token=${data.token}&type=magiclink`;
 
-      toast({
-        title: "Success",
-        description: "Magic link sent successfully",
-      });
-      
+      return {
+        magicLink,
+        email: data.email,
+        token: data.token,
+      };
     } catch (error: any) {
       console.error('Error generating magic link:', error);
       toast({
@@ -66,8 +57,49 @@ export const useMagicLink = () => {
         description: error.message,
         variant: "destructive",
       });
+      throw error;
     }
   };
 
-  return { generateMagicLink };
+  const sendMagicLinkEmail = async (email: string, link: string) => {
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Your Login Link',
+        html: `<p>Here's your magic login link: ${link}</p>`,
+      });
+
+      toast({
+        title: "Success",
+        description: "Magic link sent successfully",
+      });
+    } catch (error: any) {
+      console.error('Error sending magic link email:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Success",
+        description: "Magic link copied to clipboard",
+      });
+    } catch (error: any) {
+      console.error('Error copying to clipboard:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy link to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return { generateMagicLink, sendMagicLinkEmail, copyToClipboard };
 };
