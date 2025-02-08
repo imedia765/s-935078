@@ -86,7 +86,7 @@ export function MemberStats() {
               payment_method,
               created_at
             ),
-            collector:collectors (
+            collector:members_collectors (
               id,
               name,
               email,
