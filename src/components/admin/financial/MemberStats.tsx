@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,7 +67,16 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        const { data, error } = await supabase
+        // First get all collectors
+        const { data: collectors, error: collectorError } = await supabase
+          .from('members_collectors')
+          .select('*')
+          .eq('active', true);
+
+        if (collectorError) throw collectorError;
+
+        // Then get all members and their assignments
+        const { data: members, error: memberError } = await supabase
           .from('members')
           .select(`
             *,
@@ -77,29 +87,28 @@ export function MemberStats() {
               relationship,
               date_of_birth
             ),
-            payment_requests!payment_requests_member_number_fkey (
+            payment_requests (
               id,
               amount,
               status,
               payment_method,
               created_at
-            ),
-            members_collectors!inner (
-              id,
-              name,
-              email,
-              phone
             )
           `);
 
-        if (error) {
-          console.error('Error fetching member stats:', error);
-          throw error;
-        }
+        if (memberError) throw memberError;
 
-        const processedData = data as Member[];
-        console.log('Processed member stats:', processedData);
-        return processedData;
+        // Process and combine the data
+        const processedMembers = members.map(member => {
+          const collector = collectors.find(c => c.member_number === member.member_number);
+          return {
+            ...member,
+            members_collectors: collector
+          };
+        });
+
+        console.log('Processed member stats:', processedMembers);
+        return processedMembers;
       } catch (error) {
         console.error('Error in memberStats query:', error);
         throw error;
