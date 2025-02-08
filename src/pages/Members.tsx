@@ -329,7 +329,7 @@ export default function Members() {
   const totalPages = Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE);
 
   // Add a new query for getting all data for exports
-  const { data: allMembersData } = useQuery({
+  const { data: allMembersData, refetch: refetchAllMembers } = useQuery({
     queryKey: ["allMembers", selectedCollector],
     queryFn: async () => {
       let query = supabase
@@ -365,7 +365,7 @@ export default function Members() {
 
   // Update the export handlers to use allMembersData
   const handleExportCSV = async () => {
-    const { data: allData } = await allMembersData.refetch();
+    const { data: allData } = await refetchAllMembers();
     exportToCSV(
       allData?.members || [], 
       `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`
@@ -373,7 +373,7 @@ export default function Members() {
   };
 
   const handleExportPDF = async () => {
-    const { data: allData } = await allMembersData.refetch();
+    const { data: allData } = await refetchAllMembers();
     generatePDF(
       allData?.members || [], 
       `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`
@@ -381,7 +381,7 @@ export default function Members() {
   };
 
   const handleExportExcel = async () => {
-    const { data: allData } = await allMembersData.refetch();
+    const { data: allData } = await refetchAllMembers();
     exportToExcel(
       allData?.members || [], 
       `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`
