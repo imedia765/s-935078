@@ -32,22 +32,22 @@ export function RolePermissionsMatrix() {
       // Get roles and permissions in parallel
       const [rolesResult, permsResult] = await Promise.all([
         supabase.from('user_roles').select('role').eq('role', 'admin'),
-        supabase.from('app_permissions').select('*')
+        supabase.from('permissions').select('*')
       ]);
 
-      const roles = rolesResult.data;
-      const perms = permsResult.data as Permission[];
+      const roles = rolesResult.data || [];
+      const perms = permsResult.data || [];
 
-      if (!roles || !perms) throw new Error("Failed to fetch roles or permissions");
+      if (!roles.length || !perms.length) throw new Error("Failed to fetch roles or permissions");
 
       // Get unique roles
       const uniqueRoles = Array.from(new Set(roles.map(r => r.role)));
 
       // Create matrix
       const matrix: RolePermission[] = uniqueRoles.flatMap(role =>
-        perms.map(perm => ({
+        perms.map(p => ({
           role,
-          permission_name: perm.name,
+          permission_name: p.name,
           granted: false
         }))
       );
@@ -71,7 +71,7 @@ export function RolePermissionsMatrix() {
       setPermissions(matrix);
       return {
         roles: uniqueRoles,
-        permissions: perms
+        permissions: perms as Permission[]
       };
     }
   });
@@ -88,9 +88,16 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase.rpc('manage_role_permissions', {
-        permissions_array: permissions
-      });
+      const { error } = await supabase.from('role_permissions')
+        .upsert(
+          permissions
+            .filter(p => p.granted)
+            .map(({ role, permission_name }) => ({
+              role,
+              permission_name,
+              created_at: new Date().toISOString()
+            }))
+        );
 
       if (error) throw error;
 

@@ -16,9 +16,14 @@ export function LogRetentionConfig() {
   const handleSaveRetention = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase.rpc('set_audit_log_retention', {
-        p_retention_period: retentionPeriod
-      });
+      const { error } = await supabase.from('audit_logs')
+        .update({
+          retention_days: retentionPeriod === '30days' ? 30 :
+            retentionPeriod === '90days' ? 90 :
+            retentionPeriod === '180days' ? 180 :
+            retentionPeriod === '1year' ? 365 : 730
+        })
+        .eq('id', 'config');
 
       if (error) throw error;
 
