@@ -33,7 +33,7 @@ export function RolePermissionsMatrix() {
     queryFn: async () => {
       // Fetch the base permissions first
       const { data: basePermissionsData, error: permError } = await supabase
-        .from('app_permissions')
+        .from('permissions')
         .select('id, name, description, category');
 
       if (permError || !basePermissionsData) {
@@ -103,7 +103,8 @@ export function RolePermissionsMatrix() {
       await supabase
         .from('role_permissions')
         .delete()
-        .neq('role', 'invalid');  // Delete all rows
+        .eq('role', 'admin') // Only delete admin roles since that's what we're managing
+        .or('role.eq.collector,role.eq.member'); // And other valid roles
 
       // Then insert new permissions
       const { error } = await supabase
