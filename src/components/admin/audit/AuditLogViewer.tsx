@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,8 @@ import {
   Shield,
   Calendar,
   AlertCircle,
-  BarChart3
+  BarChart3,
+  Bell
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { exportToCSV } from "@/utils/exportUtils";
@@ -62,8 +64,9 @@ export function AuditLogViewer() {
   });
 
   const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [realtimeEnabled, setRealtimeEnabled] = useState(true);
 
-  const { data: auditActivity, isLoading } = useQuery({
+  const { data: auditActivity, isLoading, refetch } = useQuery({
     queryKey: ["auditActivity", filters],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_audit_activity_summary');
@@ -78,6 +81,36 @@ export function AuditLogViewer() {
       return data as AuditActivity[];
     }
   });
+
+  // Set up realtime subscription
+  useEffect(() => {
+    if (!realtimeEnabled) return;
+
+    const channel = supabase
+      .channel('audit_logs')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'audit_logs'
+        },
+        async (payload) => {
+          console.log('Received realtime update:', payload);
+          toast({
+            title: "New Audit Log",
+            description: `New ${payload.eventType} operation recorded`,
+            duration: 3000,
+          });
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [realtimeEnabled, refetch]);
 
   const handleExport = () => {
     if (!auditActivity) return;
@@ -228,6 +261,10 @@ export function AuditLogViewer() {
               className="w-[140px]"
             />
           </div>
+          <Button variant="outline" onClick={() => setRealtimeEnabled(!realtimeEnabled)}>
+            <Bell className={`mr-2 h-4 w-4 ${realtimeEnabled ? 'text-green-500' : 'text-gray-500'}`} />
+            {realtimeEnabled ? 'Realtime On' : 'Realtime Off'}
+          </Button>
           <Button onClick={handleExport} className="whitespace-nowrap">
             <Download className="mr-2 h-4 w-4" />
             Export Logs
