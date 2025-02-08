@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Download, Filter } from "lucide-react";
+import { Eye, Download, Filter, Loader2 } from "lucide-react";
 import { ReportDateRangePicker } from './reports/ReportDateRangePicker';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Payment } from './types';
 
 export function PaymentArchive() {
@@ -32,10 +33,12 @@ export function PaymentArchive() {
     to: new Date()
   });
   const [paymentType, setPaymentType] = useState<string>('all');
+  const [exporting, setExporting] = useState(false);
 
-  const { data: archivedPayments, isLoading } = useQuery({
+  const { data: archivedPayments, isLoading, error } = useQuery({
     queryKey: ['archivedPayments', dateRange, paymentType],
     queryFn: async () => {
+      console.log('Fetching archived payments with filters:', { dateRange, paymentType });
       let query = supabase
         .from('payment_requests')
         .select(`
@@ -63,21 +66,27 @@ export function PaymentArchive() {
       }
 
       const { data, error } = await query;
+      console.log('Archived payments fetch result:', { data, error });
 
       if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error fetching archived payments",
-          description: error.message
-        });
+        console.error('Error fetching archived payments:', error);
         throw error;
       }
       return data as unknown as Payment[];
     }
   });
 
-  const handleViewReceipt = (url: string) => {
-    window.open(url, '_blank');
+  const handleViewReceipt = async (url: string) => {
+    try {
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error viewing receipt:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to open receipt. Please try again."
+      });
+    }
   };
 
   const handleDownload = async (url: string) => {
@@ -93,6 +102,7 @@ export function PaymentArchive() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
+      console.error('Error downloading receipt:', error);
       toast({
         variant: "destructive",
         title: "Error downloading receipt",
@@ -102,9 +112,11 @@ export function PaymentArchive() {
   };
 
   const handleExport = async () => {
-    if (!archivedPayments?.length) return;
+    if (!archivedPayments?.length || exporting) return;
 
+    setExporting(true);
     try {
+      console.log('Starting archive export...');
       const csvContent = archivedPayments.map(payment => ({
         date: format(new Date(payment.created_at), 'dd/MM/yyyy'),
         receipt_number: payment.receipts?.[0]?.receipt_number || 'N/A',
@@ -135,21 +147,45 @@ export function PaymentArchive() {
         description: "Payment archive has been exported to CSV"
       });
     } catch (error) {
+      console.error('Error exporting archive:', error);
       toast({
         variant: "destructive",
         title: "Export failed",
         description: "Failed to export payment archive"
       });
+    } finally {
+      setExporting(false);
     }
   };
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <Alert variant="destructive">
+          <AlertTitle>Error Loading Archive</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error ? error.message : 'Failed to load payment archive'}
+          </AlertDescription>
+        </Alert>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-6">
       <div className="space-y-4">
         <div className="flex justify-between items-start">
           <h2 className="text-xl font-semibold">Payment Archive</h2>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
+          <Button 
+            variant="outline" 
+            onClick={handleExport}
+            disabled={isLoading || !archivedPayments?.length || exporting}
+          >
+            {exporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
             Export Archive
           </Button>
         </div>
@@ -190,11 +226,16 @@ export function PaymentArchive() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading archived payments...</TableCell>
+                <TableCell colSpan={6} className="h-24">
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="ml-2">Loading archived payments...</span>
+                  </div>
+                </TableCell>
               </TableRow>
             ) : !archivedPayments?.length ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                   No archived payments found for the selected period.
                 </TableCell>
               </TableRow>

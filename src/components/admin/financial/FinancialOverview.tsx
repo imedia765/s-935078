@@ -1,13 +1,36 @@
 
 import { Card } from "@/components/ui/card";
-import { Receipt, PoundSterling, Clock, CheckCircle } from "lucide-react";
+import { Receipt, PoundSterling, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PaymentStats } from "./types";
 
 interface FinancialOverviewProps {
   payments: PaymentStats | null;
+  isLoading?: boolean;
+  error?: Error | null;
 }
 
-export function FinancialOverview({ payments }: FinancialOverviewProps) {
+export function FinancialOverview({ payments, isLoading, error }: FinancialOverviewProps) {
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Error Loading Overview</AlertTitle>
+        <AlertDescription>{error.message}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading financial overview...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
