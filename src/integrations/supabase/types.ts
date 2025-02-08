@@ -2632,11 +2632,10 @@ export type Database = {
       check_error_rates: {
         Args: Record<PropertyKey, never>
         Returns: {
-          metric_name: string
-          current_value: number
-          threshold: number
-          status: string
-          details: Json
+          recorded_at: string
+          severity: string
+          message: string
+          source: string
         }[]
       }
       check_member_numbers: {

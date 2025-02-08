@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ export function ErrorLogViewer() {
       const { data: rpcData, error } = await supabase.rpc('check_error_rates');
       if (error) throw error;
       return (rpcData as any[]).map(item => ({
-        timestamp: item.timestamp || new Date().toISOString(),
+        timestamp: item.recorded_at || new Date().toISOString(),
         severity: item.severity || 'info',
         message: item.message || '',
         source: item.source || 'system'
