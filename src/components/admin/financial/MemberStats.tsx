@@ -27,6 +27,7 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
+        // Updated query to properly join with collectors
         const { data, error } = await supabase
           .from('members')
           .select(`
@@ -45,7 +46,7 @@ export function MemberStats() {
               payment_method,
               created_at
             ),
-            members_collectors (
+            collector:members_collectors!members_collector_id_fkey (
               id,
               name,
               email,
@@ -60,7 +61,7 @@ export function MemberStats() {
 
         const processedData = data?.map(member => ({
           ...member,
-          members_collectors: member.members_collectors || []
+          collector: member.collector || null
         }));
 
         console.log('Fetched member stats:', processedData);
@@ -83,9 +84,10 @@ export function MemberStats() {
     unspecified: stats?.filter(m => !m.gender)?.length || 0,
   };
 
+  // Updated collector reports processing
   const collectorReports = stats?.reduce((acc: any, member) => {
-    const collectorId = member.collector_id;
-    const collector = member.members_collectors?.[0];
+    const collector = member.collector;
+    const collectorId = collector?.id || 'unassigned';
     const collectorName = collector?.name || 'Unassigned';
     
     if (!acc[collectorId]) {
