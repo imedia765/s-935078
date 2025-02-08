@@ -43,7 +43,6 @@ export default function Members() {
     searchTerm,
     sortField,
     sortDirection,
-    !userInfo?.roles.includes("admin") ? userInfo?.collectorId : null,
     page,
     ITEMS_PER_PAGE
   );
