@@ -306,6 +306,11 @@ export default function Members() {
     },
   });
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    setPage(1); // Reset to first page when searching
+  };
+
   const handleExportCSV = async () => {
     await refetchAllMembers();
     if (allMembersData?.members) {
@@ -352,7 +357,7 @@ export default function Members() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
         <MembersToolbar
-          onSearch={setSearchTerm}
+          onSearch={handleSearch}
           selectedCollector={selectedCollector}
           onCollectorChange={setSelectedCollector}
           onExportCSV={handleExportCSV}
