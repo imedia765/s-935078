@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { exportToCSV } from "@/utils/exportUtils";
 import { AuditAnalytics } from "./AuditAnalytics";
 import { useToast } from "@/hooks/use-toast";
+import { DetailedLogView } from "./DetailedLogView";
 
 interface AuditActivity {
   hour_bucket: string;
@@ -59,6 +60,8 @@ export function AuditLogViewer() {
     },
     retentionPeriod: "30days"
   });
+
+  const [selectedLog, setSelectedLog] = useState<any>(null);
 
   const { data: auditActivity, isLoading } = useQuery({
     queryKey: ["auditActivity", filters],
@@ -251,7 +254,11 @@ export function AuditLogViewer() {
                   <TableCell colSpan={6} className="text-center">Loading audit logs...</TableCell>
                 </TableRow>
               ) : filteredLogs?.map((activity, index) => (
-                <TableRow key={index}>
+                <TableRow 
+                  key={index}
+                  className="cursor-pointer hover:bg-accent/50"
+                  onClick={() => setSelectedLog(activity)}
+                >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
@@ -282,6 +289,13 @@ export function AuditLogViewer() {
           </Table>
         </div>
       </Card>
+
+      {selectedLog && (
+        <DetailedLogView 
+          log={selectedLog} 
+          onClose={() => setSelectedLog(null)} 
+        />
+      )}
     </div>
   );
 }

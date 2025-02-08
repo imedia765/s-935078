@@ -6,6 +6,7 @@ import { QueryAnalysis } from "./QueryAnalysis";
 import { BackupScheduler } from "./BackupScheduler";
 import { DataIntegrity } from "./DataIntegrity";
 import { StorageOptimizer } from "./StorageOptimizer";
+import { ConnectionPoolMonitor } from "./ConnectionPoolMonitor";
 import { supabase } from "@/integrations/supabase/client";
 
 interface HealthMetric {
@@ -41,7 +42,10 @@ export function DatabaseManagement() {
           </TabsList>
 
           <TabsContent value="health">
-            <HealthMonitoring metrics={healthMetrics} />
+            <Card className="p-6 space-y-6">
+              <HealthMonitoring metrics={healthMetrics} />
+              <ConnectionPoolMonitor />
+            </Card>
           </TabsContent>
 
           <TabsContent value="performance">
