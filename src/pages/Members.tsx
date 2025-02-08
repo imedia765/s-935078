@@ -43,6 +43,7 @@ export default function Members() {
     searchTerm,
     sortField,
     sortDirection,
+    null,  // collectorId - passing null as we'll handle the filtering in the query
     page,
     ITEMS_PER_PAGE
   );
