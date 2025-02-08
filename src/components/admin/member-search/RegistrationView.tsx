@@ -17,12 +17,7 @@ export function RegistrationView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('members')
-        .select(`
-          *,
-          user_roles (
-            role
-          )
-        `)
+        .select('*')
         .eq('verified', false)
         .order('created_at', { ascending: false });
 
