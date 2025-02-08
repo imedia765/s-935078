@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,15 +66,7 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        // First get all collectors
-        const { data: collectors, error: collectorError } = await supabase
-          .from('members_collectors')
-          .select('*')
-          .eq('active', true);
-
-        if (collectorError) throw collectorError;
-
-        // Then get all members and their assignments
+        // First get all members with their relationships
         const { data: members, error: memberError } = await supabase
           .from('members')
           .select(`
@@ -93,22 +84,20 @@ export function MemberStats() {
               status,
               payment_method,
               created_at
+            ),
+            members_collectors!members_collectors_member_number_fkey (
+              id,
+              name,
+              email,
+              phone,
+              active
             )
           `);
 
         if (memberError) throw memberError;
 
-        // Process and combine the data
-        const processedMembers = members.map(member => {
-          const collector = collectors.find(c => c.member_number === member.member_number);
-          return {
-            ...member,
-            members_collectors: collector
-          };
-        });
-
-        console.log('Processed member stats:', processedMembers);
-        return processedMembers;
+        console.log('Members data:', members);
+        return members || [];
       } catch (error) {
         console.error('Error in memberStats query:', error);
         throw error;
