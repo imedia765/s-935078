@@ -21,7 +21,6 @@ export interface CollectorPaymentStats {
 
 export interface Receipt {
   id: string;
-  payment_id: string;
   receipt_number: string;
   receipt_url: string;
   generated_at: string;
