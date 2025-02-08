@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,12 +101,14 @@ export function MemberStats() {
         // Properly type and transform the data to match our interfaces
         const processedData = data?.map(member => ({
           ...member,
-          collector: member.collector ? {
-            id: member.collector.id,
-            name: member.collector.name,
-            email: member.collector.email,
-            phone: member.collector.phone
-          } : null
+          collector: Array.isArray(member.collector) && member.collector.length > 0
+            ? {
+                id: member.collector[0].id,
+                name: member.collector[0].name,
+                email: member.collector[0].email,
+                phone: member.collector[0].phone
+              }
+            : null
         })) as Member[];
 
         console.log('Processed member stats:', processedData);
