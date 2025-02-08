@@ -101,4 +101,3 @@ export async function getAuditLogs(tableName?: string, recordId?: string) {
   if (error) throw error;
   return data;
 }
-

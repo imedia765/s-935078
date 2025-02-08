@@ -78,6 +78,7 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
 
     // Record the successful link in email_audit with fallback
     try {
+      // First try with all columns
       const { error: auditError } = await supabase
         .from('email_audit')
         .insert({
@@ -85,11 +86,28 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
           member_number: memberNumber,
           status: 'linked',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          metadata: {
+            linked_at: new Date().toISOString(),
+            user_agent: navigator.userAgent
+          }
         });
 
+      // If error, try without metadata
       if (auditError) {
-        console.error('Failed to create audit record:', auditError);
+        const { error: fallbackError } = await supabase
+          .from('email_audit')
+          .insert({
+            auth_user_id: authUserId,
+            member_number: memberNumber,
+            status: 'linked',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (fallbackError) {
+          console.error('Failed to create audit record:', fallbackError);
+        }
       }
     } catch (auditError) {
       console.error('Failed to insert audit record:', auditError);
@@ -137,4 +155,3 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
     };
   }
 }
-
