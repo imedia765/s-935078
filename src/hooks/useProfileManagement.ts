@@ -54,20 +54,22 @@ export function useProfileManagement() {
         return;
       }
 
-      // Get member number from email_audit table
-      const { data: emailAudit, error: emailAuditError } = await supabase
+      // Get member number from email_audit table - now handling multiple records
+      const { data: emailAuditRecords, error: emailAuditError } = await supabase
         .from('email_audit')
         .select('member_number')
         .eq('auth_user_id', user.id)
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (emailAuditError) {
         throw new Error(`Failed to fetch email audit: ${emailAuditError.message}`);
       }
 
+      const emailAudit = emailAuditRecords?.[0];
       console.log("[useProfileManagement] Email audit data:", { emailAudit });
 
-      let memberNumber = emailAudit?.member_number;
+      let memberNumber = emailAudit?.member_number || user.user_metadata?.member_number;
 
       // Then fetch member data with explicit relationship specification
       const { data: member, error: memberError } = await supabase
@@ -91,11 +93,6 @@ export function useProfileManagement() {
       if (memberError) {
         throw new Error(`Failed to fetch member data: ${memberError.message}`);
       }
-
-      console.log("[useProfileManagement] Member data fetch result:", {
-        member,
-        userId: user.id
-      });
 
       if (!member && memberNumber) {
         console.log("[useProfileManagement] Attempting to fetch by member number:", memberNumber);
