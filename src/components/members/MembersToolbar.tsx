@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,6 +19,7 @@ import { AddMemberDialog } from "./AddMemberDialog";
 
 interface MembersToolbarProps {
   onSearch: (term: string) => void;
+  searchValue: string;
   selectedCollector: string;
   onCollectorChange: (value: string) => void;
   onExportCSV: () => void;
@@ -30,6 +32,7 @@ interface MembersToolbarProps {
 
 export function MembersToolbar({
   onSearch,
+  searchValue,
   selectedCollector,
   onCollectorChange,
   onExportCSV,
@@ -44,6 +47,7 @@ export function MembersToolbar({
       <h1 className="text-2xl font-bold text-gradient">Members List</h1>
       <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
         <SearchInput
+          value={searchValue}
           placeholder="Search members..."
           onSearch={onSearch}
         />

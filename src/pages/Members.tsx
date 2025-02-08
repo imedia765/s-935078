@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -358,6 +359,7 @@ export default function Members() {
       <div className="container mx-auto p-6 space-y-6">
         <MembersToolbar
           onSearch={handleSearch}
+          searchValue={searchTerm}
           selectedCollector={selectedCollector}
           onCollectorChange={setSelectedCollector}
           onExportCSV={handleExportCSV}
