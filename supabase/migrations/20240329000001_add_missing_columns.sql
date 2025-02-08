@@ -1,4 +1,6 @@
 
+-- This migration ensures all required columns exist and have proper indexes
+
 -- Add status column to email_audit table if it doesn't exist
 ALTER TABLE IF EXISTS public.email_audit
 ADD COLUMN IF NOT EXISTS status TEXT;
@@ -17,12 +19,36 @@ CREATE INDEX IF NOT EXISTS idx_email_audit_metadata ON public.email_audit USING 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_metadata ON public.audit_logs USING gin (metadata);
 
 -- Update RLS policies
-ALTER POLICY IF EXISTS "Enable read access for authenticated users" ON public.email_audit
-    USING (auth.uid() = auth_user_id);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT FROM pg_policies 
+        WHERE tablename = 'email_audit' 
+        AND policyname = 'Enable read access for authenticated users'
+    ) THEN
+        CREATE POLICY "Enable read access for authenticated users" 
+        ON public.email_audit
+        FOR SELECT
+        USING (auth.uid() = auth_user_id);
+    END IF;
 
-ALTER POLICY IF EXISTS "Enable insert access for authenticated users" ON public.email_audit
-    USING (auth.uid() = auth_user_id);
+    IF NOT EXISTS (
+        SELECT FROM pg_policies 
+        WHERE tablename = 'email_audit' 
+        AND policyname = 'Enable insert access for authenticated users'
+    ) THEN
+        CREATE POLICY "Enable insert access for authenticated users" 
+        ON public.email_audit
+        FOR INSERT
+        WITH CHECK (auth.uid() = auth_user_id);
+    END IF;
+END $$;
+
+-- Enable RLS
+ALTER TABLE public.email_audit ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Grant necessary permissions
 GRANT ALL ON public.email_audit TO authenticated;
 GRANT ALL ON public.audit_logs TO authenticated;
+
