@@ -75,15 +75,24 @@ export function useSessionPersistence() {
           });
           break;
 
-        case 'USER_DELETED':
-          console.log("[Session] User account deleted");
-          navigate("/");
-          toast({
-            title: "Account Deleted",
-            description: "Your account has been permanently deleted.",
-            variant: "destructive",
-          });
+        case 'INITIAL_SESSION':
+          console.log("[Session] Initial session loaded");
           break;
+
+        case 'PASSWORD_RECOVERY':
+          console.log("[Session] Password recovery initiated");
+          break;
+
+        default:
+          if (!session) {
+            console.log("[Session] Session ended");
+            navigate("/");
+            toast({
+              title: "Session Ended",
+              description: "Your session has ended. Please sign in again to continue.",
+              variant: "destructive",
+            });
+          }
       }
     });
 
