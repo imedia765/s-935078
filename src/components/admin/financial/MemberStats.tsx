@@ -86,7 +86,7 @@ export function MemberStats() {
               payment_method,
               created_at
             ),
-            collector:members_collectors (
+            collector:collectors!members_collector_id_fkey (
               id,
               name,
               email,
@@ -126,6 +126,8 @@ export function MemberStats() {
   };
 
   const collectorReports = stats?.reduce((acc: Record<string, CollectorReport>, member) => {
+    if (!member) return acc;
+    
     const collector = member.collector;
     const collectorId = collector?.id || 'unassigned';
     const collectorName = collector?.name || 'Unassigned';
