@@ -328,6 +328,66 @@ export default function Members() {
 
   const totalPages = Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE);
 
+  // Add a new query for getting all data for exports
+  const { data: allMembersData } = useQuery({
+    queryKey: ["allMembers", selectedCollector],
+    queryFn: async () => {
+      let query = supabase
+        .from("members")
+        .select(`
+          *,
+          members_collectors!members_collectors_member_number_fkey (
+            name,
+            number,
+            active
+          )
+        `);
+
+      // If user is a collector, only show their members
+      if (collectorId) {
+        query = query.eq('collector_id', collectorId);
+      } 
+      // If user is admin and a collector is selected
+      else if (selectedCollector !== 'all') {
+        query = query.eq('collector_id', selectedCollector);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return {
+        members: data,
+        totalCount: data.length
+      };
+    },
+    enabled: false // Only run when exporting
+  });
+
+  // Update the export handlers to use allMembersData
+  const handleExportCSV = async () => {
+    const { data: allData } = await allMembersData.refetch();
+    exportToCSV(
+      allData?.members || [], 
+      `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`
+    );
+  };
+
+  const handleExportPDF = async () => {
+    const { data: allData } = await allMembersData.refetch();
+    generatePDF(
+      allData?.members || [], 
+      `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`
+    );
+  };
+
+  const handleExportExcel = async () => {
+    const { data: allData } = await allMembersData.refetch();
+    exportToExcel(
+      allData?.members || [], 
+      `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
@@ -335,9 +395,9 @@ export default function Members() {
           onSearch={setDebouncedSearchTerm}
           selectedCollector={selectedCollector}
           onCollectorChange={setSelectedCollector}
-          onExportCSV={() => exportToCSV(membersData?.members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
-          onExportPDF={() => generatePDF(membersData?.members || [], `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`)}
-          onExportExcel={() => exportToExcel(membersData?.members || [], `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`)}
+          onExportCSV={handleExportCSV}
+          onExportPDF={handleExportPDF}
+          onExportExcel={handleExportExcel}
           onAddMember={(data) => addMemberMutation.mutate(data)}
           collectors={collectors || []}
           isAdmin={isAdmin}
