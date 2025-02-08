@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchBar } from "./SearchBar";
 import { MemberCard } from "./MemberCard";
 import { DeletedMembersView } from "./DeletedMembersView";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RegistrationView } from "./RegistrationView";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { MemberWithRelations } from "../../../types/member";
 
 export function MemberSearch() {
@@ -166,6 +168,7 @@ export function MemberSearch() {
       <TabsList>
         <TabsTrigger value="active">Active Members</TabsTrigger>
         <TabsTrigger value="deleted">Deleted Members</TabsTrigger>
+        <TabsTrigger value="registrations">Registrations</TabsTrigger>
       </TabsList>
 
       <TabsContent value="active">
@@ -200,6 +203,10 @@ export function MemberSearch() {
 
       <TabsContent value="deleted">
         <DeletedMembersView />
+      </TabsContent>
+
+      <TabsContent value="registrations">
+        <RegistrationView />
       </TabsContent>
     </Tabs>
   );
