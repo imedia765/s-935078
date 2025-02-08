@@ -1,4 +1,3 @@
-
 export interface Database {
   public: {
     Tables: {
@@ -16,7 +15,7 @@ export interface Database {
           metric_name: string
           threshold: number
           severity: 'info' | 'warning' | 'critical'
-          enabled: boolean
+          enabled?: boolean
           created_at?: string
         }
         Update: {
@@ -41,6 +40,7 @@ export interface Database {
             message: string
             timestamp: string
           }
+          created_at: string
         }
         Insert: {
           id?: string
@@ -50,10 +50,11 @@ export interface Database {
           severity: 'info' | 'warning' | 'critical'
           triggered_at?: string
           resolved_at?: string | null
-          details: {
+          details?: {
             message: string
             timestamp: string
           }
+          created_at?: string
         }
         Update: {
           metric_name?: string
@@ -66,6 +67,7 @@ export interface Database {
             message: string
             timestamp: string
           }
+          created_at?: string
         }
       }
       smtp_health_checks: {

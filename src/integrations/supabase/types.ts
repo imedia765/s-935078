@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      active_alerts: {
+        Row: {
+          created_at: string | null
+          current_value: number
+          details: Json | null
+          id: string
+          metric_name: string
+          resolved_at: string | null
+          severity: string | null
+          threshold: number
+          triggered_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_value: number
+          details?: Json | null
+          id?: string
+          metric_name: string
+          resolved_at?: string | null
+          severity?: string | null
+          threshold: number
+          triggered_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_value?: number
+          details?: Json | null
+          id?: string
+          metric_name?: string
+          resolved_at?: string | null
+          severity?: string | null
+          threshold?: number
+          triggered_at?: string | null
+        }
+        Relationships: []
+      }
       archive_settings: {
         Row: {
           archive_criteria: Json | null
@@ -1325,6 +1361,33 @@ export type Database = {
             referencedColumns: ["member_number"]
           },
         ]
+      }
+      monitoring_alert_configs: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          metric_name: string
+          severity: string | null
+          threshold: number
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          metric_name: string
+          severity?: string | null
+          threshold: number
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          metric_name?: string
+          severity?: string | null
+          threshold?: number
+        }
+        Relationships: []
       }
       monitoring_logs: {
         Row: {
@@ -3081,6 +3144,12 @@ export type Database = {
           status: string
           details: Json
         }[]
+      }
+      verify_backup: {
+        Args: {
+          backup_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {
