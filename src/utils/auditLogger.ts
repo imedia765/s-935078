@@ -1,7 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+// Define all possible operations in the application
 type AuditOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE' | 'approve' | 'reject';
+
+// Database expects only these operations
+type DatabaseOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE';
+
 type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 
 interface AuditLogParams {
@@ -13,6 +18,17 @@ interface AuditLogParams {
   severity?: AuditSeverity;
   metadata?: Record<string, any>;
   userId?: string;
+}
+
+// Map custom operations to database operations
+function mapOperationToDatabase(operation: AuditOperation): DatabaseOperation {
+  switch (operation) {
+    case 'approve':
+    case 'reject':
+      return 'update';
+    default:
+      return operation as DatabaseOperation;
+  }
 }
 
 export async function logAuditEvent({
@@ -30,7 +46,7 @@ export async function logAuditEvent({
     const { error } = await supabase
       .from('audit_logs')
       .insert({
-        operation: operation.toUpperCase() as AuditOperation,
+        operation: mapOperationToDatabase(operation),
         table_name: tableName,
         record_id: recordId,
         old_values: oldValues,
@@ -39,6 +55,7 @@ export async function logAuditEvent({
         user_id: user?.id,
         metadata: {
           ...metadata,
+          original_operation: operation, // Store the original operation in metadata
           user_agent: navigator.userAgent,
           timestamp: new Date().toISOString()
         }
