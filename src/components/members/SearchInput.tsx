@@ -10,19 +10,19 @@ interface SearchInputProps {
 }
 
 export function SearchInput({ onSearch, placeholder = "Search..." }: SearchInputProps) {
-  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const debouncedSearch = useCallback(
     debounce((term: string) => {
       onSearch(term);
-    }, 300),
+    }, 500),
     [onSearch]
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTerm = e.target.value;
-    setLocalSearchTerm(newTerm);
-    debouncedSearch(newTerm);
+    const value = e.target.value;
+    setSearchTerm(value);
+    debouncedSearch(value);
   };
 
   return (
@@ -30,7 +30,7 @@ export function SearchInput({ onSearch, placeholder = "Search..." }: SearchInput
       <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
       <Input
         placeholder={placeholder}
-        value={localSearchTerm}
+        value={searchTerm}
         onChange={handleSearchChange}
         className="pl-9 w-full bg-card text-card-foreground"
       />

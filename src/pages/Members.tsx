@@ -111,7 +111,7 @@ export default function Members() {
       }
 
       if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
+        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
       }
 
       if (sortField) {
@@ -308,7 +308,7 @@ export default function Members() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    setPage(1); // Reset to first page when searching
+    setPage(1);
   };
 
   const handleExportCSV = async () => {
