@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,8 +37,7 @@ interface Member {
   gender?: string;
   family_members: any[];
   payment_requests: any[];
-  collector_id: string | null;
-  collector: Collector | null;
+  collector: string | null;
 }
 
 interface CollectorReport {
@@ -86,7 +84,7 @@ export function MemberStats() {
               payment_method,
               created_at
             ),
-            collector:members_collectors!members_collector_id_fkey (
+            members_collectors!inner (
               id,
               name,
               email,
@@ -99,17 +97,10 @@ export function MemberStats() {
           throw error;
         }
 
-        // Properly type and transform the data to match our interfaces
+        // Transform the data to match our interfaces
         const processedData = data?.map(member => ({
           ...member,
-          collector: Array.isArray(member.collector) && member.collector.length > 0
-            ? {
-                id: member.collector[0].id,
-                name: member.collector[0].name,
-                email: member.collector[0].email,
-                phone: member.collector[0].phone
-              }
-            : null
+          collector: member.members_collectors?.name || null
         })) as Member[];
 
         console.log('Processed member stats:', processedData);
