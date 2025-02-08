@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { BackupManagement } from "./maintenance/BackupManagement";
 import { ErrorLogViewer } from "./maintenance/ErrorLogViewer";
 import { PerformanceMetrics } from "./maintenance/PerformanceMetrics";
 import { SecurityDashboard } from "./maintenance/SecurityDashboard";
+import { AlertsDashboard } from "./maintenance/AlertsDashboard";
 import { MaintenanceHistory } from "@/types/maintenance";
 import {
   Table,
@@ -140,6 +140,7 @@ export function MaintenanceManagement() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="resources">System Resources</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts</TabsTrigger>
           <TabsTrigger value="backups">Backups</TabsTrigger>
           <TabsTrigger value="logs">Error Logs</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
@@ -214,6 +215,10 @@ export function MaintenanceManagement() {
 
         <TabsContent value="resources">
           <SystemResources />
+        </TabsContent>
+
+        <TabsContent value="alerts">
+          <AlertsDashboard />
         </TabsContent>
 
         <TabsContent value="backups">
