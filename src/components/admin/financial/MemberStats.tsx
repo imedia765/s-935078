@@ -37,7 +37,7 @@ interface Member {
   gender?: string;
   family_members: any[];
   payment_requests: any[];
-  collector: string | null;
+  members_collectors: Collector | null;
 }
 
 interface CollectorReport {
@@ -98,11 +98,7 @@ export function MemberStats() {
         }
 
         // Transform the data to match our interfaces
-        const processedData = data?.map(member => ({
-          ...member,
-          collector: member.members_collectors?.name || null
-        })) as Member[];
-
+        const processedData = data as Member[];
         console.log('Processed member stats:', processedData);
         return processedData;
       } catch (error) {
@@ -127,18 +123,17 @@ export function MemberStats() {
   const collectorReports: Record<string, CollectorReport> = {};
   
   stats?.forEach(member => {
-    if (!member) return;
+    if (!member || !member.members_collectors) return;
     
-    const collector = member.collector;
-    const collectorId = collector?.id || 'unassigned';
-    const collectorName = collector?.name || 'Unassigned';
+    const collector = member.members_collectors;
+    const collectorId = collector.id;
     
     if (!collectorReports[collectorId]) {
       collectorReports[collectorId] = {
         id: collectorId,
-        name: collectorName,
-        email: collector?.email || null,
-        phone: collector?.phone || null,
+        name: collector.name,
+        email: collector.email,
+        phone: collector.phone,
         members: [],
         totalMembers: 0,
         totalPayments: 0,
