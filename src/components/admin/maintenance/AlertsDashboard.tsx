@@ -6,28 +6,10 @@ import { Bell, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/types/supabase";
 
-interface AlertConfig {
-  id: string;
-  metric_name: string;
-  threshold: number;
-  severity: 'info' | 'warning' | 'critical';
-  enabled: boolean;
-}
-
-interface ActiveAlert {
-  id: string;
-  metric_name: string;
-  current_value: number;
-  threshold: number;
-  severity: 'info' | 'warning' | 'critical';
-  triggered_at: string;
-  resolved_at: string | null;
-  details: {
-    message: string;
-    timestamp: string;
-  };
-}
+type AlertConfig = Database['public']['Tables']['monitoring_alert_configs']['Row'];
+type ActiveAlert = Database['public']['Tables']['active_alerts']['Row'];
 
 export function AlertsDashboard() {
   const { toast } = useToast();
@@ -57,7 +39,7 @@ export function AlertsDashboard() {
       if (error) throw error;
       return data as ActiveAlert[];
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   const handleToggleConfig = async (configId: string, enabled: boolean) => {
