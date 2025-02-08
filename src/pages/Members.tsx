@@ -48,7 +48,6 @@ export default function Members() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // First, get the current user's role and collector ID if they are a collector
   const { data: userInfo } = useQuery({
     queryKey: ["userInfo"],
     queryFn: async () => {
@@ -77,7 +76,6 @@ export default function Members() {
   const isAdmin = userInfo?.roles.includes("admin");
   const collectorId = !isAdmin ? userInfo?.collectorId : null;
 
-  // Get collectors for the dropdown
   const { data: collectors, isLoading: loadingCollectors } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
@@ -91,7 +89,6 @@ export default function Members() {
     }
   });
 
-  // Get members based on user role and filters with pagination
   const { data: membersData, isLoading: loadingMembers } = useQuery({
     queryKey: ["members", selectedCollector, debouncedSearchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
@@ -140,7 +137,6 @@ export default function Members() {
     }
   });
 
-  // Add a new query for getting all data for exports
   const { data: allMembersData, refetch: refetchAllMembers } = useQuery({
     queryKey: ["allMembers", selectedCollector],
     queryFn: async () => {
@@ -173,7 +169,6 @@ export default function Members() {
     enabled: false
   });
 
-  // Add member mutation
   const addMemberMutation = useMutation({
     mutationFn: async (newMember: MemberFormData) => {
       const { data, error } = await supabase
@@ -201,7 +196,6 @@ export default function Members() {
     },
   });
 
-  // Update member mutation
   const updateMemberMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<MemberFormData> }) => {
       const { data: updatedMember, error } = await supabase
@@ -232,7 +226,6 @@ export default function Members() {
     },
   });
 
-  // Delete member mutation with proper error handling
   const deleteMemberMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -259,7 +252,6 @@ export default function Members() {
     },
   });
 
-  // Toggle member status mutation with proper error handling
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
       const newStatus = currentStatus === 'active' ? 'paused' : 'active';
@@ -290,7 +282,6 @@ export default function Members() {
     },
   });
 
-  // Add move member mutation
   const moveMemberMutation = useMutation({
     mutationFn: async ({ memberId, newCollectorId }: { memberId: string; newCollectorId: string }) => {
       const { data, error } = await supabase
@@ -320,6 +311,27 @@ export default function Members() {
       });
     },
   });
+
+  const handleExportCSV = async () => {
+    await refetchAllMembers();
+    if (allMembersData?.members) {
+      exportToCSV(allMembersData.members, 'members_export');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    await refetchAllMembers();
+    if (allMembersData?.members) {
+      generatePDF(allMembersData.members, 'members_export');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    await refetchAllMembers();
+    if (allMembersData?.members) {
+      exportToExcel(allMembersData.members, 'members_export');
+    }
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
