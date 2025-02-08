@@ -21,6 +21,15 @@ INSERT INTO public.permissions (name, description, category) VALUES
     ('manage_backups', 'Can manage database backups', 'database')
 ON CONFLICT (name) DO NOTHING;
 
+-- Create role_permissions table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.role_permissions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    role text NOT NULL,
+    permission_name text NOT NULL REFERENCES permissions(name),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(role, permission_name)
+);
+
 -- Function to update role permissions
 CREATE OR REPLACE FUNCTION public.update_role_permissions(
     permissions_array jsonb

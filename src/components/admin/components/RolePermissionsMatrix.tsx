@@ -30,15 +30,18 @@ export function RolePermissionsMatrix() {
     queryKey: ["rolePermissions"],
     queryFn: async () => {
       const [{ data: roles }, { data: perms }] = await Promise.all([
-        supabase.from('roles').select('*'),
+        supabase.from('user_roles').select('role').distinct(),
         supabase.from('permissions').select('*')
       ]);
 
       if (!roles || !perms) throw new Error("Failed to fetch roles or permissions");
 
-      const matrix = roles.flatMap(role =>
+      // Get unique roles
+      const uniqueRoles = [...new Set(roles.map(r => r.role))];
+
+      const matrix = uniqueRoles.flatMap(role =>
         perms.map(perm => ({
-          role: role.name,
+          role: role,
           permission_name: perm.name,
           granted: false
         }))
@@ -61,7 +64,7 @@ export function RolePermissionsMatrix() {
 
       setPermissions(matrix);
       return {
-        roles: roles,
+        roles: uniqueRoles,
         permissions: perms as Permission[]
       };
     }
