@@ -31,31 +31,38 @@ export function RolePermissionsMatrix() {
   const { data: rolePermissions, isLoading } = useQuery({
     queryKey: ["rolePermissions"],
     queryFn: async () => {
-      const [rolesResult, permsResult] = await Promise.all([
-        supabase.from('user_roles').select('role').eq('role', 'admin'),
-        supabase.from('role_permissions').select('*')
-      ]);
+      // Fetch the base permissions first
+      const { data: basePermissions, error: permError } = await supabase
+        .from('permissions')
+        .select('*');
 
-      if (!rolesResult.data || !permsResult.data) {
-        throw new Error("Failed to fetch roles or permissions");
+      if (permError || !basePermissions) {
+        throw new Error("Failed to fetch base permissions");
       }
 
-      const roles = rolesResult.data as { role: AppRole }[];
-      const perms = permsResult.data as Permission[];
+      // Then fetch the roles
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('role', 'admin');
 
-      // Get unique roles
-      const uniqueRoles = Array.from(new Set(roles.map(r => r.role)));
+      if (rolesError || !roles) {
+        throw new Error("Failed to fetch roles");
+      }
+
+      const uniqueRoles = Array.from(new Set(roles.map(r => r.role))) as AppRole[];
+      const permissions = basePermissions as Permission[];
 
       // Create matrix
       const matrix: RolePermission[] = uniqueRoles.flatMap(role =>
-        perms.map(p => ({
+        permissions.map(p => ({
           role,
           permission_name: p.name,
           granted: false
         }))
       );
 
-      // Get existing permissions
+      // Get existing role permissions
       const { data: existingPerms } = await supabase
         .from('role_permissions')
         .select('*');
@@ -74,7 +81,7 @@ export function RolePermissionsMatrix() {
       setPermissions(matrix);
       return {
         roles: uniqueRoles,
-        permissions: perms
+        permissions: permissions
       };
     }
   });
