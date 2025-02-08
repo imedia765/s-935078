@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateReceipt, saveReceiptToStorage } from "@/utils/receiptGenerator";
 import { sendPaymentNotification } from "@/utils/emailNotifications";
+import { validatePayment } from "@/utils/financialValidation";
+import { logFinancialEvent, validateFinancialAccess } from "@/utils/financialAuditLogger";
 import type { Payment } from "../types";
 
 export function useFinancialMutations() {
@@ -12,15 +14,15 @@ export function useFinancialMutations() {
 
   const approveMutation = useMutation({
     mutationFn: async (paymentId: string) => {
-      // First approve the payment
-      const { data: paymentData, error: approvalError } = await supabase
+      // Validate access rights first
+      const hasAccess = await validateFinancialAccess('approve', 'admin');
+      if (!hasAccess) {
+        throw new Error('Unauthorized: Insufficient permissions to approve payments');
+      }
+
+      // Fetch payment data first
+      const { data: paymentData, error: fetchError } = await supabase
         .from('payment_requests')
-        .update({ 
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .eq('id', paymentId)
         .select(`
           *,
           members!payment_requests_member_id_fkey (
@@ -32,42 +34,48 @@ export function useFinancialMutations() {
             name
           )
         `)
+        .eq('id', paymentId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      if (!paymentData) throw new Error('Payment not found');
+
+      // Validate payment data
+      const validation = validatePayment(paymentData);
+      if (!validation.valid) {
+        throw new Error(`Invalid payment data: ${validation.error}`);
+      }
+
+      // Approve the payment
+      const { data: approvedPayment, error: approvalError } = await supabase
+        .from('payment_requests')
+        .update({ 
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          approved_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', paymentId)
+        .select()
         .single();
       
       if (approvalError) throw approvalError;
-      if (!paymentData) throw new Error('No payment data returned');
 
-      const payment = paymentData as unknown as Payment;
+      // Log the approval
+      await logFinancialEvent('approve', paymentData, {
+        approved_at: new Date().toISOString(),
+        payment_id: paymentId
+      });
+
+      const payment = approvedPayment as unknown as Payment;
 
       // Generate and store receipt
       const receiptBlob = await generateReceipt(payment);
       const receiptUrl = await saveReceiptToStorage(payment, receiptBlob);
 
-      // Create a new receipt record
-      const { error: receiptError } = await supabase
-        .from('receipts')
-        .insert({
-          payment_id: paymentId,
-          receipt_number: `RCP-${Date.now()}`,
-          receipt_url: receiptUrl,
-          generated_at: new Date().toISOString()
-        });
-
-      if (receiptError) throw receiptError;
-
       // Send confirmation email
       await sendPaymentNotification(payment, 'confirmation');
 
-      // If this is a late payment, also send a late notice
-      if (payment.due_date) {
-        const dueDate = new Date(payment.due_date);
-        if (dueDate < new Date()) {
-          const daysLate = Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysLate > 0) {
-            await sendPaymentNotification(payment, 'late', { daysLate });
-          }
-        }
-      }
+      return { payment, receiptUrl };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -87,6 +95,27 @@ export function useFinancialMutations() {
 
   const deleteMutation = useMutation({
     mutationFn: async (paymentId: string) => {
+      // Validate access rights first
+      const hasAccess = await validateFinancialAccess('delete', 'admin');
+      if (!hasAccess) {
+        throw new Error('Unauthorized: Insufficient permissions to delete payments');
+      }
+
+      // Fetch payment data before deletion for audit log
+      const { data: paymentData, error: fetchError } = await supabase
+        .from('payment_requests')
+        .select('*')
+        .eq('id', paymentId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Log deletion attempt before actual deletion
+      await logFinancialEvent('delete', paymentData, {
+        deleted_at: new Date().toISOString(),
+        payment_id: paymentId
+      });
+
       const { error } = await supabase
         .from('payment_requests')
         .delete()
@@ -115,4 +144,3 @@ export function useFinancialMutations() {
     deleteMutation
   };
 }
-
