@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberWithRelations, validateField } from "@/types/member";
+import { useSessionPersistence } from "./useSessionPersistence";
 
 export function useProfileManagement() {
   const [memberData, setMemberData] = useState<MemberWithRelations | null>(null);
@@ -16,14 +17,27 @@ export function useProfileManagement() {
   const [isEditFamilyMemberOpen, setIsEditFamilyMemberOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({
+    profile: false,
+    familyMembers: false,
+    payments: false,
+    documents: false
+  });
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const familyMemberRef = useRef<any>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const { sessionChecked, setSessionChecked } = useSessionPersistence();
 
-  const fetchData = async () => {
+  const setLoadingState = (key: keyof typeof loadingStates, value: boolean) => {
+    setLoadingStates(prev => ({ ...prev, [key]: value }));
+  };
+
+  const fetchData = async (retryCount = 0) => {
     try {
       setError(null);
+      setLoadingState('profile', true);
       console.log("[useProfileManagement] Starting profile data fetch");
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -31,6 +45,11 @@ export function useProfileManagement() {
       
       if (!user) {
         console.log("[useProfileManagement] No user found, redirecting to login");
+        toast({
+          title: "Session Expired",
+          description: "Please log in again to continue",
+          variant: "destructive",
+        });
         navigate("/");
         return;
       }
@@ -42,7 +61,11 @@ export function useProfileManagement() {
         .eq('auth_user_id', user.id)
         .maybeSingle();
 
-      console.log("[useProfileManagement] Email audit data:", { emailAudit, emailAuditError });
+      if (emailAuditError) {
+        throw new Error(`Failed to fetch email audit: ${emailAuditError.message}`);
+      }
+
+      console.log("[useProfileManagement] Email audit data:", { emailAudit });
 
       let memberNumber = emailAudit?.member_number;
 
@@ -65,9 +88,12 @@ export function useProfileManagement() {
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
+      if (memberError) {
+        throw new Error(`Failed to fetch member data: ${memberError.message}`);
+      }
+
       console.log("[useProfileManagement] Member data fetch result:", {
         member,
-        memberError,
         userId: user.id
       });
 
@@ -92,8 +118,10 @@ export function useProfileManagement() {
           .maybeSingle();
 
         if (memberByNumberError) {
-          console.error("[useProfileManagement] Error fetching by member number:", memberByNumberError);
-        } else if (memberByNumber) {
+          throw new Error(`Failed to fetch member by number: ${memberByNumberError.message}`);
+        }
+
+        if (memberByNumber) {
           console.log("[useProfileManagement] Found member by number:", memberByNumber);
           
           // Update auth_user_id
@@ -103,20 +131,20 @@ export function useProfileManagement() {
             .eq('id', memberByNumber.id);
 
           if (updateError) {
-            console.error("[useProfileManagement] Error updating auth_user_id:", updateError);
-          } else {
-            const memberWithRoles: MemberWithRelations = {
-              ...memberByNumber,
-              user_roles: [],
-              roles: [],
-              member_notes: memberByNumber.member_notes || [],
-              family_members: memberByNumber.family_members || [],
-              payment_requests: memberByNumber.payment_requests || []
-            };
-            setMemberData(memberWithRoles);
-            setEditedData(memberWithRoles);
-            return;
+            throw new Error(`Failed to update auth_user_id: ${updateError.message}`);
           }
+
+          const memberWithRoles: MemberWithRelations = {
+            ...memberByNumber,
+            user_roles: [],
+            roles: [],
+            member_notes: memberByNumber.member_notes || [],
+            family_members: memberByNumber.family_members || [],
+            payment_requests: memberByNumber.payment_requests || []
+          };
+          setMemberData(memberWithRoles);
+          setEditedData(memberWithRoles);
+          return;
         }
       }
 
@@ -126,13 +154,11 @@ export function useProfileManagement() {
         .select("role")
         .eq("user_id", user.id);
 
-      console.log("[useProfileManagement] User roles fetch result:", {
-        roles,
-        rolesError
-      });
+      if (rolesError) {
+        throw new Error(`Failed to fetch user roles: ${rolesError.message}`);
+      }
 
       if (member) {
-        // Transform the data to match MemberWithRelations type
         const memberWithRelations: MemberWithRelations = {
           ...member,
           user_roles: roles?.map(r => ({ role: r.role })) || [],
@@ -161,13 +187,29 @@ export function useProfileManagement() {
     } catch (error: any) {
       console.error("[useProfileManagement] Error in fetchData:", error);
       setError(error.message);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message
-      });
+      
+      // Implement exponential backoff for retries
+      if (retryCount < 3) {
+        const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        toast({
+          title: "Connection Error",
+          description: `Retrying in ${retryDelay/1000} seconds...`,
+          variant: "destructive",
+        });
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchData(retryCount + 1);
+        }, retryDelay);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load profile data. Please try again later.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setLoading(false);
+      setLoadingState('profile', false);
+      setSessionChecked(true);
     }
   };
 
@@ -293,12 +335,10 @@ export function useProfileManagement() {
     setUploadingPhoto(true);
 
     try {
-      // Validate file size
       if (file.size > 5 * 1024 * 1024) {
         throw new Error('File size must be less than 5MB');
       }
 
-      // Validate file type
       if (!['image/jpeg', 'image/png'].includes(file.type)) {
         throw new Error('Only JPEG and PNG files are allowed');
       }
@@ -343,6 +383,7 @@ export function useProfileManagement() {
   const handleCancel = () => {
     setEditedData(memberData);
     setIsEditing(false);
+    setValidationErrors({});
   };
 
   const handleEdit = () => {
@@ -398,6 +439,12 @@ export function useProfileManagement() {
     };
 
     initializeProfile();
+
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, [navigate]);
 
   return {
@@ -411,7 +458,8 @@ export function useProfileManagement() {
     saving,
     isAddFamilyMemberOpen,
     isEditFamilyMemberOpen,
-    selectedFamilyMember: familyMemberRef.current,
+    loadingStates,
+    selectedFamilyMember: familyMemberRef,
     handleInputChange,
     handleSave,
     handleCancel,
@@ -420,14 +468,51 @@ export function useProfileManagement() {
     setIsAddFamilyMemberOpen,
     setIsEditFamilyMemberOpen,
     fetchData,
-    handleAddFamilyMember,
-    handleViewDocument,
-    handleDownloadDocument,
+    handleAddFamilyMember: async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      
+      try {
+        setLoadingState('familyMembers', true);
+        const relationship = formData.get('relationship')?.toString() || '';
+        const familyMemberNumber = generateFamilyMemberNumber(memberData?.member_number || '', relationship);
+
+        const { error } = await supabase
+          .from('family_members')
+          .insert({
+            member_id: memberData?.id,
+            family_member_number: familyMemberNumber,
+            full_name: formData.get('full_name')?.toString() || '',
+            relationship: relationship,
+            date_of_birth: formData.get('date_of_birth')?.toString() || null,
+            gender: formData.get('gender')?.toString() || null
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Family member added successfully"
+        });
+        
+        setIsAddFamilyMemberOpen(false);
+        fetchData();
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message
+        });
+      } finally {
+        setLoadingState('familyMembers', false);
+      }
+    },
     handleEditFamilyMember: async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const formData = new FormData(e.currentTarget);
       
       try {
+        setLoadingState('familyMembers', true);
         const { error } = await supabase
           .from('family_members')
           .update({
@@ -447,17 +532,20 @@ export function useProfileManagement() {
         
         setIsEditFamilyMemberOpen(false);
         familyMemberRef.current = null;
-        fetchData(); // Refresh data
+        fetchData();
       } catch (error: any) {
         toast({
           variant: "destructive",
           title: "Error",
           description: error.message
         });
+      } finally {
+        setLoadingState('familyMembers', false);
       }
     },
     handleDeleteFamilyMember: async (id: string) => {
       try {
+        setLoadingState('familyMembers', true);
         const { error } = await supabase
           .from('family_members')
           .delete()
@@ -470,13 +558,15 @@ export function useProfileManagement() {
           description: "Family member removed successfully"
         });
         
-        fetchData(); // Refresh data
+        fetchData();
       } catch (error: any) {
         toast({
           variant: "destructive",
           title: "Error",
           description: error.message
         });
+      } finally {
+        setLoadingState('familyMembers', false);
       }
     }
   };
