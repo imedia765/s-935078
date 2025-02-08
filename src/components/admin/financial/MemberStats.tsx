@@ -68,7 +68,6 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        // Updated query to use proper collector relationship
         const { data, error } = await supabase
           .from('members')
           .select(`
@@ -100,13 +99,19 @@ export function MemberStats() {
           throw error;
         }
 
+        // Properly type and transform the data to match our interfaces
         const processedData = data?.map(member => ({
           ...member,
-          collector: member.collector || null
-        }));
+          collector: member.collector ? {
+            id: member.collector.id,
+            name: member.collector.name,
+            email: member.collector.email,
+            phone: member.collector.phone
+          } : null
+        })) as Member[];
 
         console.log('Processed member stats:', processedData);
-        return processedData as Member[];
+        return processedData;
       } catch (error) {
         console.error('Error in memberStats query:', error);
         throw error;
