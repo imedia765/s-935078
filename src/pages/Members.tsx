@@ -35,7 +35,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function Members() {
   const [selectedCollector, setSelectedCollector] = useState<string>('all');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('full_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -90,7 +90,7 @@ export default function Members() {
   });
 
   const { data: membersData, isLoading: loadingMembers } = useQuery({
-    queryKey: ["members", selectedCollector, debouncedSearchTerm, sortField, sortDirection, collectorId, page],
+    queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
       let query = supabase
         .from("members")
@@ -110,6 +110,10 @@ export default function Members() {
         query = query.eq('collector_id', selectedCollector);
       }
 
+      if (searchTerm) {
+        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%`);
+      }
+
       if (sortField) {
         query = query.order(sortField, { ascending: sortDirection === 'asc' });
       }
@@ -120,18 +124,8 @@ export default function Members() {
       const { data, error, count } = await query;
       if (error) throw error;
 
-      let filteredData = data;
-      if (debouncedSearchTerm) {
-        const searchLower = debouncedSearchTerm.toLowerCase();
-        filteredData = data.filter((member: any) => 
-          member.full_name?.toLowerCase().includes(searchLower) ||
-          member.email?.toLowerCase().includes(searchLower) ||
-          member.member_number?.toLowerCase().includes(searchLower)
-        );
-      }
-
       return {
-        members: filteredData,
+        members: data || [],
         totalCount: count || 0
       };
     }
@@ -358,7 +352,7 @@ export default function Members() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
         <MembersToolbar
-          onSearch={setDebouncedSearchTerm}
+          onSearch={setSearchTerm}
           selectedCollector={selectedCollector}
           onCollectorChange={setSelectedCollector}
           onExportCSV={handleExportCSV}
