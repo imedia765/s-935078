@@ -1,7 +1,6 @@
 
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { memo } from "react";
 
 interface SearchInputProps {
   value: string;
@@ -9,7 +8,7 @@ interface SearchInputProps {
   placeholder?: string;
 }
 
-export const SearchInput = memo(function SearchInput({ 
+export function SearchInput({ 
   value, 
   onSearch, 
   placeholder = "Search..." 
@@ -25,5 +24,4 @@ export const SearchInput = memo(function SearchInput({
       />
     </div>
   );
-});
-
+}
