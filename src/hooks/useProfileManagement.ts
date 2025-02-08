@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MemberWithRelations, validateField } from "@/types/member";
 import { useSessionPersistence } from "./useSessionPersistence";
+import { matchAndLinkProfile } from "@/utils/profileMatcher";
 
 export function useProfileManagement() {
   const [memberData, setMemberData] = useState<MemberWithRelations | null>(null);
@@ -54,7 +55,7 @@ export function useProfileManagement() {
         return;
       }
 
-      // Get member number from email_audit table - now handling multiple records
+      // Get member number from email_audit table
       const { data: emailAuditRecords, error: emailAuditError } = await supabase
         .from('email_audit')
         .select('member_number')
@@ -70,6 +71,21 @@ export function useProfileManagement() {
       console.log("[useProfileManagement] Email audit data:", { emailAudit });
 
       let memberNumber = emailAudit?.member_number || user.user_metadata?.member_number;
+
+      if (memberNumber) {
+        // Try to match and link the profile
+        const matchResult = await matchAndLinkProfile(user.id, memberNumber);
+        
+        if (!matchResult.success) {
+          console.error("[useProfileManagement] Profile matching failed:", matchResult.error);
+          toast({
+            title: "Profile Error",
+            description: matchResult.error,
+            variant: "destructive",
+          });
+          // Continue anyway to try fetching the profile
+        }
+      }
 
       // Then fetch member data with explicit relationship specification
       const { data: member, error: memberError } = await supabase
@@ -92,57 +108,6 @@ export function useProfileManagement() {
 
       if (memberError) {
         throw new Error(`Failed to fetch member data: ${memberError.message}`);
-      }
-
-      if (!member && memberNumber) {
-        console.log("[useProfileManagement] Attempting to fetch by member number:", memberNumber);
-        const { data: memberByNumber, error: memberByNumberError } = await supabase
-          .from("members")
-          .select(`
-            *,
-            family_members (*),
-            member_notes (*),
-            payment_requests!payment_requests_member_id_fkey (
-              id,
-              payment_type,
-              amount,
-              status,
-              created_at,
-              payment_number
-            )
-          `)
-          .eq("member_number", memberNumber)
-          .maybeSingle();
-
-        if (memberByNumberError) {
-          throw new Error(`Failed to fetch member by number: ${memberByNumberError.message}`);
-        }
-
-        if (memberByNumber) {
-          console.log("[useProfileManagement] Found member by number:", memberByNumber);
-          
-          // Update auth_user_id
-          const { error: updateError } = await supabase
-            .from('members')
-            .update({ auth_user_id: user.id })
-            .eq('id', memberByNumber.id);
-
-          if (updateError) {
-            throw new Error(`Failed to update auth_user_id: ${updateError.message}`);
-          }
-
-          const memberWithRoles: MemberWithRelations = {
-            ...memberByNumber,
-            user_roles: [],
-            roles: [],
-            member_notes: memberByNumber.member_notes || [],
-            family_members: memberByNumber.family_members || [],
-            payment_requests: memberByNumber.payment_requests || []
-          };
-          setMemberData(memberWithRoles);
-          setEditedData(memberWithRoles);
-          return;
-        }
       }
 
       // Get user roles
@@ -185,9 +150,8 @@ export function useProfileManagement() {
       console.error("[useProfileManagement] Error in fetchData:", error);
       setError(error.message);
       
-      // Implement exponential backoff for retries
       if (retryCount < 3) {
-        const retryDelay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        const retryDelay = Math.pow(2, retryCount) * 1000;
         toast({
           title: "Connection Error",
           description: `Retrying in ${retryDelay/1000} seconds...`,
