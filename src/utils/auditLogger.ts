@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-type AuditOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE';
+type AuditOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE' | 'approve' | 'reject';
 type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 
 interface AuditLogParams {
@@ -12,6 +12,7 @@ interface AuditLogParams {
   newValues?: any;
   severity?: AuditSeverity;
   metadata?: Record<string, any>;
+  userId?: string;
 }
 
 export async function logAuditEvent({
@@ -68,4 +69,3 @@ export async function getAuditLogs(tableName?: string, recordId?: string) {
   if (error) throw error;
   return data;
 }
-
