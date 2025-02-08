@@ -12,7 +12,7 @@ import { useFamilyMembers } from "./profile/useFamilyMembers";
 export function useProfileManagement() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { sessionChecked, setSessionChecked } = useSessionPersistence();
+  const { sessionChecked, sessionExpiring } = useSessionPersistence();
 
   const {
     memberData,
@@ -75,6 +75,17 @@ export function useProfileManagement() {
           navigate("/");
           return;
         }
+
+        // If session is expiring soon and user is editing, show warning
+        if (sessionExpiring && isEditing) {
+          toast({
+            title: "Warning",
+            description: "Your session is expiring soon. Please save your changes.",
+            variant: "destructive",
+            duration: 10000,
+          });
+        }
+
         await fetchData();
       } catch (error: any) {
         console.error("[useProfileManagement] Session check error:", error);
@@ -88,7 +99,7 @@ export function useProfileManagement() {
     };
 
     initializeProfile();
-  }, [navigate]);
+  }, [navigate, sessionExpiring, isEditing]);
 
   return {
     memberData,
