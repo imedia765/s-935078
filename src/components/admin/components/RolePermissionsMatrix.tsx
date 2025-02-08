@@ -32,13 +32,15 @@ export function RolePermissionsMatrix() {
     queryKey: ["rolePermissions"],
     queryFn: async () => {
       // Fetch the base permissions first
-      const { data: basePermissions, error: permError } = await supabase
-        .from('permissions')
-        .select('*');
+      const { data: basePermissionsData, error: permError } = await supabase
+        .from('app_permissions')
+        .select('id, name, description, category');
 
-      if (permError || !basePermissions) {
+      if (permError || !basePermissionsData) {
         throw new Error("Failed to fetch base permissions");
       }
+
+      const basePermissions = basePermissionsData as unknown as Permission[];
 
       // Then fetch the roles
       const { data: roles, error: rolesError } = await supabase
@@ -51,11 +53,10 @@ export function RolePermissionsMatrix() {
       }
 
       const uniqueRoles = Array.from(new Set(roles.map(r => r.role))) as AppRole[];
-      const permissions = basePermissions as Permission[];
 
       // Create matrix
       const matrix: RolePermission[] = uniqueRoles.flatMap(role =>
-        permissions.map(p => ({
+        basePermissions.map(p => ({
           role,
           permission_name: p.name,
           granted: false
@@ -81,7 +82,7 @@ export function RolePermissionsMatrix() {
       setPermissions(matrix);
       return {
         roles: uniqueRoles,
-        permissions: permissions
+        permissions: basePermissions
       };
     }
   });
@@ -98,15 +99,23 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase.from('role_permissions')
-        .upsert(
+      // First, clear existing permissions
+      await supabase
+        .from('role_permissions')
+        .delete()
+        .neq('role', 'invalid');  // Delete all rows
+
+      // Then insert new permissions
+      const { error } = await supabase
+        .from('role_permissions')
+        .insert(
           permissions
             .filter(p => p.granted)
             .map(({ role, permission_name }) => ({
               role,
               permission_name,
               created_at: new Date().toISOString(),
-              description: `Permission ${permission_name} for role ${role}`
+              updated_at: new Date().toISOString()
             }))
         );
 
