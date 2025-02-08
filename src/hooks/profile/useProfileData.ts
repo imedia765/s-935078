@@ -120,6 +120,7 @@ export function useProfileData(): UseProfileDataReturn {
             emergency_collection_status,
             emergency_collection_amount,
             emergency_collection_due_date,
+            failed_login_attempts,
             family_members (
               id,
               full_name,
@@ -165,6 +166,7 @@ export function useProfileData(): UseProfileDataReturn {
             member_notes: member.member_notes || [],
             family_members: member.family_members || [],
             payment_requests: member.payment_requests || [],
+            failed_login_attempts: member.failed_login_attempts || 0
           };
           
           return memberWithRelations;
@@ -179,7 +181,7 @@ export function useProfileData(): UseProfileDataReturn {
       }
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
-    cacheTime: 5 * 60 * 1000, // Keep cached data for 5 minutes
+    gcTime: 5 * 60 * 1000, // Keep cached data for 5 minutes (replaced cacheTime with gcTime)
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 30000),
   });
