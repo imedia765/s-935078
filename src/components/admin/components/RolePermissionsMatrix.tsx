@@ -40,19 +40,18 @@ export function RolePermissionsMatrix() {
         throw new Error("Failed to fetch base permissions");
       }
 
-      const basePermissions = basePermissionsData as unknown as Permission[];
+      const basePermissions = basePermissionsData as Permission[];
 
       // Then fetch the roles
-      const { data: roles, error: rolesError } = await supabase
+      const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('role')
-        .eq('role', 'admin');
+        .select('role');
 
-      if (rolesError || !roles) {
+      if (rolesError || !rolesData) {
         throw new Error("Failed to fetch roles");
       }
 
-      const uniqueRoles = Array.from(new Set(roles.map(r => r.role))) as AppRole[];
+      const uniqueRoles = Array.from(new Set(rolesData.map(r => r.role))) as AppRole[];
 
       // Create matrix
       const matrix: RolePermission[] = uniqueRoles.flatMap(role =>
@@ -115,8 +114,7 @@ export function RolePermissionsMatrix() {
             .map(({ role, permission_name }) => ({
               role,
               permission_name,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              created_at: new Date().toISOString()
             }))
         );
 
