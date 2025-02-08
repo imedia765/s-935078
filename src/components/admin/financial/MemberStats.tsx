@@ -17,11 +17,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 import { generatePDF } from "@/utils/exportUtils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function MemberStats() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, error } = useQuery({
     queryKey: ["memberStats"],
     queryFn: async () => {
       console.log('Fetching member stats...');
@@ -57,7 +58,6 @@ export function MemberStats() {
           throw error;
         }
 
-        // Ensure we handle the case where members_collectors might be null
         const processedData = data?.map(member => ({
           ...member,
           members_collectors: member.members_collectors || []
@@ -83,7 +83,6 @@ export function MemberStats() {
     unspecified: stats?.filter(m => !m.gender)?.length || 0,
   };
 
-  // Group members by collector
   const collectorReports = stats?.reduce((acc: any, member) => {
     const collectorId = member.collector_id;
     const collector = member.members_collectors?.[0];
@@ -104,7 +103,6 @@ export function MemberStats() {
       };
     }
 
-    // Calculate payment statistics
     const memberPayments = member.payment_requests || [];
     const totalPayments = memberPayments.length;
     const approvedPayments = memberPayments.filter(p => p.status === 'approved').length;
@@ -146,11 +144,30 @@ export function MemberStats() {
     generatePDF(reportData, title);
   };
 
-  if (isLoading) return <div>Loading member statistics...</div>;
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Error Loading Member Statistics</AlertTitle>
+        <AlertDescription>
+          {error instanceof Error ? error.message : 'Failed to load member statistics'}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading member statistics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 glass-card">
           <h3 className="text-lg font-semibold">Total Members</h3>
@@ -170,7 +187,6 @@ export function MemberStats() {
         </Card>
       </div>
 
-      {/* Collector Reports */}
       <Card className="p-6 glass-card">
         <h2 className="text-xl font-semibold mb-4 text-gradient">Collector Reports</h2>
         <Accordion type="single" collapsible className="w-full space-y-4">
