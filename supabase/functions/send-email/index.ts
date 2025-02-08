@@ -1,18 +1,54 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
-import { throttle } from "https://deno.land/x/throttle@v1.0.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple in-memory rate limiter
+class RateLimiter {
+  private tokens: number;
+  private lastRefill: number;
+  private readonly rate: number;
+  private readonly interval: number;
+
+  constructor(rate: number, interval: number) {
+    this.tokens = rate;
+    this.lastRefill = Date.now();
+    this.rate = rate;
+    this.interval = interval;
+  }
+
+  private refillTokens() {
+    const now = Date.now();
+    const timePassed = now - this.lastRefill;
+    const tokensToAdd = Math.floor(timePassed / this.interval) * this.rate;
+    
+    if (tokensToAdd > 0) {
+      this.tokens = Math.min(this.rate, this.tokens + tokensToAdd);
+      this.lastRefill = now;
+    }
+  }
+
+  tryAcquire(): boolean {
+    this.refillTokens();
+    if (this.tokens > 0) {
+      this.tokens--;
+      return true;
+    }
+    return false;
+  }
+
+  getCurrentCount(): number {
+    this.refillTokens();
+    return this.tokens;
+  }
+}
+
 // Rate limiting setup - 100 emails per hour
-const rateLimiter = throttle({
-  rate: 100,
-  interval: 60 * 60 * 1000, // 1 hour
-});
+const rateLimiter = new RateLimiter(100, 60 * 60 * 1000);
 
 interface SmtpConfig {
   host: string;
@@ -52,7 +88,7 @@ serve(async (req) => {
 
   try {
     // Check rate limit
-    if (!rateLimiter.tryRemoveTokens(1)) {
+    if (!rateLimiter.tryAcquire()) {
       throw new Error('Rate limit exceeded. Please try again later.');
     }
 
