@@ -4,7 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Payment, Collector } from "../types";
 
 export function useFinancialQueries() {
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+  const { 
+    data: paymentsData, 
+    isLoading: loadingPayments,
+    error: paymentsError
+  } = useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
       console.log('Fetching payments...');
@@ -19,7 +23,8 @@ export function useFinancialQueries() {
           created_at,
           payment_number,
           members!payment_requests_member_number_fkey (
-            full_name
+            full_name,
+            email
           ),
           members_collectors!payment_requests_collector_id_fkey (
             id,
@@ -40,10 +45,18 @@ export function useFinancialQueries() {
       }
       console.log('Fetched payments:', data);
       return data as Payment[];
-    }
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    gcTime: 1000 * 60 * 10, // Keep unused data for 10 minutes
+    retry: 2
   });
 
-  const { data: collectors, isLoading: isLoadingCollectors, refetch: refetchCollectors } = useQuery({
+  const { 
+    data: collectors, 
+    isLoading: isLoadingCollectors,
+    refetch: refetchCollectors,
+    error: collectorsError 
+  } = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
       console.log('Fetching collectors...');
@@ -70,14 +83,20 @@ export function useFinancialQueries() {
       }
       console.log('Fetched collectors:', data);
       return data as unknown as Collector[];
-    }
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    retry: 2
   });
+
+  const error = paymentsError || collectorsError;
 
   return {
     paymentsData,
     loadingPayments,
     collectors,
     isLoadingCollectors,
-    refetchCollectors
+    refetchCollectors,
+    error: error as Error | null
   };
 }
