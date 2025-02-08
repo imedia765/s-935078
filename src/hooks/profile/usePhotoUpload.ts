@@ -52,7 +52,15 @@ export function usePhotoUpload(
 
       if (updateError) throw updateError;
 
-      setMemberData(prev => prev ? { ...prev, photo_url: publicUrl } : null);
+      // Update member data with new photo URL
+      if (memberData) {
+        const updatedMemberData: MemberWithRelations = {
+          ...memberData,
+          photo_url: publicUrl
+        };
+        setMemberData(updatedMemberData);
+      }
+
       toast({
         title: "Success",
         description: "Profile photo updated successfully"
