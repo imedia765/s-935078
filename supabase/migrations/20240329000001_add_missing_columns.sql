@@ -1,13 +1,12 @@
 
--- Create the tables if they don't exist
+-- First ensure the tables exist
 CREATE TABLE IF NOT EXISTS public.email_audit (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     auth_user_id UUID REFERENCES auth.users(id),
     member_number TEXT,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
-    status TEXT,
-    metadata JSONB DEFAULT '{}'::jsonb
+    status TEXT
 );
 
 CREATE TABLE IF NOT EXISTS public.audit_logs (
@@ -19,9 +18,28 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     old_values JSONB,
     new_values JSONB,
     created_at TIMESTAMPTZ DEFAULT now(),
-    severity TEXT DEFAULT 'info',
-    metadata JSONB DEFAULT '{}'::jsonb
+    severity TEXT DEFAULT 'info'
 );
+
+-- Add metadata columns if they don't exist
+DO $$ 
+BEGIN
+    -- Add metadata column to email_audit if it doesn't exist
+    IF NOT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'email_audit' AND column_name = 'metadata'
+    ) THEN
+        ALTER TABLE public.email_audit ADD COLUMN metadata JSONB DEFAULT '{}'::jsonb;
+    END IF;
+
+    -- Add metadata column to audit_logs if it doesn't exist
+    IF NOT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'audit_logs' AND column_name = 'metadata'
+    ) THEN
+        ALTER TABLE public.audit_logs ADD COLUMN metadata JSONB DEFAULT '{}'::jsonb;
+    END IF;
+END $$;
 
 -- Add indices for better query performance
 CREATE INDEX IF NOT EXISTS idx_email_audit_status ON public.email_audit(status);
