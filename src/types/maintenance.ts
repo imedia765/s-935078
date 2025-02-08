@@ -27,6 +27,19 @@ export interface PerformanceMetrics {
   query_times: Array<{ timestamp: string; value: number }>;
   api_performance: Array<{ timestamp: string; value: number }>;
   cache_hits: Array<{ timestamp: string; value: number }>;
+  query_stats: Array<{
+    query_id: string;
+    execution_time: number;
+    rows_affected: number;
+    cache_hits: number;
+    index_usage: number;
+  }>;
+  index_recommendations: Array<{
+    table_name: string;
+    column_name: string;
+    benefit_score: number;
+    recommendation: string;
+  }>;
 }
 
 export interface SecurityMetrics {
