@@ -1,26 +1,39 @@
 
--- This migration ensures all required columns exist and have proper indexes
+-- Create the tables if they don't exist
+CREATE TABLE IF NOT EXISTS public.email_audit (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    auth_user_id UUID REFERENCES auth.users(id),
+    member_number TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    status TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb
+);
 
--- Add status column to email_audit table if it doesn't exist
-ALTER TABLE IF EXISTS public.email_audit
-ADD COLUMN IF NOT EXISTS status TEXT;
-
--- Add metadata column to email_audit table if it doesn't exist
-ALTER TABLE IF EXISTS public.email_audit
-ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
-
--- Add metadata column to audit_logs table if it doesn't exist
-ALTER TABLE IF EXISTS public.audit_logs
-ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id),
+    operation TEXT NOT NULL,
+    table_name TEXT NOT NULL,
+    record_id TEXT,
+    old_values JSONB,
+    new_values JSONB,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    severity TEXT DEFAULT 'info',
+    metadata JSONB DEFAULT '{}'::jsonb
+);
 
 -- Add indices for better query performance
 CREATE INDEX IF NOT EXISTS idx_email_audit_status ON public.email_audit(status);
 CREATE INDEX IF NOT EXISTS idx_email_audit_metadata ON public.email_audit USING gin (metadata);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_metadata ON public.audit_logs USING gin (metadata);
+CREATE INDEX IF NOT EXISTS idx_email_audit_auth_user_id ON public.email_audit(auth_user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON public.audit_logs(user_id);
 
 -- Update RLS policies
 DO $$ 
 BEGIN
+    -- Email Audit Policies
     IF NOT EXISTS (
         SELECT FROM pg_policies 
         WHERE tablename = 'email_audit' 
@@ -41,6 +54,29 @@ BEGIN
         ON public.email_audit
         FOR INSERT
         WITH CHECK (auth.uid() = auth_user_id);
+    END IF;
+
+    -- Audit Logs Policies
+    IF NOT EXISTS (
+        SELECT FROM pg_policies 
+        WHERE tablename = 'audit_logs' 
+        AND policyname = 'Enable read access for own logs'
+    ) THEN
+        CREATE POLICY "Enable read access for own logs" 
+        ON public.audit_logs
+        FOR SELECT
+        USING (auth.uid() = user_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT FROM pg_policies 
+        WHERE tablename = 'audit_logs' 
+        AND policyname = 'Enable insert for own logs'
+    ) THEN
+        CREATE POLICY "Enable insert for own logs" 
+        ON public.audit_logs
+        FOR INSERT
+        WITH CHECK (auth.uid() = user_id);
     END IF;
 END $$;
 
