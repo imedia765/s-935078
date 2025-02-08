@@ -79,14 +79,14 @@ export function MemberStats() {
               relationship,
               date_of_birth
             ),
-            payment_requests!payment_requests_member_id_fkey (
+            payment_requests (
               id,
               amount,
               status,
               payment_method,
               created_at
             ),
-            collector:members_collectors!members_collector_id_fkey (
+            collector:collectors (
               id,
               name,
               email,
@@ -99,13 +99,14 @@ export function MemberStats() {
           throw error;
         }
 
+        // Process the data to match our Member type
         const processedData = data?.map(member => ({
           ...member,
           collector: member.collector || null
         }));
 
         console.log('Fetched member stats:', processedData);
-        return processedData as Member[];
+        return processedData as unknown as Member[];
       } catch (error) {
         console.error('Error in memberStats query:', error);
         throw error;
