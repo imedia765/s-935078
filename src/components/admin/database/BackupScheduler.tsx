@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BackupSchedule } from "@/types/maintenance";
 
 export function BackupScheduler() {
   const { toast } = useToast();
@@ -40,7 +41,7 @@ export function BackupScheduler() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as BackupSchedule[];
     }
   });
 
@@ -57,7 +58,8 @@ export function BackupScheduler() {
           frequency,
           cron_expression: cronExpression,
           retention_days: parseInt(retentionDays),
-          next_run: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          next_run: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active'
         });
 
       if (error) throw error;
@@ -79,26 +81,26 @@ export function BackupScheduler() {
     }
   });
 
-  const handleCreateSchedule = () => {
-    createScheduleMutation.mutate();
-  };
+  const toggleScheduleStatus = useMutation({
+    mutationFn: async (schedule: BackupSchedule) => {
+      const { error } = await supabase
+        .from('backup_schedules')
+        .update({ status: schedule.status === 'active' ? 'inactive' : 'active' })
+        .eq('id', schedule.id);
 
-  const handleCreateBackup = async () => {
-    try {
-      const { data, error } = await supabase.rpc('perform_automated_backup');
       if (error) throw error;
-      
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["backupSchedules"] });
       toast({
         title: "Success",
-        description: "Manual backup created successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
+        description: "Schedule status updated successfully",
       });
     }
+  });
+
+  const handleCreateSchedule = () => {
+    createScheduleMutation.mutate();
   };
 
   if (isLoading) {
@@ -109,61 +111,55 @@ export function BackupScheduler() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Backup Schedules</h3>
-        <div className="space-x-2">
-          <Button onClick={handleCreateBackup}>
-            <Download className="mr-2 h-4 w-4" />
-            Create Backup
-          </Button>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Schedule Backup
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Backup Schedule</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Schedule Name</Label>
-                  <Input
-                    id="name"
-                    value={scheduleName}
-                    onChange={(e) => setScheduleName(e.target.value)}
-                    placeholder="Daily Production Backup"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequency</Label>
-                  <Select value={frequency} onValueChange={(value: "daily" | "weekly" | "monthly") => setFrequency(value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="retention">Retention (days)</Label>
-                  <Input
-                    id="retention"
-                    type="number"
-                    value={retentionDays}
-                    onChange={(e) => setRetentionDays(e.target.value)}
-                  />
-                </div>
-                <Button onClick={handleCreateSchedule} className="w-full">
-                  Create Schedule
-                </Button>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              Schedule Backup
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Backup Schedule</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Schedule Name</Label>
+                <Input
+                  id="name"
+                  value={scheduleName}
+                  onChange={(e) => setScheduleName(e.target.value)}
+                  placeholder="Daily Production Backup"
+                />
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequency</Label>
+                <Select value={frequency} onValueChange={(value: "daily" | "weekly" | "monthly") => setFrequency(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="retention">Retention (days)</Label>
+                <Input
+                  id="retention"
+                  type="number"
+                  value={retentionDays}
+                  onChange={(e) => setRetentionDays(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleCreateSchedule} className="w-full">
+                Create Schedule
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Table>
@@ -171,9 +167,11 @@ export function BackupScheduler() {
           <TableRow>
             <TableHead>Schedule Name</TableHead>
             <TableHead>Frequency</TableHead>
+            <TableHead>Retention Days</TableHead>
             <TableHead>Last Run</TableHead>
             <TableHead>Next Run</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -181,6 +179,7 @@ export function BackupScheduler() {
             <TableRow key={schedule.id}>
               <TableCell>{schedule.schedule_name}</TableCell>
               <TableCell className="capitalize">{schedule.frequency}</TableCell>
+              <TableCell>{schedule.retention_days} days</TableCell>
               <TableCell>
                 {schedule.last_run ? new Date(schedule.last_run).toLocaleString() : 'Never'}
               </TableCell>
@@ -188,11 +187,19 @@ export function BackupScheduler() {
                 {schedule.next_run ? new Date(schedule.next_run).toLocaleString() : 'Not scheduled'}
               </TableCell>
               <TableCell>
-                <span className={`px-2 py-1 rounded text-sm ${
-                  schedule.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }`}>
+                <Button
+                  variant={schedule.status === 'active' ? 'default' : 'secondary'}
+                  size="sm"
+                  onClick={() => toggleScheduleStatus.mutate(schedule)}
+                >
                   {schedule.status}
-                </span>
+                </Button>
+              </TableCell>
+              <TableCell>
+                <Button variant="outline" size="sm" onClick={() => {}}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
               </TableCell>
             </TableRow>
           ))}

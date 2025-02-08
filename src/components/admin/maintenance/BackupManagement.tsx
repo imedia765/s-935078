@@ -1,15 +1,18 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Upload, Calendar } from "lucide-react";
+import { Download, Upload, Shield, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BackupRecord } from "@/types/maintenance";
+import { Badge } from "@/components/ui/badge";
 
 export function BackupManagement() {
   const { toast } = useToast();
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const { data: backups, refetch } = useQuery({
     queryKey: ["backups"],
@@ -20,7 +23,9 @@ export function BackupManagement() {
         id: item.id || '',
         created_at: item.timestamp || '',
         size: item.size || '0 KB',
-        status: item.status || 'completed'
+        status: item.status || 'completed',
+        verification_status: item.verification_status || 'pending',
+        retention_days: item.retention_days || 30
       })) as BackupRecord[];
     }
   });
@@ -47,6 +52,28 @@ export function BackupManagement() {
     }
   };
 
+  const handleVerifyBackup = async (backupId: string) => {
+    try {
+      setIsVerifying(true);
+      const { data, error } = await supabase.rpc('verify_backup', { backup_id: backupId });
+      if (error) throw error;
+      
+      toast({
+        title: "Backup Verification",
+        description: "Verification process has been completed",
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleRestore = async (backupId: string) => {
     try {
       const { data, error } = await supabase.rpc('restore_from_backup', { 
@@ -65,6 +92,21 @@ export function BackupManagement() {
         variant: "destructive",
       });
     }
+  };
+
+  const getVerificationBadge = (status: string) => {
+    const config = {
+      pending: { class: "bg-yellow-100 text-yellow-800", text: "Pending" },
+      verified: { class: "bg-green-100 text-green-800", text: "Verified" },
+      failed: { class: "bg-red-100 text-red-800", text: "Failed" }
+    };
+    const badgeConfig = config[status as keyof typeof config] || config.pending;
+    
+    return (
+      <Badge className={badgeConfig.class}>
+        {badgeConfig.text}
+      </Badge>
+    );
   };
 
   return (
@@ -89,16 +131,35 @@ export function BackupManagement() {
             <TableHead>Date</TableHead>
             <TableHead>Size</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Verification</TableHead>
+            <TableHead>Retention (Days)</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {backups?.map((backup: any) => (
+          {backups?.map((backup) => (
             <TableRow key={backup.id}>
               <TableCell>{new Date(backup.created_at).toLocaleString()}</TableCell>
               <TableCell>{backup.size}</TableCell>
-              <TableCell>{backup.status}</TableCell>
               <TableCell>
+                <Badge variant={backup.status === 'completed' ? 'default' : 'destructive'}>
+                  {backup.status}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                {getVerificationBadge(backup.verification_status || 'pending')}
+              </TableCell>
+              <TableCell>{backup.retention_days} days</TableCell>
+              <TableCell className="space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleVerifyBackup(backup.id)}
+                  disabled={isVerifying || backup.verification_status === 'verified'}
+                >
+                  <Shield className="mr-2 h-4 w-4" />
+                  Verify
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

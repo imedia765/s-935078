@@ -1,3 +1,4 @@
+
 export interface MaintenanceHistory {
   execution_time: string;
   status: string;
@@ -10,6 +11,8 @@ export interface BackupRecord {
   created_at: string;
   size: string;
   status: string;
+  verification_status?: 'pending' | 'verified' | 'failed';
+  retention_days?: number;
 }
 
 export interface ErrorLog {
@@ -40,4 +43,15 @@ export interface SystemResources {
   memory_usage: number;
   disk_usage: number;
   network_status: string;
+}
+
+export interface BackupSchedule {
+  id: string;
+  schedule_name: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  cron_expression: string;
+  retention_days: number;
+  last_run: string | null;
+  next_run: string;
+  status: 'active' | 'inactive';
 }
