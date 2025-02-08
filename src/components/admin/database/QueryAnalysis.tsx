@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,7 +16,10 @@ export function QueryAnalysis() {
       
       if (error) throw error;
       return data;
-    }
+    },
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 1000 * 30, // Consider data stale after 30 seconds
+    cacheTime: 1000 * 60 * 5 // Cache for 5 minutes
   });
 
   if (isLoading) {

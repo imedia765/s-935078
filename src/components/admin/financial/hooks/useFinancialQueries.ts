@@ -37,7 +37,8 @@ export function useFinancialQueries() {
             generated_at
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // Limit initial load
       
       if (error) {
         console.error('Error fetching payments:', error);
@@ -48,7 +49,9 @@ export function useFinancialQueries() {
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     gcTime: 1000 * 60 * 10, // Keep unused data for 10 minutes
-    retry: 2
+    retry: 2,
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    refetchOnMount: false
   });
 
   const { 
@@ -86,7 +89,9 @@ export function useFinancialQueries() {
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
-    retry: 2
+    retry: 2,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false
   });
 
   const error = paymentsError || collectorsError;
