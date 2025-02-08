@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, FileDown, Check, Trash2, ChevronDown, ChevronRight, FileText } from "lucide-react";
@@ -39,6 +38,7 @@ interface PaymentsListProps {
   showDeleteDialog: boolean;
   setShowDeleteDialog: (show: boolean) => void;
   confirmDelete: () => void;
+  exporting: boolean;  // Added this property
 }
 
 export function PaymentsList({
@@ -49,7 +49,8 @@ export function PaymentsList({
   handleDelete,
   showDeleteDialog,
   setShowDeleteDialog,
-  confirmDelete
+  confirmDelete,
+  exporting
 }: PaymentsListProps) {
   const { toast } = useToast();
   const [openCollectors, setOpenCollectors] = useState<string[]>([]);

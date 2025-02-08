@@ -9,9 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface FinancialReportsProps {
   payments: PaymentStats | null;
   handleExport: (type: 'excel' | 'csv' | 'all') => void;
+  exporting: boolean;  // Added this property
 }
 
-export function FinancialReports({ payments, handleExport }: FinancialReportsProps) {
+export function FinancialReports({ payments, handleExport, exporting }: FinancialReportsProps) {
   const COLORS = ['#8c5dd3', '#3b82f6', '#22c55e', '#f59e0b'];
 
   const { data: memberPayments } = useQuery({
