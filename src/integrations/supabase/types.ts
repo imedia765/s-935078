@@ -2776,6 +2776,14 @@ export type Database = {
           permissions: Json
         }[]
       }
+      get_connection_pool_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          metric_name: string
+          current_value: number
+          details: Json
+        }[]
+      }
       get_email_quota: {
         Args: {
           category: string

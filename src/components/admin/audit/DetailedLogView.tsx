@@ -49,6 +49,17 @@ export function DetailedLogView({ log, onClose }: DetailedLogViewProps) {
     return String(value);
   };
 
+  const getSeverityVariant = (severity: string): "default" | "destructive" | "outline" | "secondary" => {
+    switch (severity.toLowerCase()) {
+      case 'error':
+        return "destructive";
+      case 'warning':
+        return "secondary";
+      default:
+        return "default";
+    }
+  };
+
   return (
     <Dialog open={!!log} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-2xl">
@@ -67,7 +78,7 @@ export function DetailedLogView({ log, onClose }: DetailedLogViewProps) {
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>{new Date(log.timestamp).toLocaleString()}</span>
             </div>
-            <Badge variant={log.severity.toLowerCase() as "default" | "warning" | "destructive"}>
+            <Badge variant={getSeverityVariant(log.severity)}>
               {getSeverityIcon(log.severity)}
               <span className="ml-1">{log.severity}</span>
             </Badge>
@@ -103,7 +114,6 @@ export function DetailedLogView({ log, onClose }: DetailedLogViewProps) {
               size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(formatValue(log));
-                // You could add a toast here to confirm the copy
               }}
             >
               <ClipboardCheck className="h-4 w-4 mr-2" />
