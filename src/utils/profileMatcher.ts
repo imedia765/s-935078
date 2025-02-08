@@ -18,16 +18,22 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
       .single();
 
     if (!existingLink) {
-      await logAuditEvent({
-        operation: 'update',
-        tableName: 'members',
-        recordId: memberNumber,
-        metadata: { 
-          event: 'profile_match_failed',
-          reason: 'member_not_found'
-        },
-        severity: 'warning'
-      });
+      // Log the failure without metadata if column doesn't exist yet
+      try {
+        await logAuditEvent({
+          operation: 'update',
+          tableName: 'members',
+          recordId: memberNumber,
+          metadata: { 
+            event: 'profile_match_failed',
+            reason: 'member_not_found'
+          },
+          severity: 'warning'
+        });
+      } catch (auditError) {
+        console.error('Failed to log audit event:', auditError);
+      }
+      
       return { 
         success: false, 
         error: 'Member number not found' 
@@ -35,16 +41,21 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
     }
 
     if (existingLink.auth_user_id && existingLink.auth_user_id !== authUserId) {
-      await logAuditEvent({
-        operation: 'update',
-        tableName: 'members',
-        recordId: memberNumber,
-        metadata: { 
-          event: 'profile_match_failed',
-          reason: 'already_linked'
-        },
-        severity: 'warning'
-      });
+      try {
+        await logAuditEvent({
+          operation: 'update',
+          tableName: 'members',
+          recordId: memberNumber,
+          metadata: { 
+            event: 'profile_match_failed',
+            reason: 'already_linked'
+          },
+          severity: 'warning'
+        });
+      } catch (auditError) {
+        console.error('Failed to log audit event:', auditError);
+      }
+      
       return { 
         success: false, 
         error: 'Member already linked to another account' 
@@ -65,33 +76,39 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
       throw updateError;
     }
 
-    // Record the successful link in email_audit
-    const { error: auditError } = await supabase
-      .from('email_audit')
-      .insert({
-        auth_user_id: authUserId,
-        member_number: memberNumber,
-        status: 'linked',
-        metadata: {
-          event: 'profile_linked',
-          timestamp: new Date().toISOString()
-        }
-      });
+    // Record the successful link in email_audit with fallback
+    try {
+      const { error: auditError } = await supabase
+        .from('email_audit')
+        .insert({
+          auth_user_id: authUserId,
+          member_number: memberNumber,
+          status: 'linked',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
 
-    if (auditError) {
-      console.error('Failed to create audit record:', auditError);
+      if (auditError) {
+        console.error('Failed to create audit record:', auditError);
+      }
+    } catch (auditError) {
+      console.error('Failed to insert audit record:', auditError);
     }
 
-    await logAuditEvent({
-      operation: 'update',
-      tableName: 'members',
-      recordId: existingLink.id,
-      metadata: { 
-        event: 'profile_matched',
-        member_number: memberNumber
-      },
-      severity: 'info'
-    });
+    try {
+      await logAuditEvent({
+        operation: 'update',
+        tableName: 'members',
+        recordId: existingLink.id,
+        metadata: { 
+          event: 'profile_matched',
+          member_number: memberNumber
+        },
+        severity: 'info'
+      });
+    } catch (auditError) {
+      console.error('Failed to log audit event:', auditError);
+    }
 
     return { 
       success: true, 
@@ -99,19 +116,25 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
     };
   } catch (error: any) {
     console.error('Profile matching error:', error);
-    await logAuditEvent({
-      operation: 'update',
-      tableName: 'members',
-      recordId: memberNumber,
-      metadata: { 
-        event: 'profile_match_error',
-        error: error.message
-      },
-      severity: 'error'
-    });
+    try {
+      await logAuditEvent({
+        operation: 'update',
+        tableName: 'members',
+        recordId: memberNumber,
+        metadata: { 
+          event: 'profile_match_error',
+          error: error.message
+        },
+        severity: 'error'
+      });
+    } catch (auditError) {
+      console.error('Failed to log audit event:', auditError);
+    }
+    
     return { 
       success: false, 
       error: 'Failed to link profile' 
     };
   }
 }
+

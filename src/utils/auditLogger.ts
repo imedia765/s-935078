@@ -1,12 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// Define all possible operations in the application
 type AuditOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE' | 'approve' | 'reject';
-
-// Database expects only these operations
 type DatabaseOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE';
-
 type AuditSeverity = 'info' | 'warning' | 'error' | 'critical';
 
 interface AuditLogParams {
@@ -20,7 +16,6 @@ interface AuditLogParams {
   userId?: string;
 }
 
-// Map custom operations to database operations
 function mapOperationToDatabase(operation: AuditOperation): DatabaseOperation {
   switch (operation) {
     case 'approve':
@@ -43,6 +38,32 @@ export async function logAuditEvent({
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
+    // First try with metadata column
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert({
+          operation: mapOperationToDatabase(operation),
+          table_name: tableName,
+          record_id: recordId,
+          old_values: oldValues,
+          new_values: newValues,
+          severity,
+          user_id: user?.id,
+          metadata: {
+            ...metadata,
+            original_operation: operation,
+            user_agent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+          }
+        });
+
+      if (!error) return;
+    } catch (error) {
+      console.error('Failed to log audit event with metadata:', error);
+    }
+
+    // Fallback: try without metadata column
     const { error } = await supabase
       .from('audit_logs')
       .insert({
@@ -52,13 +73,7 @@ export async function logAuditEvent({
         old_values: oldValues,
         new_values: newValues,
         severity,
-        user_id: user?.id,
-        metadata: {
-          ...metadata,
-          original_operation: operation, // Store the original operation in metadata
-          user_agent: navigator.userAgent,
-          timestamp: new Date().toISOString()
-        }
+        user_id: user?.id
       });
 
     if (error) throw error;
@@ -86,3 +101,4 @@ export async function getAuditLogs(tableName?: string, recordId?: string) {
   if (error) throw error;
   return data;
 }
+
