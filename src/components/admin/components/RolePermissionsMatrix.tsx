@@ -29,29 +29,30 @@ export function RolePermissionsMatrix() {
   const { data: rolePermissions, isLoading } = useQuery({
     queryKey: ["rolePermissions"],
     queryFn: async () => {
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('role', 'admin')
-        .distinct();
+      // Get roles and permissions in parallel
+      const [rolesResult, permsResult] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('role', 'admin'),
+        supabase.from('app_permissions').select('*')
+      ]);
 
-      const { data: perms } = await supabase
-        .from('permissions')
-        .select('*');
+      const roles = rolesResult.data;
+      const perms = permsResult.data as Permission[];
 
       if (!roles || !perms) throw new Error("Failed to fetch roles or permissions");
 
       // Get unique roles
-      const uniqueRoles = [...new Set(roles.map(r => r.role))];
+      const uniqueRoles = Array.from(new Set(roles.map(r => r.role)));
 
-      const matrix = uniqueRoles.flatMap(role =>
+      // Create matrix
+      const matrix: RolePermission[] = uniqueRoles.flatMap(role =>
         perms.map(perm => ({
-          role: role,
+          role,
           permission_name: perm.name,
           granted: false
         }))
       );
 
+      // Get existing permissions
       const { data: existingPerms } = await supabase
         .from('role_permissions')
         .select('*');
@@ -87,7 +88,7 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase.rpc('update_role_permissions', {
+      const { error } = await supabase.rpc('manage_role_permissions', {
         permissions_array: permissions
       });
 
