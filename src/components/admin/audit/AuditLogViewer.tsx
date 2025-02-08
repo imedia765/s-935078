@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -25,6 +24,7 @@ import { exportToCSV } from "@/utils/exportUtils";
 import { AuditAnalytics } from "./AuditAnalytics";
 import { useToast } from "@/hooks/use-toast";
 import { DetailedLogView } from "./DetailedLogView";
+import { LogRetentionConfig } from "./LogRetentionConfig";
 
 interface AuditActivity {
   hour_bucket: string;
@@ -183,6 +183,8 @@ export function AuditLogViewer() {
   return (
     <div className="space-y-4">
       <AuditAnalytics />
+      
+      <LogRetentionConfig />
       
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 items-center space-x-2">
