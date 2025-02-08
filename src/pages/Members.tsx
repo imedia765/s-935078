@@ -52,27 +52,19 @@ export default function Members() {
   const { data: userInfo } = useQuery({
     queryKey: ["userInfo"],
     queryFn: async () => {
-      console.log('Fetching user info...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // Get user roles
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
 
-      console.log('User roles:', roles);
-
-      // If user is a collector, get their collector ID
-      const { data: collectorInfo, error } = await supabase
+      const { data: collectorInfo } = await supabase
         .from("members_collectors")
         .select("id")
         .eq("auth_user_id", user.id);
 
-      console.log('Collector info:', collectorInfo, 'Error:', error);
-
-      // Handle case where collector info might not exist
       const collectorId = collectorInfo && collectorInfo.length > 0 ? collectorInfo[0].id : null;
 
       return {
@@ -114,28 +106,23 @@ export default function Members() {
           )
         `, { count: 'exact' });
 
-      // If user is a collector, only show their members
       if (collectorId) {
         query = query.eq('collector_id', collectorId);
       } 
-      // If user is admin and a collector is selected
       else if (selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
       }
 
-      // Add sorting
       if (sortField) {
         query = query.order(sortField, { ascending: sortDirection === 'asc' });
       }
 
-      // Add pagination
       const from = (page - 1) * ITEMS_PER_PAGE;
       query = query.range(from, from + ITEMS_PER_PAGE - 1);
 
       const { data, error, count } = await query;
       if (error) throw error;
 
-      // If there's a search term, filter the results
       let filteredData = data;
       if (debouncedSearchTerm) {
         const searchLower = debouncedSearchTerm.toLowerCase();
@@ -151,6 +138,39 @@ export default function Members() {
         totalCount: count || 0
       };
     }
+  });
+
+  // Add a new query for getting all data for exports
+  const { data: allMembersData, refetch: refetchAllMembers } = useQuery({
+    queryKey: ["allMembers", selectedCollector],
+    queryFn: async () => {
+      let query = supabase
+        .from("members")
+        .select(`
+          *,
+          members_collectors!members_collectors_member_number_fkey (
+            name,
+            number,
+            active
+          )
+        `);
+
+      if (collectorId) {
+        query = query.eq('collector_id', collectorId);
+      } 
+      else if (selectedCollector !== 'all') {
+        query = query.eq('collector_id', selectedCollector);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return {
+        members: data,
+        totalCount: data.length
+      };
+    },
+    enabled: false
   });
 
   // Add member mutation
@@ -310,85 +330,19 @@ export default function Members() {
     }
   };
 
-  if (loadingMembers || loadingCollectors) {
-    return (
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-[200px]" />
-          <Skeleton className="h-10 w-[150px]" />
-        </div>
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="p-6">
-            <Skeleton className="h-[120px] w-full" />
-          </Card>
-        ))}
+  const content = loadingMembers || loadingCollectors ? (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-10 w-[200px]" />
+        <Skeleton className="h-10 w-[150px]" />
       </div>
-    );
-  }
-
-  const totalPages = Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE);
-
-  // Add a new query for getting all data for exports
-  const { data: allMembersData, refetch: refetchAllMembers } = useQuery({
-    queryKey: ["allMembers", selectedCollector],
-    queryFn: async () => {
-      let query = supabase
-        .from("members")
-        .select(`
-          *,
-          members_collectors!members_collectors_member_number_fkey (
-            name,
-            number,
-            active
-          )
-        `);
-
-      // If user is a collector, only show their members
-      if (collectorId) {
-        query = query.eq('collector_id', collectorId);
-      } 
-      // If user is admin and a collector is selected
-      else if (selectedCollector !== 'all') {
-        query = query.eq('collector_id', selectedCollector);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      return {
-        members: data,
-        totalCount: data.length
-      };
-    },
-    enabled: false // Only run when exporting
-  });
-
-  // Update the export handlers to use allMembersData
-  const handleExportCSV = async () => {
-    const { data: allData } = await refetchAllMembers();
-    exportToCSV(
-      allData?.members || [], 
-      `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`
-    );
-  };
-
-  const handleExportPDF = async () => {
-    const { data: allData } = await refetchAllMembers();
-    generatePDF(
-      allData?.members || [], 
-      `Members Report - ${selectedCollector === 'all' ? 'All Members' : 'Collector ' + selectedCollector}`
-    );
-  };
-
-  const handleExportExcel = async () => {
-    const { data: allData } = await refetchAllMembers();
-    exportToExcel(
-      allData?.members || [], 
-      `members_${selectedCollector === 'all' ? 'all' : 'collector_' + selectedCollector}`
-    );
-  };
-
-  return (
+      {[1, 2, 3].map((i) => (
+        <Card key={i} className="p-6">
+          <Skeleton className="h-[120px] w-full" />
+        </Card>
+      ))}
+    </div>
+  ) : (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
         <MembersToolbar
@@ -436,13 +390,13 @@ export default function Members() {
                 Previous
               </Button>
               <span className="text-sm">
-                Page {page} of {totalPages}
+                Page {page} of {Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE)}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
+                onClick={() => setPage(p => Math.min(Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE), p + 1))}
+                disabled={page === Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE)}
               >
                 Next
               </Button>
@@ -511,4 +465,6 @@ export default function Members() {
       </div>
     </div>
   );
+
+  return content;
 }
