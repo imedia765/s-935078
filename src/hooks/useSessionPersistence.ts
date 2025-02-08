@@ -15,7 +15,7 @@ export function useSessionPersistence() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("[Session Event]:", event);
       
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT') {
         navigate("/");
         toast({
           title: "Session Ended",

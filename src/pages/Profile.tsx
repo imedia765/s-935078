@@ -11,8 +11,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
+import { MouseEvent } from "react";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -51,6 +51,11 @@ const Profile = () => {
       priority: 'medium' as const
     }
   ];
+
+  const handleRetry = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    await fetchData();
+  };
 
   if (loading) {
     return (
@@ -106,7 +111,7 @@ const Profile = () => {
           </div>
           <p className="text-destructive mb-4">{error}</p>
           <Button 
-            onClick={fetchData}
+            onClick={handleRetry}
             className="w-full"
             variant="outline"
           >
@@ -144,12 +149,10 @@ const Profile = () => {
                 onEdit={handleEdit}
               />
               <BankDetailsCard 
-                memberNumber={memberData?.member_number} 
-                isLoading={loadingStates.profile}
+                memberNumber={memberData?.member_number}
               />
               <FamilyMembersCard
                 memberData={memberData}
-                isLoading={loadingStates.familyMembers}
                 onAddMember={() => setIsAddFamilyMemberOpen(true)}
                 onEditMember={(member) => {
                   selectedFamilyMember.current = member;
@@ -158,15 +161,14 @@ const Profile = () => {
                 onDeleteMember={handleDeleteFamilyMember}
               />
               <PaymentHistoryCard 
-                memberData={memberData} 
-                isLoading={loadingStates.payments} 
+                memberData={memberData}
+                isLoading={loadingStates.payments}
               />
             </div>
             <div className="space-y-6">
               <AnnouncementsCard announcements={announcements} />
               <DocumentsCard
                 documents={[]}
-                isLoading={loadingStates.documents}
                 onView={() => {}}
                 onDownload={() => {}}
               />

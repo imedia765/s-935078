@@ -1,12 +1,32 @@
 
 import { Card } from "@/components/ui/card";
 import { Building2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BankDetailsCardProps {
   memberNumber?: string;
+  isLoading?: boolean;
 }
 
-export function BankDetailsCard({ memberNumber }: BankDetailsCardProps) {
+export function BankDetailsCard({ memberNumber, isLoading }: BankDetailsCardProps) {
+  if (isLoading) {
+    return (
+      <Card className="glass-card p-6">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="glass-card p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3 mb-4">
