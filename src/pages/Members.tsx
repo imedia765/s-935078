@@ -1,15 +1,15 @@
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF, exportToExcel } from "@/utils/exportUtils";
 import { MembersToolbar } from "@/components/members/MembersToolbar";
 import { MembersTable } from "@/components/members/MembersTable";
 import { EditMemberDialog } from "@/components/members/EditMemberDialog";
 import { MoveMemberDialog } from "@/components/members/MoveMemberDialog";
+import { MembersPagination } from "@/components/members/MembersPagination";
+import { useMemberQueries } from "@/hooks/useMemberQueries";
+import { useMemberMutations } from "@/hooks/useMemberMutations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,17 +20,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-
-interface MemberFormData {
-  full_name: string;
-  email: string;
-  phone: string;
-  member_number: string;
-  collector_id: string | null;
-  status: string;
-}
 
 const ITEMS_PER_PAGE = 10;
 
@@ -46,91 +35,24 @@ export default function Members() {
   const [page, setPage] = useState(1);
   const [deleteConfirmMember, setDeleteConfirmMember] = useState<any>(null);
   const [statusConfirmMember, setStatusConfirmMember] = useState<any>(null);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: userInfo } = useQuery({
-    queryKey: ["userInfo"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+  const { userInfo, collectors, membersData, isLoading } = useMemberQueries(
+    selectedCollector,
+    searchTerm,
+    sortField,
+    sortDirection,
+    !userInfo?.roles.includes("admin") ? userInfo?.collectorId : null,
+    page,
+    ITEMS_PER_PAGE
+  );
 
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      const { data: collectorInfo } = await supabase
-        .from("members_collectors")
-        .select("id")
-        .eq("auth_user_id", user.id);
-
-      const collectorId = collectorInfo && collectorInfo.length > 0 ? collectorInfo[0].id : null;
-
-      return {
-        roles: roles?.map(r => r.role) || [],
-        collectorId
-      };
-    }
-  });
-
-  const isAdmin = userInfo?.roles.includes("admin");
-  const collectorId = !isAdmin ? userInfo?.collectorId : null;
-
-  const { data: collectors, isLoading: loadingCollectors } = useQuery({
-    queryKey: ["collectors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("members_collectors")
-        .select("*")
-        .eq("active", true);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: membersData, isLoading: loadingMembers } = useQuery({
-    queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
-    queryFn: async () => {
-      let query = supabase
-        .from("members")
-        .select(`
-          *,
-          members_collectors!members_collectors_member_number_fkey (
-            name,
-            number,
-            active
-          )
-        `, { count: 'exact' });
-
-      if (collectorId) {
-        query = query.eq('collector_id', collectorId);
-      } 
-      else if (selectedCollector !== 'all') {
-        query = query.eq('collector_id', selectedCollector);
-      }
-
-      if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
-      }
-
-      if (sortField) {
-        query = query.order(sortField, { ascending: sortDirection === 'asc' });
-      }
-
-      const from = (page - 1) * ITEMS_PER_PAGE;
-      query = query.range(from, from + ITEMS_PER_PAGE - 1);
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-
-      return {
-        members: data || [],
-        totalCount: count || 0
-      };
-    }
-  });
+  const {
+    addMemberMutation,
+    updateMemberMutation,
+    deleteMemberMutation,
+    toggleStatusMutation,
+    moveMemberMutation
+  } = useMemberMutations();
 
   const { data: allMembersData, refetch: refetchAllMembers } = useQuery({
     queryKey: ["allMembers", selectedCollector],
@@ -146,8 +68,8 @@ export default function Members() {
           )
         `);
 
-      if (collectorId) {
-        query = query.eq('collector_id', collectorId);
+      if (!userInfo?.roles.includes("admin")) {
+        query = query.eq('collector_id', userInfo?.collectorId);
       } 
       else if (selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
@@ -162,149 +84,6 @@ export default function Members() {
       };
     },
     enabled: false
-  });
-
-  const addMemberMutation = useMutation({
-    mutationFn: async (newMember: MemberFormData) => {
-      const { data, error } = await supabase
-        .from('members')
-        .insert([newMember])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      toast({
-        title: "Success",
-        description: "Member added successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to add member: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMemberMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<MemberFormData> }) => {
-      const { data: updatedMember, error } = await supabase
-        .from('members')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return updatedMember;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      setIsEditDialogOpen(false);
-      setEditingMember(null);
-      toast({
-        title: "Success",
-        description: "Member updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update member: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMemberMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('members')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      toast({
-        title: "Success",
-        description: "Member deleted successfully",
-      });
-      setDeleteConfirmMember(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete member: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const toggleStatusMutation = useMutation({
-    mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
-      const newStatus = currentStatus === 'active' ? 'paused' : 'active';
-      const { data, error } = await supabase
-        .from('members')
-        .update({ status: newStatus })
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      setStatusConfirmMember(null);
-      toast({
-        title: "Success",
-        description: `Member ${data.status === 'active' ? 'activated' : 'paused'} successfully`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to update member status: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const moveMemberMutation = useMutation({
-    mutationFn: async ({ memberId, newCollectorId }: { memberId: string; newCollectorId: string }) => {
-      const { data, error } = await supabase
-        .from('members')
-        .update({ collector_id: newCollectorId })
-        .eq('id', memberId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      setIsMoveDialogOpen(false);
-      setMovingMember(null);
-      toast({
-        title: "Success",
-        description: "Member moved successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to move member: " + error.message,
-        variant: "destructive",
-      });
-    },
   });
 
   const handleSearch = (term: string) => {
@@ -342,19 +121,23 @@ export default function Members() {
     }
   };
 
-  const content = loadingMembers || loadingCollectors ? (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-10 w-[200px]" />
-        <Skeleton className="h-10 w-[150px]" />
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-[200px]" />
+          <Skeleton className="h-10 w-[150px]" />
+        </div>
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-6">
+            <Skeleton className="h-[120px] w-full" />
+          </Card>
+        ))}
       </div>
-      {[1, 2, 3].map((i) => (
-        <Card key={i} className="p-6">
-          <Skeleton className="h-[120px] w-full" />
-        </Card>
-      ))}
-    </div>
-  ) : (
+    );
+  }
+
+  return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-6 space-y-6">
         <MembersToolbar
@@ -367,7 +150,7 @@ export default function Members() {
           onExportExcel={handleExportExcel}
           onAddMember={(data) => addMemberMutation.mutate(data)}
           collectors={collectors || []}
-          isAdmin={isAdmin}
+          isAdmin={userInfo?.roles.includes("admin")}
         />
 
         <Card className="glass-card p-6">
@@ -389,32 +172,12 @@ export default function Members() {
             onDelete={(member) => setDeleteConfirmMember(member)}
           />
 
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              Showing {((page - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(page * ITEMS_PER_PAGE, membersData?.totalCount || 0)} of {membersData?.totalCount} members
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm">
-                Page {page} of {Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE)}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE), p + 1))}
-                disabled={page === Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <MembersPagination
+            page={page}
+            itemsPerPage={ITEMS_PER_PAGE}
+            totalCount={membersData?.totalCount || 0}
+            onPageChange={setPage}
+          />
         </Card>
 
         <EditMemberDialog
@@ -478,6 +241,4 @@ export default function Members() {
       </div>
     </div>
   );
-
-  return content;
 }
