@@ -99,4 +99,3 @@ function StatusBadge({ status }: { status: 'healthy' | 'degraded' | 'failing' })
     </div>
   );
 }
-

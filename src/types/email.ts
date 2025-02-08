@@ -41,5 +41,8 @@ export interface SmtpHealthCheck {
   quota_remaining: number;
   error_details: Record<string, any>;
   created_at: string;
+  smtp_configurations?: {
+    name: string;
+    host: string;
+  };
 }
-
