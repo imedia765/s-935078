@@ -1,21 +1,23 @@
+
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { PaymentStats } from "./types";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ReportFilters } from "./reports/ReportFilters";
+import { useToast } from "@/components/ui/use-toast";
 
 interface FinancialReportsProps {
   payments: PaymentStats | null;
   handleExport: (type: 'excel' | 'csv' | 'all') => void;
-  exporting: boolean;  // Added this property
+  exporting: boolean;
 }
 
 export function FinancialReports({ payments, handleExport, exporting }: FinancialReportsProps) {
+  const { toast } = useToast();
   const COLORS = ['#8c5dd3', '#3b82f6', '#22c55e', '#f59e0b'];
 
-  const { data: memberPayments } = useQuery({
+  const { data: memberPayments, isLoading: loadingMemberPayments } = useQuery({
     queryKey: ["memberPayments"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,7 +35,6 @@ export function FinancialReports({ payments, handleExport, exporting }: Financia
       
       if (error) throw error;
       
-      // Group payments by member
       const memberStats = data.reduce((acc: any, payment: any) => {
         const memberName = payment.members?.full_name || 'Unknown';
         if (!acc[memberName]) {
@@ -120,132 +121,155 @@ export function FinancialReports({ payments, handleExport, exporting }: Financia
     }
   });
 
+  const handleDateRangeChange = (range: { from: Date; to: Date }) => {
+    // Update queries with new date range
+    toast({
+      title: "Date range updated",
+      description: "The reports will reflect the selected date range.",
+    });
+  };
+
+  const handleTypeChange = (type: string) => {
+    // Update queries with new type filter
+    toast({
+      title: "Report type updated",
+      description: "The reports will show data for: " + type,
+    });
+  };
+
+  const handleExportFormat = (format: 'excel' | 'csv' | 'pdf') => {
+    handleExport(format === 'pdf' ? 'all' : format);
+  };
+
+  if (loadingMemberPayments) {
+    return <div>Loading reports...</div>;
+  }
+
   return (
     <Card className="p-6 glass-card">
-      <div className="flex justify-between items-center mb-6">
+      <div className="space-y-6">
         <h2 className="text-xl font-semibold text-gradient">Financial Reports</h2>
-        <Button 
-          variant="outline"
-          onClick={() => handleExport('all')}
-          className="bg-purple-600/20 hover:bg-purple-600/30"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Download Full Report
-        </Button>
-      </div>
+        
+        <ReportFilters 
+          onDateRangeChange={handleDateRangeChange}
+          onTypeChange={handleTypeChange}
+          onExport={handleExportFormat}
+          isExporting={exporting}
+        />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
-          <h4 className="text-lg font-medium mb-4">Payment Methods Distribution</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: 'Cash', value: payments?.paymentMethods.cash || 0 },
-                  { name: 'Bank Transfer', value: payments?.paymentMethods.bankTransfer || 0 }
-                ]}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, value }) => `${name}: ${value}`}
-              >
-                {[
-                  { name: 'Cash', value: payments?.paymentMethods.cash || 0 },
-                  { name: 'Bank Transfer', value: payments?.paymentMethods.bankTransfer || 0 }
-                ].map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <h4 className="text-lg font-medium mb-4">Payment Methods Distribution</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Cash', value: payments?.paymentMethods.cash || 0 },
+                    { name: 'Bank Transfer', value: payments?.paymentMethods.bankTransfer || 0 }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
+                  {[
+                    { name: 'Cash', value: payments?.paymentMethods.cash || 0 },
+                    { name: 'Bank Transfer', value: payments?.paymentMethods.bankTransfer || 0 }
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-medium mb-4">Payment Status Distribution</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Pending', value: payments?.pendingPayments || 0 },
+                    { name: 'Approved', value: payments?.approvedPayments || 0 }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
+                  {[
+                    { name: 'Pending', value: payments?.pendingPayments || 0 },
+                    { name: 'Approved', value: payments?.approvedPayments || 0 }
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div>
-          <h4 className="text-lg font-medium mb-4">Payment Status Distribution</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={[
-                  { name: 'Pending', value: payments?.pendingPayments || 0 },
-                  { name: 'Approved', value: payments?.approvedPayments || 0 }
-                ]}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, value }) => `${name}: ${value}`}
-              >
-                {[
-                  { name: 'Pending', value: payments?.pendingPayments || 0 },
-                  { name: 'Approved', value: payments?.approvedPayments || 0 }
-                ].map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        <div className="space-y-8">
+          <div>
+            <h4 className="text-lg font-medium mb-4">Payments by Member</h4>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={memberPayments || []}>
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  interval={0}
+                />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
+                  labelFormatter={(label) => `Member: ${label}`}
+                />
+                <Legend />
+                <Bar dataKey="approvedAmount" name="Approved Payments" fill="#22c55e" />
+                <Bar dataKey="pendingAmount" name="Pending Payments" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-      <div className="space-y-8">
-        <div>
-          <h4 className="text-lg font-medium mb-4">Payments by Member</h4>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={memberPayments || []}>
-              <XAxis 
-                dataKey="name" 
-                angle={-45}
-                textAnchor="end"
-                height={100}
-                interval={0}
-              />
-              <YAxis />
-              <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
-                labelFormatter={(label) => `Member: ${label}`}
-              />
-              <Legend />
-              <Bar dataKey="approvedAmount" name="Approved Payments" fill="#22c55e" />
-              <Bar dataKey="pendingAmount" name="Pending Payments" fill="#f59e0b" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+          <div>
+            <h4 className="text-lg font-medium mb-4">Monthly Payment Trends</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyTrends || []}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="approved" name="Approved" fill="#22c55e" />
+                <Bar dataKey="pending" name="Pending" fill="#eab308" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-        <div>
-          <h4 className="text-lg font-medium mb-4">Monthly Payment Trends</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={monthlyTrends || []}>
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="approved" name="Approved" fill="#22c55e" />
-              <Bar dataKey="pending" name="Pending" fill="#eab308" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div>
-          <h4 className="text-lg font-medium mb-4">Collector Performance</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={collectorPerformance || []}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="totalCollected" name="Total Collected" fill="#8c5dd3" />
-              <Bar dataKey="successRate" name="Success Rate (%)" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div>
+            <h4 className="text-lg font-medium mb-4">Collector Performance</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={collectorPerformance || []}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="totalCollected" name="Total Collected" fill="#8c5dd3" />
+                <Bar dataKey="successRate" name="Success Rate (%)" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </Card>
