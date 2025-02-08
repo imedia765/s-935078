@@ -21,7 +21,6 @@ import { FileDown, Loader2 } from "lucide-react";
 import { generatePDF } from "@/utils/exportUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Define TypeScript interfaces for our data structures
 interface Collector {
   id: string;
   name: string;
@@ -39,6 +38,7 @@ interface Member {
   gender?: string;
   family_members: any[];
   payment_requests: any[];
+  collector_id: string | null;
   collector: Collector | null;
 }
 
@@ -68,6 +68,7 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
+        // Updated query to use proper collector relationship
         const { data, error } = await supabase
           .from('members')
           .select(`
@@ -79,14 +80,14 @@ export function MemberStats() {
               relationship,
               date_of_birth
             ),
-            payment_requests!payment_requests_member_id_fkey (
+            payment_requests (
               id,
               amount,
               status,
               payment_method,
               created_at
             ),
-            collector:collectors!members_collector_id_fkey (
+            collector:members_collectors!members_collector_id_fkey (
               id,
               name,
               email,
@@ -99,14 +100,13 @@ export function MemberStats() {
           throw error;
         }
 
-        // Process the data to match our Member type
         const processedData = data?.map(member => ({
           ...member,
           collector: member.collector || null
         }));
 
-        console.log('Fetched member stats:', processedData);
-        return processedData as unknown as Member[];
+        console.log('Processed member stats:', processedData);
+        return processedData as Member[];
       } catch (error) {
         console.error('Error in memberStats query:', error);
         throw error;
@@ -125,15 +125,18 @@ export function MemberStats() {
     unspecified: stats?.filter(m => !m.gender)?.length || 0,
   };
 
-  const collectorReports = stats?.reduce((acc: Record<string, CollectorReport>, member) => {
-    if (!member) return acc;
+  // Improved collector grouping logic
+  const collectorReports: Record<string, CollectorReport> = {};
+  
+  stats?.forEach(member => {
+    if (!member) return;
     
     const collector = member.collector;
     const collectorId = collector?.id || 'unassigned';
     const collectorName = collector?.name || 'Unassigned';
     
-    if (!acc[collectorId]) {
-      acc[collectorId] = {
+    if (!collectorReports[collectorId]) {
+      collectorReports[collectorId] = {
         id: collectorId,
         name: collectorName,
         email: collector?.email || null,
@@ -153,7 +156,7 @@ export function MemberStats() {
     const pendingPayments = memberPayments.filter(p => p.status === 'pending').length;
     const totalAmount = memberPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    acc[collectorId].members.push({
+    collectorReports[collectorId].members.push({
       ...member,
       payments: {
         total: totalPayments,
@@ -163,18 +166,16 @@ export function MemberStats() {
       }
     });
 
-    acc[collectorId].totalMembers += 1;
-    acc[collectorId].totalPayments += totalPayments;
-    acc[collectorId].approvedPayments += approvedPayments;
-    acc[collectorId].pendingPayments += pendingPayments;
-    acc[collectorId].totalAmount += totalAmount;
+    collectorReports[collectorId].totalMembers += 1;
+    collectorReports[collectorId].totalPayments += totalPayments;
+    collectorReports[collectorId].approvedPayments += approvedPayments;
+    collectorReports[collectorId].pendingPayments += pendingPayments;
+    collectorReports[collectorId].totalAmount += totalAmount;
+  });
 
-    return acc;
-  }, {});
-
-  const handleExportCollectorReport = (collectorData: any) => {
+  const handleExportCollectorReport = (collectorData: CollectorReport) => {
     const title = `Collector Report - ${collectorData.name}`;
-    const reportData = collectorData.members.map((member: any) => ({
+    const reportData = collectorData.members.map((member) => ({
       member_number: member.member_number,
       full_name: member.full_name,
       email: member.email,
@@ -227,14 +228,14 @@ export function MemberStats() {
         </Card>
         <Card className="p-4 glass-card">
           <h3 className="text-lg font-semibold">Active Collectors</h3>
-          <p className="text-3xl font-bold">{Object.keys(collectorReports || {}).length}</p>
+          <p className="text-3xl font-bold">{Object.keys(collectorReports).length}</p>
         </Card>
       </div>
 
       <Card className="p-6 glass-card">
         <h2 className="text-xl font-semibold mb-4 text-gradient">Collector Reports</h2>
         <Accordion type="single" collapsible className="w-full space-y-4">
-          {Object.values(collectorReports || {}).map((collector) => (
+          {Object.values(collectorReports).map((collector) => (
             <AccordionItem key={collector.id} value={collector.id} className="border rounded-lg p-4">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full">
@@ -276,7 +277,7 @@ export function MemberStats() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {collector.members.map((member: any) => (
+                      {collector.members.map((member) => (
                         <TableRow key={member.id}>
                           <TableCell>{member.member_number}</TableCell>
                           <TableCell>{member.full_name}</TableCell>
