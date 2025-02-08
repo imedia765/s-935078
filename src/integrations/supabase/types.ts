@@ -224,6 +224,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           cron_expression: string
+          frequency: string | null
           id: string
           last_run: string | null
           next_run: string | null
@@ -236,6 +237,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           cron_expression: string
+          frequency?: string | null
           id?: string
           last_run?: string | null
           next_run?: string | null
@@ -248,6 +250,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           cron_expression?: string
+          frequency?: string | null
           id?: string
           last_run?: string | null
           next_run?: string | null
@@ -2960,6 +2963,10 @@ export type Database = {
       manual_cleanup_expired_tokens: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      perform_automated_backup: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       perform_system_maintenance: {
         Args: Record<PropertyKey, never>
