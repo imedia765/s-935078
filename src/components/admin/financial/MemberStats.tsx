@@ -97,7 +97,6 @@ export function MemberStats() {
           throw error;
         }
 
-        // Transform the data to match our interfaces
         const processedData = data as Member[];
         console.log('Processed member stats:', processedData);
         return processedData;
@@ -123,11 +122,12 @@ export function MemberStats() {
   const collectorReports: Record<string, CollectorReport> = {};
   
   stats?.forEach(member => {
-    if (!member || !member.members_collectors) return;
+    if (!member?.members_collectors) return;
     
     const collector = member.members_collectors;
     const collectorId = collector.id;
     
+    // Initialize collector report if it doesn't exist
     if (!collectorReports[collectorId]) {
       collectorReports[collectorId] = {
         id: collectorId,
@@ -149,6 +149,7 @@ export function MemberStats() {
     const pendingPayments = memberPayments.filter(p => p.status === 'pending').length;
     const totalAmount = memberPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+    // Add member to collector's members array
     collectorReports[collectorId].members.push({
       ...member,
       payments: {
@@ -159,6 +160,7 @@ export function MemberStats() {
       }
     });
 
+    // Update collector totals
     collectorReports[collectorId].totalMembers += 1;
     collectorReports[collectorId].totalPayments += totalPayments;
     collectorReports[collectorId].approvedPayments += approvedPayments;
