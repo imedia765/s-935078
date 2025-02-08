@@ -1,3 +1,4 @@
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -96,7 +97,7 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
       head: [['Payment Date', 'Amount', 'Status', 'Method', 'Reference']],
       body: member.paymentHistory.map((payment: any) => [
         payment.created_at,
-        `£${payment.amount.toFixed(2)}`,
+        payment.amount ? `£${payment.amount.toFixed(2)}` : '£0.00',
         payment.status,
         payment.payment_method,
         payment.payment_number
@@ -113,7 +114,7 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
       head: [['Payment Summary']],
       body: Object.entries(member.paymentSummary).map(([key, value]) => [
         `${key.replace(/_/g, ' ').toUpperCase()}: ${
-          key.includes('amount') ? `£${Number(value).toFixed(2)}` : value
+          key.includes('amount') ? (value ? `£${Number(value).toFixed(2)}` : '£0.00') : value
         }`
       ]),
       theme: 'grid',
@@ -136,7 +137,7 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
           [`Phone: ${collector.collector_phone}`],
           [`Total Members: ${collector.total_members}`],
           [`Total Payments: ${collector.total_payments}`],
-          [`Total Amount: £${collector.total_amount.toFixed(2)}`]
+          [`Total Amount: £${(collector.total_amount || 0).toFixed(2)}`]
         ],
         theme: 'grid',
         styles: { fontSize: 10, cellPadding: 5 }
@@ -153,7 +154,7 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
           `${member.email}\n${member.phone}`,
           member.status,
           `Total: ${member.payments.total}\nApproved: ${member.payments.approved}\nPending: ${member.payments.pending}`,
-          `£${member.payments.amount.toFixed(2)}`
+          `£${(member.payments.amount || 0).toFixed(2)}`
         ]),
         theme: 'grid',
         styles: { fontSize: 10, cellPadding: 5 }
@@ -170,7 +171,7 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
         `${member.email}\n${member.phone}`,
         member.status,
         `Total: ${member.total_payments}\nApproved: ${member.approved_payments}\nPending: ${member.pending_payments}`,
-        `£${member.total_amount.toFixed(2)}`
+        `£${(member.total_amount || 0).toFixed(2)}`
       ]),
       theme: 'grid',
       styles: { fontSize: 10, cellPadding: 5 }
