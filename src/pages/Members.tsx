@@ -10,6 +10,8 @@ import { MoveMemberDialog } from "@/components/members/MoveMemberDialog";
 import { MembersPagination } from "@/components/members/MembersPagination";
 import { useMemberQueries } from "@/hooks/useMemberQueries";
 import { useMemberMutations } from "@/hooks/useMemberMutations";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,

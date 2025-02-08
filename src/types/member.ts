@@ -45,6 +45,24 @@ export interface MemberWithRelations {
   updated_at?: string;
 }
 
+export interface MemberFormData {
+  full_name: string;
+  email?: string | null;
+  phone?: string | null;
+  member_number: string;
+  status?: string;
+  date_of_birth?: string | null;
+  address?: string | null;
+  town?: string | null;
+  postcode?: string | null;
+  membership_type?: string | null;
+  payment_date?: string | null;
+  marital_status?: string | null;
+  gender?: string | null;
+  collector_id?: string | null;
+  photo_url?: string | null;
+}
+
 export interface ValidationRules {
   pattern?: RegExp;
   minLength?: number;
