@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinancialOverview } from "./financial/FinancialOverview";
@@ -16,6 +17,7 @@ export function FinancialManagement() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const { paymentsData, loadingPayments, collectors, isLoadingCollectors, refetchCollectors } = useFinancialQueries();
   const { approveMutation, deleteMutation } = useFinancialMutations();
@@ -41,6 +43,8 @@ export function FinancialManagement() {
   const handleExport = async (type: 'excel' | 'csv' | 'all') => {
     try {
       if (!paymentsData) return;
+      
+      setExporting(true);
 
       const data = paymentsData.map(payment => ({
         payment_number: payment.payment_number || 'N/A',
@@ -76,6 +80,8 @@ export function FinancialManagement() {
         title: "Export failed",
         description: error instanceof Error ? error.message : "Failed to export data",
       });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -116,6 +122,7 @@ export function FinancialManagement() {
             showDeleteDialog={showDeleteDialog}
             setShowDeleteDialog={setShowDeleteDialog}
             confirmDelete={confirmDelete}
+            exporting={exporting}
           />
         </TabsContent>
 
@@ -123,6 +130,7 @@ export function FinancialManagement() {
           <FinancialReports 
             payments={payments}
             handleExport={handleExport}
+            exporting={exporting}
           />
         </TabsContent>
 
