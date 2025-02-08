@@ -22,7 +22,7 @@ export function SmtpHealthStatus() {
           quota_remaining,
           error_details,
           created_at,
-          smtp_configurations (
+          smtp_configurations!inner (
             name,
             host
           )
@@ -31,9 +31,13 @@ export function SmtpHealthStatus() {
         .limit(5);
 
       if (error) throw error;
-      return data as (SmtpHealthCheck & { smtp_configurations: { name: string; host: string } })[];
+      
+      return (data as any[]).map(check => ({
+        ...check,
+        smtp_configurations: check.smtp_configurations[0]
+      })) as (SmtpHealthCheck & { smtp_configurations: { name: string; host: string } })[];
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   if (isLoading) return <div>Loading health status...</div>;

@@ -38,19 +38,23 @@ export function useFinancialQueries() {
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(50); // Limit initial load
+        .limit(50);
       
       if (error) {
         console.error('Error fetching payments:', error);
         throw error;
       }
-      console.log('Fetched payments:', data);
-      return data as Payment[];
+
+      return (data as any[]).map(payment => ({
+        ...payment,
+        members: payment.members?.[0],
+        members_collectors: payment.members_collectors?.[0]
+      })) as Payment[];
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    gcTime: 1000 * 60 * 10, // Keep unused data for 10 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
     retry: 2,
-    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    refetchOnWindowFocus: false,
     refetchOnMount: false
   });
 
@@ -84,8 +88,7 @@ export function useFinancialQueries() {
         console.error('Error fetching collectors:', error);
         throw error;
       }
-      console.log('Fetched collectors:', data);
-      return data as unknown as Collector[];
+      return data as Collector[];
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
