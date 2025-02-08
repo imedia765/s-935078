@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,20 +166,78 @@ export function MemberStats() {
     collectorReports[collectorId].totalAmount += totalAmount;
   });
 
+  const generateDetailedMemberExport = (member: Member & { payments: any }) => {
+    const title = `Member Report - ${member.full_name}`;
+    const reportData = {
+      memberInfo: {
+        member_number: member.member_number,
+        full_name: member.full_name,
+        email: member.email,
+        phone: member.phone,
+        status: member.status,
+        gender: member.gender,
+      },
+      familyMembers: member.family_members.map((fm: any) => ({
+        full_name: fm.full_name,
+        relationship: fm.relationship,
+        gender: fm.gender,
+        date_of_birth: fm.date_of_birth,
+      })),
+      paymentHistory: member.payment_requests.map((payment: any) => ({
+        payment_number: payment.payment_number,
+        amount: payment.amount,
+        status: payment.status,
+        payment_method: payment.payment_method,
+        created_at: new Date(payment.created_at).toLocaleDateString(),
+      })),
+      paymentSummary: {
+        total_payments: member.payments.total,
+        approved_payments: member.payments.approved,
+        pending_payments: member.payments.pending,
+        total_amount: member.payments.amount,
+      }
+    };
+    generatePDF([reportData], title, 'detailed-member');
+  };
+
   const handleExportCollectorReport = (collectorData: CollectorReport) => {
     const title = `Collector Report - ${collectorData.name}`;
     const reportData = collectorData.members.map((member) => ({
       member_number: member.member_number,
       full_name: member.full_name,
-      email: member.email,
-      phone: member.phone,
+      email: member.email || 'No email',
+      phone: member.phone || 'No phone',
       status: member.status,
       total_payments: member.payments.total,
       approved_payments: member.payments.approved,
       pending_payments: member.payments.pending,
-      total_amount: member.payments.amount
+      total_amount: member.payments.amount,
+      family_members: member.family_members.length
     }));
-    generatePDF(reportData, title);
+    generatePDF(reportData, title, 'collector');
+  };
+
+  const handleExportAllCollectors = () => {
+    const title = 'Complete Members Report - All Collectors';
+    const reportData = Object.values(collectorReports).map((collector) => ({
+      collector_name: collector.name,
+      collector_email: collector.email || 'No email',
+      collector_phone: collector.phone || 'No phone',
+      total_members: collector.totalMembers,
+      total_payments: collector.totalPayments,
+      approved_payments: collector.approvedPayments,
+      pending_payments: collector.pendingPayments,
+      total_amount: collector.totalAmount,
+      members: collector.members.map((member) => ({
+        member_number: member.member_number,
+        full_name: member.full_name,
+        email: member.email || 'No email',
+        phone: member.phone || 'No phone',
+        status: member.status,
+        payments: member.payments
+      }))
+    }));
+    generatePDF(reportData, title, 'all-collectors');
   };
 
   if (error) {
@@ -227,7 +284,19 @@ export function MemberStats() {
       </div>
 
       <Card className="p-6 glass-card">
-        <h2 className="text-xl font-semibold mb-4 text-gradient">Collector Reports</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gradient">Collector Reports</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportAllCollectors}
+            className="bg-primary/20 hover:bg-primary/30"
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            Export All Collectors
+          </Button>
+        </div>
+        
         <Accordion type="single" collapsible className="w-full space-y-4">
           {Object.values(collectorReports).map((collector) => (
             <AccordionItem key={collector.id} value={collector.id} className="border rounded-lg p-4">
@@ -256,7 +325,7 @@ export function MemberStats() {
                       className="bg-primary/20 hover:bg-primary/30"
                     >
                       <FileDown className="mr-2 h-4 w-4" />
-                      Export Report
+                      Export Collector Report
                     </Button>
                   </div>
                   <Table>
@@ -268,6 +337,7 @@ export function MemberStats() {
                         <TableHead>Status</TableHead>
                         <TableHead>Payments</TableHead>
                         <TableHead>Amount</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -298,6 +368,15 @@ export function MemberStats() {
                             </div>
                           </TableCell>
                           <TableCell>£{member.payments.amount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => generateDetailedMemberExport(member)}
+                            >
+                              <FileDown className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

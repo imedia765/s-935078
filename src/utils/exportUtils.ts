@@ -43,7 +43,7 @@ export const exportToCSV = (data: any[], filename: string) => {
   link.click();
 };
 
-export const generatePDF = (data: any[], title: string) => {
+export const generatePDF = (data: any[], title: string, exportType: 'all-collectors' | 'collector' | 'detailed-member' = 'collector') => {
   const doc = new jsPDF();
   
   // Add header
@@ -57,62 +57,125 @@ export const generatePDF = (data: any[], title: string) => {
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(11);
 
-  const tableData = data.map(member => ({
-    memberInfo: {
-      number: member.member_number,
-      name: member.full_name,
-      contact: `${member.email}\n${member.phone || 'No phone'}\n${member.address || 'No address'}`,
-      status: member.status,
-      registration: new Date(member.created_at).toLocaleDateString()
-    },
-    payments: {
-      total: member.payment_requests?.length || 0,
-      lastPayment: member.last_payment_date ? new Date(member.last_payment_date).toLocaleDateString() : 'N/A',
-      status: member.payment_status || 'N/A'
-    },
-    family: (member.family_members || []).map((fm: any) => 
-      `${fm.full_name} (${fm.relationship})`
-    ).join('\n'),
-    notes: member.notes || 'N/A'
-  }));
-
   let yPosition = 40;
-  
-  tableData.forEach((member, index) => {
-    if (index > 0 && yPosition > doc.internal.pageSize.height - 60) {
-      doc.addPage();
-      yPosition = 20;
-    }
 
+  if (exportType === 'detailed-member') {
+    const member = data[0];
+    
+    // Member Information
     autoTable(doc, {
       startY: yPosition,
-      head: [['Member Information', 'Payment Details', 'Family Members', 'Notes']],
-      body: [[
-        `Number: ${member.memberInfo.number}\n` +
-        `Name: ${member.memberInfo.name}\n` +
-        `Contact: ${member.memberInfo.contact}\n` +
-        `Status: ${member.memberInfo.status}\n` +
-        `Registered: ${member.memberInfo.registration}`,
-        
-        `Total Payments: ${member.payments.total}\n` +
-        `Last Payment: ${member.payments.lastPayment}\n` +
-        `Status: ${member.payments.status}`,
-        
-        member.family,
-        member.notes
-      ]],
+      head: [['Member Information']],
+      body: Object.entries(member.memberInfo).map(([key, value]) => [
+        `${key.replace(/_/g, ' ').toUpperCase()}: ${value || 'N/A'}`
+      ]),
       theme: 'grid',
-      styles: { fontSize: 10, cellPadding: 5 },
-      columnStyles: {
-        0: { cellWidth: 'auto' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 'auto' },
-        3: { cellWidth: 'auto' }
-      }
+      styles: { fontSize: 10, cellPadding: 5 }
     });
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;
-  });
+
+    // Family Members
+    if (member.familyMembers.length > 0) {
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Family Members']],
+        body: member.familyMembers.map((fm: any) => [
+          `${fm.full_name} (${fm.relationship}) - ${fm.gender || 'N/A'} - DOB: ${fm.date_of_birth || 'N/A'}`
+        ]),
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 5 }
+      });
+
+      yPosition = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    // Payment History
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Payment Date', 'Amount', 'Status', 'Method', 'Reference']],
+      body: member.paymentHistory.map((payment: any) => [
+        payment.created_at,
+        `£${payment.amount.toFixed(2)}`,
+        payment.status,
+        payment.payment_method,
+        payment.payment_number
+      ]),
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 5 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+    // Payment Summary
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Payment Summary']],
+      body: Object.entries(member.paymentSummary).map(([key, value]) => [
+        `${key.replace(/_/g, ' ').toUpperCase()}: ${
+          key.includes('amount') ? `£${Number(value).toFixed(2)}` : value
+        }`
+      ]),
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 5 }
+    });
+  } else if (exportType === 'all-collectors') {
+    data.forEach((collector, index) => {
+      if (index > 0) {
+        doc.addPage();
+        yPosition = 40;
+      }
+
+      // Collector Summary
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Collector Information']],
+        body: [
+          [`Name: ${collector.collector_name}`],
+          [`Email: ${collector.collector_email}`],
+          [`Phone: ${collector.collector_phone}`],
+          [`Total Members: ${collector.total_members}`],
+          [`Total Payments: ${collector.total_payments}`],
+          [`Total Amount: £${collector.total_amount.toFixed(2)}`]
+        ],
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 5 }
+      });
+
+      yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+      // Members Table
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Member', 'Contact', 'Status', 'Payments', 'Amount']],
+        body: collector.members.map((member: any) => [
+          `${member.full_name}\n${member.member_number}`,
+          `${member.email}\n${member.phone}`,
+          member.status,
+          `Total: ${member.payments.total}\nApproved: ${member.payments.approved}\nPending: ${member.payments.pending}`,
+          `£${member.payments.amount.toFixed(2)}`
+        ]),
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 5 }
+      });
+    });
+  } else {
+    // Single collector export
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Member Number', 'Name', 'Contact', 'Status', 'Payments', 'Amount']],
+      body: data.map((member) => [
+        member.member_number,
+        member.full_name,
+        `${member.email}\n${member.phone}`,
+        member.status,
+        `Total: ${member.total_payments}\nApproved: ${member.approved_payments}\nPending: ${member.pending_payments}`,
+        `£${member.total_amount.toFixed(2)}`
+      ]),
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 5 }
+    });
+  }
 
   doc.save(`${title}.pdf`);
 };
