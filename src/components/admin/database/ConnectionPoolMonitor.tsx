@@ -29,7 +29,7 @@ export function ConnectionPoolMonitor() {
     },
     refetchInterval: 30000, // Refresh every 30 seconds
     staleTime: 1000 * 15, // Consider data stale after 15 seconds
-    cacheTime: 1000 * 60 * 5 // Cache for 5 minutes
+    gcTime: 1000 * 60 * 5 // Cache for 5 minutes (formerly cacheTime)
   });
 
   if (isLoading) {

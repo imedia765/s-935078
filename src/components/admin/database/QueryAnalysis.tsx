@@ -19,7 +19,7 @@ export function QueryAnalysis() {
     },
     refetchInterval: 60000, // Refresh every minute
     staleTime: 1000 * 30, // Consider data stale after 30 seconds
-    cacheTime: 1000 * 60 * 5 // Cache for 5 minutes
+    gcTime: 1000 * 60 * 5 // Cache for 5 minutes (formerly cacheTime)
   });
 
   if (isLoading) {
