@@ -16,12 +16,18 @@ export function LogRetentionConfig() {
   const handleSaveRetention = async () => {
     setSaving(true);
     try {
+      // Store the retention period in the new_values field as JSON
       const { error } = await supabase.from('audit_logs')
         .update({
-          retention_days: retentionPeriod === '30days' ? 30 :
-            retentionPeriod === '90days' ? 90 :
-            retentionPeriod === '180days' ? 180 :
-            retentionPeriod === '1year' ? 365 : 730
+          new_values: {
+            retention_period: retentionPeriod,
+            days: retentionPeriod === '30days' ? 30 :
+              retentionPeriod === '90days' ? 90 :
+              retentionPeriod === '180days' ? 180 :
+              retentionPeriod === '1year' ? 365 : 730
+          },
+          operation: 'UPDATE',
+          table_name: 'audit_retention'
         })
         .eq('id', 'config');
 

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Save } from "lucide-react";
 
+type AppRole = 'admin' | 'collector' | 'member';
+
 interface Permission {
   id: string;
   name: string;
@@ -16,7 +18,7 @@ interface Permission {
 }
 
 interface RolePermission {
-  role: string;
+  role: AppRole;
   permission_name: string;
   granted: boolean;
 }
@@ -29,16 +31,17 @@ export function RolePermissionsMatrix() {
   const { data: rolePermissions, isLoading } = useQuery({
     queryKey: ["rolePermissions"],
     queryFn: async () => {
-      // Get roles and permissions in parallel
       const [rolesResult, permsResult] = await Promise.all([
         supabase.from('user_roles').select('role').eq('role', 'admin'),
-        supabase.from('permissions').select('*')
+        supabase.from('role_permissions').select('*')
       ]);
 
-      const roles = rolesResult.data || [];
-      const perms = permsResult.data || [];
+      if (!rolesResult.data || !permsResult.data) {
+        throw new Error("Failed to fetch roles or permissions");
+      }
 
-      if (!roles.length || !perms.length) throw new Error("Failed to fetch roles or permissions");
+      const roles = rolesResult.data as { role: AppRole }[];
+      const perms = permsResult.data as Permission[];
 
       // Get unique roles
       const uniqueRoles = Array.from(new Set(roles.map(r => r.role)));
@@ -71,12 +74,12 @@ export function RolePermissionsMatrix() {
       setPermissions(matrix);
       return {
         roles: uniqueRoles,
-        permissions: perms as Permission[]
+        permissions: perms
       };
     }
   });
 
-  const handlePermissionChange = (role: string, permission: string) => {
+  const handlePermissionChange = (role: AppRole, permission: string) => {
     setPermissions(prev => prev.map(p => {
       if (p.role === role && p.permission_name === permission) {
         return { ...p, granted: !p.granted };
@@ -95,7 +98,8 @@ export function RolePermissionsMatrix() {
             .map(({ role, permission_name }) => ({
               role,
               permission_name,
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              description: `Permission ${permission_name} for role ${role}`
             }))
         );
 
