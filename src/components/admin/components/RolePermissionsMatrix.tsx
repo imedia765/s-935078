@@ -29,10 +29,15 @@ export function RolePermissionsMatrix() {
   const { data: rolePermissions, isLoading } = useQuery({
     queryKey: ["rolePermissions"],
     queryFn: async () => {
-      const [{ data: roles }, { data: perms }] = await Promise.all([
-        supabase.from('user_roles').select('role').distinct(),
-        supabase.from('permissions').select('*')
-      ]);
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('role', 'admin')
+        .distinct();
+
+      const { data: perms } = await supabase
+        .from('permissions')
+        .select('*');
 
       if (!roles || !perms) throw new Error("Failed to fetch roles or permissions");
 
@@ -65,7 +70,7 @@ export function RolePermissionsMatrix() {
       setPermissions(matrix);
       return {
         roles: uniqueRoles,
-        permissions: perms as Permission[]
+        permissions: perms
       };
     }
   });
