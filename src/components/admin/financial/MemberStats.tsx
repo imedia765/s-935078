@@ -21,13 +21,53 @@ import { FileDown, Loader2 } from "lucide-react";
 import { generatePDF } from "@/utils/exportUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+// Define TypeScript interfaces for our data structures
+interface Collector {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+}
+
+interface Member {
+  id: string;
+  member_number: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  gender?: string;
+  family_members: any[];
+  payment_requests: any[];
+  collector: Collector | null;
+}
+
+interface CollectorReport {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  members: Array<Member & { 
+    payments: {
+      total: number;
+      approved: number;
+      pending: number;
+      amount: number;
+    }
+  }>;
+  totalMembers: number;
+  totalPayments: number;
+  approvedPayments: number;
+  pendingPayments: number;
+  totalAmount: number;
+}
+
 export function MemberStats() {
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ["memberStats"],
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        // Updated query to properly join with collectors
         const { data, error } = await supabase
           .from('members')
           .select(`
@@ -65,7 +105,7 @@ export function MemberStats() {
         }));
 
         console.log('Fetched member stats:', processedData);
-        return processedData;
+        return processedData as Member[];
       } catch (error) {
         console.error('Error in memberStats query:', error);
         throw error;
@@ -84,8 +124,7 @@ export function MemberStats() {
     unspecified: stats?.filter(m => !m.gender)?.length || 0,
   };
 
-  // Updated collector reports processing
-  const collectorReports = stats?.reduce((acc: any, member) => {
+  const collectorReports = stats?.reduce((acc: Record<string, CollectorReport>, member) => {
     const collector = member.collector;
     const collectorId = collector?.id || 'unassigned';
     const collectorName = collector?.name || 'Unassigned';
@@ -94,8 +133,8 @@ export function MemberStats() {
       acc[collectorId] = {
         id: collectorId,
         name: collectorName,
-        email: collector?.email,
-        phone: collector?.phone,
+        email: collector?.email || null,
+        phone: collector?.phone || null,
         members: [],
         totalMembers: 0,
         totalPayments: 0,
@@ -192,8 +231,8 @@ export function MemberStats() {
       <Card className="p-6 glass-card">
         <h2 className="text-xl font-semibold mb-4 text-gradient">Collector Reports</h2>
         <Accordion type="single" collapsible className="w-full space-y-4">
-          {Object.values(collectorReports || {}).map((collector: any) => (
-            <AccordionItem key={collector.id} value={collector.id || 'unassigned'} className="border rounded-lg p-4">
+          {Object.values(collectorReports || {}).map((collector) => (
+            <AccordionItem key={collector.id} value={collector.id} className="border rounded-lg p-4">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex flex-col items-start">
