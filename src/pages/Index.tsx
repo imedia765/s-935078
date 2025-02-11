@@ -25,17 +25,19 @@ export const Index = () => {
 
   const tryLogin = async (email: string, attemptedFormat: string) => {
     try {
+      console.log(`Attempting login with ${attemptedFormat}:`, email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (!error) {
-        console.log(`Login successful with ${attemptedFormat} format:`, email);
+        console.log(`Login successful with ${attemptedFormat}`);
         return { data, error: null };
       }
       
-      console.log(`Login failed with ${attemptedFormat} format:`, error.message);
+      console.log(`Login failed with ${attemptedFormat}:`, error.message);
       return { data: null, error };
     } catch (error: any) {
       console.error(`Error during login attempt with ${attemptedFormat}:`, error);
@@ -103,148 +105,82 @@ export const Index = () => {
     try {
       await supabase.auth.signOut();
       
-      console.log("Attempting login for member:", memberNumber);
-      
-      const deviceInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
-      };
-
+      // Get member details first
       const { data: member, error: memberError } = await supabase
         .from("members")
         .select("*, auth_user_id, email")
         .eq("member_number", memberNumber)
         .maybeSingle();
 
-      console.log("Member lookup result:", { member, memberError });
-
       if (memberError || !member) {
-        await supabase.rpc('log_login_attempt', {
-          p_member_number: memberNumber,
-          p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-          p_status: 'member_not_found',
-          p_error_details: { error: memberError?.message || 'Member not found' },
-          p_user_agent: navigator.userAgent,
-          p_ip_address: window.location.hostname
-        });
-
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: "Please check your member number and try again",
+          description: "Member not found. Please check your member number.",
         });
         setIsLoading(false);
         return;
       }
 
+      // Check if account is locked
       if (member.locked_until && new Date(member.locked_until) > new Date()) {
         const waitTime = Math.ceil(
           (new Date(member.locked_until).getTime() - new Date().getTime()) / 1000 / 60
         );
-
-        await supabase.rpc('log_login_attempt', {
-          p_member_number: memberNumber,
-          p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-          p_status: 'account_locked',
-          p_error_details: { wait_time: waitTime },
-          p_user_agent: navigator.userAgent,
-          p_ip_address: window.location.hostname
-        });
-
         toast({
           variant: "destructive",
-          title: "Account Temporarily Locked",
+          title: "Account Locked",
           description: `Please try again in ${waitTime} minutes or contact support`,
         });
         setIsLoading(false);
         return;
       }
 
-      if (member.status !== "active") {
-        if (member.failed_login_attempts && member.failed_login_attempts > 3) {
-          await supabase.rpc('log_login_attempt', {
-            p_member_number: memberNumber,
-            p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-            p_status: 'account_locked',
-            p_error_details: { reason: 'too_many_attempts' },
-            p_user_agent: navigator.userAgent,
-            p_ip_address: window.location.hostname
-          });
-
-          toast({
-            variant: "destructive",
-            title: "Account Locked",
-            description: "Too many failed attempts. Please contact support.",
-          });
-        } else {
-          await supabase.rpc('log_login_attempt', {
-            p_member_number: memberNumber,
-            p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-            p_status: 'account_inactive',
-            p_user_agent: navigator.userAgent,
-            p_ip_address: window.location.hostname
-          });
-
-          toast({
-            variant: "destructive",
-            title: "Account Inactive",
-            description: "Please contact support to activate your account",
-          });
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      const emailFormats = [
-        {
-          email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-          format: "standard"
-        },
-        {
-          email: `${memberNumber.toLowerCase()}@temp.com`,
-          format: "legacy"
-        }
-      ];
-
-      if (member.email && member.email.includes('@') && !member.email.includes('@temp')) {
+      // Define email formats to try
+      const emailFormats = [];
+      
+      // If member has a personal email, try that first
+      if (member.email && !member.email.includes('@temp')) {
         emailFormats.push({
           email: member.email,
-          format: "personal"
+          format: "Personal email"
         });
       }
 
-      let loginSuccess = false;
-      let authData = null;
-      let signInError = null;
-      let usedEmail = '';
+      // Add standardized format
+      emailFormats.push({
+        email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+        format: "Standard format"
+      });
 
+      // Add legacy format as fallback
+      emailFormats.push({
+        email: `${memberNumber.toLowerCase()}@temp.com`,
+        format: "Legacy format"
+      });
+
+      let loginSuccess = false;
+      let lastError = null;
+      let successfulEmail = '';
+
+      // Try each format in sequence
       for (const { email, format } of emailFormats) {
-        console.log(`Trying login with ${format} format:`, email);
         const result = await tryLogin(email, format);
         
-        if (!result.error) {
-          loginSuccess = true;
-          authData = result.data;
-          usedEmail = email;
-          break;
+        if (result.error) {
+          lastError = result.error;
+          continue;
         }
-        signInError = result.error;
+
+        loginSuccess = true;
+        successfulEmail = email;
+        break;
       }
 
       if (!loginSuccess) {
+        // Handle failed login
         const { error: loginError } = await supabase.rpc("handle_failed_login", {
           member_number: memberNumber,
-        });
-
-        await supabase.rpc('log_login_attempt', {
-          p_member_number: memberNumber,
-          p_attempted_email: usedEmail || `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-          p_status: 'auth_failed',
-          p_error_details: { error: signInError?.message },
-          p_user_agent: navigator.userAgent,
-          p_ip_address: window.location.hostname
         });
 
         if (loginError) {
@@ -254,68 +190,37 @@ export const Index = () => {
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: "Invalid credentials. Please try again.",
+          description: "Invalid credentials. If you're having trouble, please contact support.",
         });
         setIsLoading(false);
         return;
       }
 
-      await supabase.rpc('log_login_attempt', {
-        p_member_number: memberNumber,
-        p_attempted_email: usedEmail,
-        p_status: 'success',
-        p_user_agent: navigator.userAgent,
-        p_ip_address: window.location.hostname
-      });
-
+      // Handle successful login
       if (rememberMe) {
         localStorage.setItem("rememberedMember", memberNumber);
       } else {
         localStorage.removeItem("rememberedMember");
       }
 
-      await supabase
-        .from("audit_logs")
-        .insert({
-          operation: "INSERT",
-          table_name: "login_events",
-          new_values: {
-            member_id: member.id,
-            login_time: new Date().toISOString(),
-            device_info: deviceInfo,
-            ip_address: window.location.hostname,
-            status: "success"
-          },
-          severity: "info"
-        });
-
       const currentTime = new Date().toISOString();
       localStorage.setItem("lastLoginTime", currentTime);
       setLastLogin(currentTime);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Failed to establish session");
-      }
+      // Reset failed login attempts on success
+      await supabase.rpc("cleanup_failed_attempts", {
+        p_member_number: memberNumber
+      });
 
       toast({
         title: "Welcome back!",
         description: "Successfully logged in",
       });
+
       navigate("/profile");
 
     } catch (error: any) {
       console.error("Login error:", error);
-      
-      await supabase.rpc('log_login_attempt', {
-        p_member_number: memberNumber,
-        p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-        p_status: 'error',
-        p_error_details: { error: error.message },
-        p_user_agent: navigator.userAgent,
-        p_ip_address: window.location.hostname
-      });
-
       toast({
         variant: "destructive",
         title: "Error",
