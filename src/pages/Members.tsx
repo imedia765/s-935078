@@ -38,12 +38,37 @@ export default function Members() {
   const [deleteConfirmMember, setDeleteConfirmMember] = useState<any>(null);
   const [statusConfirmMember, setStatusConfirmMember] = useState<any>(null);
 
+  // Get current user's role and collector ID if they're a collector
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      const { data: collectorInfo } = await supabase
+        .from("members_collectors")
+        .select("id")
+        .eq("auth_user_id", user.id)
+        .single();
+
+      return {
+        isAdmin: roles?.some(r => r.role === "admin") || false,
+        collectorId: collectorInfo?.id || null
+      };
+    }
+  });
+
   const { userInfo, collectors, membersData, isLoading } = useMemberQueries(
     selectedCollector,
     searchTerm,
     sortField,
     sortDirection,
-    null,  // collectorId - passing null as we'll handle the filtering in the query
+    currentUser?.collectorId, // Pass the collector ID if user is a collector
     page,
     ITEMS_PER_PAGE
   );
@@ -70,8 +95,9 @@ export default function Members() {
           )
         `);
 
-      if (!userInfo?.roles.includes("admin")) {
-        query = query.eq('collector_id', userInfo?.collectorId);
+      // Only filter by collector if user is not an admin
+      if (!currentUser?.isAdmin) {
+        query = query.eq('collector_id', currentUser?.collectorId);
       } 
       else if (selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
@@ -152,7 +178,7 @@ export default function Members() {
           onExportExcel={handleExportExcel}
           onAddMember={(data) => addMemberMutation.mutate(data)}
           collectors={collectors || []}
-          isAdmin={userInfo?.roles.includes("admin")}
+          isAdmin={currentUser?.isAdmin || false}
         />
 
         <Card className="glass-card p-6">
