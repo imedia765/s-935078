@@ -73,13 +73,13 @@ export function useProfileData(): UseProfileDataReturn {
           .limit(1);
 
         if (emailAuditError) {
-          throw new Error(`Failed to fetch email audit: ${emailAuditError.message}`);
+          console.error('Failed to fetch email audit:', emailAuditError);
         }
 
         const emailAudit = emailAuditRecords?.[0];
         console.log("[useProfileData] Email audit data:", { emailAudit });
 
-        let memberNumber = emailAudit?.member_number || user.user_metadata?.member_number;
+        const memberNumber = emailAudit?.member_number || user.user_metadata?.member_number;
 
         if (memberNumber) {
           const matchResult = await matchAndLinkProfile(user.id, memberNumber);
@@ -181,7 +181,7 @@ export function useProfileData(): UseProfileDataReturn {
       }
     },
     staleTime: 30000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep cached data for 5 minutes (replaced cacheTime with gcTime)
+    gcTime: 5 * 60 * 1000, // Keep cached data for 5 minutes
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 30000),
   });
