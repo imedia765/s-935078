@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, AlertCircle, CheckCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { PostgrestError } from "@supabase/supabase-js";
 
 interface EmailStandardization {
   member_number: string;
@@ -42,10 +43,13 @@ export function EmailStandardizationManager() {
 
       refetch();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const message = error instanceof PostgrestError 
+        ? error.message 
+        : 'An unknown error occurred';
+      
       toast({
         title: "Migration Failed",
-        description: errorMessage,
+        description: message,
         variant: "destructive",
       });
     }
