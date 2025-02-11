@@ -41,10 +41,11 @@ export function EmailStandardizationManager() {
       });
 
       refetch();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({
         title: "Migration Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
