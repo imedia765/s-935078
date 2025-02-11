@@ -64,23 +64,23 @@ export function useProfileData(): UseProfileDataReturn {
           return null;
         }
 
-        // Get member number from email_audit table
+        // Get latest member number from email_audit table
         const { data: emailAuditRecords, error: emailAuditError } = await supabase
           .from('email_audit')
           .select('member_number')
           .eq('auth_user_id', user.id)
-          .maybeSingle();
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-        if (emailAuditError) {
+        if (emailAuditError && emailAuditError.code !== 'PGRST116') {
           console.error('Failed to fetch email audit:', emailAuditError);
         }
 
         console.log("[useProfileData] Email audit records:", emailAuditRecords);
 
-        const emailAudit = emailAuditRecords;
-        console.log("[useProfileData] Email audit data:", { emailAudit });
-
-        const memberNumber = emailAudit?.member_number || user.user_metadata?.member_number;
+        const memberNumber = emailAuditRecords?.member_number || user.user_metadata?.member_number;
+        console.log("[useProfileData] Using member number:", memberNumber);
 
         if (memberNumber) {
           const matchResult = await matchAndLinkProfile(user.id, memberNumber);
@@ -95,8 +95,8 @@ export function useProfileData(): UseProfileDataReturn {
           }
         }
 
-        // Optimized query with specific column selection
-        const { data: member, error: memberError } = await supabase
+        // Get the most recently updated member record for this user
+        const { data: members, error: membersError } = await supabase
           .from("members")
           .select(`
             id,
@@ -144,10 +144,15 @@ export function useProfileData(): UseProfileDataReturn {
             )
           `)
           .eq("auth_user_id", user.id)
-          .maybeSingle();
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single();
 
-        if (memberError) {
-          throw new Error(`Failed to fetch member data: ${memberError.message}`);
+        if (membersError) {
+          if (membersError.code === 'PGRST116') {
+            return null;  // No member found
+          }
+          throw new Error(`Failed to fetch member data: ${membersError.message}`);
         }
 
         const { data: roles, error: rolesError } = await supabase
@@ -159,15 +164,15 @@ export function useProfileData(): UseProfileDataReturn {
           throw new Error(`Failed to fetch user roles: ${rolesError.message}`);
         }
 
-        if (member) {
+        if (members) {
           const memberWithRelations: MemberWithRelations = {
-            ...member,
+            ...members,
             user_roles: roles?.map(r => ({ role: r.role })) || [],
             roles: roles?.map(r => r.role) || [],
-            member_notes: member.member_notes || [],
-            family_members: member.family_members || [],
-            payment_requests: member.payment_requests || [],
-            failed_login_attempts: member.failed_login_attempts || 0
+            member_notes: members.member_notes || [],
+            family_members: members.family_members || [],
+            payment_requests: members.payment_requests || [],
+            failed_login_attempts: members.failed_login_attempts || 0
           };
           
           return memberWithRelations;
