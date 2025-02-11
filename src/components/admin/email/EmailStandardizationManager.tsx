@@ -21,6 +21,10 @@ interface EmailMigrationResult {
   message: string;
 }
 
+interface EmailMigrationParams {
+  p_member_number: string;
+}
+
 export function EmailStandardizationManager() {
   const { toast } = useToast();
 
@@ -35,7 +39,7 @@ export function EmailStandardizationManager() {
 
   const handleMigration = async (memberNumber: string) => {
     try {
-      const { data, error } = await supabase.rpc<EmailMigrationResult>('standardize_auth_emails', {
+      const { data, error } = await supabase.rpc<EmailMigrationResult, EmailMigrationParams>('standardize_auth_emails', {
         p_member_number: memberNumber
       });
       
