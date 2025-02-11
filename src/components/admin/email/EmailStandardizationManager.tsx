@@ -34,7 +34,14 @@ export function EmailStandardizationManager() {
         p_member_number: memberNumber
       });
       
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Migration Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Email Migration Initiated",
@@ -43,13 +50,9 @@ export function EmailStandardizationManager() {
 
       refetch();
     } catch (error) {
-      const message = error instanceof PostgrestError 
-        ? error.message 
-        : 'An unknown error occurred';
-      
       toast({
         title: "Migration Failed",
-        description: message,
+        description: "An unexpected error occurred during migration",
         variant: "destructive",
       });
     }
