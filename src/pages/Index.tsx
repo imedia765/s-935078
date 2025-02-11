@@ -24,16 +24,23 @@ export const Index = () => {
   const { toast } = useToast();
 
   const tryLogin = async (email: string, attemptedFormat: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (!error) {
-      console.log(`Login successful with ${attemptedFormat} format:`, email);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (!error) {
+        console.log(`Login successful with ${attemptedFormat} format:`, email);
+        return { data, error: null };
+      }
+      
+      console.log(`Login failed with ${attemptedFormat} format:`, error.message);
+      return { data: null, error };
+    } catch (error: any) {
+      console.error(`Error during login attempt with ${attemptedFormat}:`, error);
+      return { data: null, error };
     }
-    
-    return { data, error };
   };
 
   useEffect(() => {
@@ -109,7 +116,7 @@ export const Index = () => {
         .from("members")
         .select("*, auth_user_id, email")
         .eq("member_number", memberNumber)
-        .single();
+        .maybeSingle();
 
       console.log("Member lookup result:", { member, memberError });
 
