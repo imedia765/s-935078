@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +17,24 @@ interface AuthSetupResponse {
   auth_user_id?: string;
 }
 
+interface LoginAttemptResult {
+  data: any;
+  error: any;
+  lockoutInfo?: {
+    locked: boolean;
+    attempts: number;
+    locked_until?: string;
+    next_lockout_duration?: number;
+  };
+}
+
 export const Index = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastLogin, setLastLogin] = useState<string | null>(null);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<{
     memberNumber?: string;
     password?: string;
@@ -29,16 +42,37 @@ export const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const tryLogin = async (email: string, attemptedFormat: string) => {
+  const tryLogin = async (email: string, attemptedFormat: string): Promise<LoginAttemptResult> => {
     try {
       console.log(`[Login] Attempting login with ${attemptedFormat}:`, email);
       
-      // Log the attempt for tracking
+      // Check progressive lockout status first
+      const { data: lockoutData, error: lockoutError } = await supabase.rpc('handle_progressive_lockout', {
+        p_member_number: memberNumber
+      });
+
+      if (lockoutError) {
+        console.error("[Login] Error checking lockout status:", lockoutError);
+      } else if (lockoutData?.locked) {
+        const lockedUntil = new Date(lockoutData.locked_until);
+        const minutesLeft = Math.ceil((lockedUntil.getTime() - new Date().getTime()) / 1000 / 60);
+        
+        return {
+          data: null,
+          error: new Error(`Account is locked. Please try again in ${minutesLeft} minutes.`),
+          lockoutInfo: lockoutData
+        };
+      }
+
+      // Log the attempt
       await supabase.from('login_attempt_tracking').insert({
         member_number: memberNumber,
         attempted_email: email,
         status: 'attempting',
-        error_details: { format: attemptedFormat }
+        error_details: { 
+          format: attemptedFormat,
+          ip_address: window.location.hostname // Basic IP tracking
+        }
       });
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -55,7 +89,22 @@ export const Index = () => {
           status: 'success',
           error_details: { format: attemptedFormat }
         });
-        return { data, error: null };
+
+        // If this was a legacy format, try to standardize the email
+        if (email.endsWith('@temp.com')) {
+          const { data: standardizeData, error: standardizeError } = await supabase.rpc(
+            'standardize_member_email',
+            { p_member_number: memberNumber }
+          );
+
+          if (standardizeError) {
+            console.error("[Login] Email standardization error:", standardizeError);
+          } else {
+            console.log("[Login] Email standardization result:", standardizeData);
+          }
+        }
+
+        return { data, error: null, lockoutInfo: lockoutData };
       }
       
       console.log(`[Login] Failed with ${attemptedFormat}:`, error.message);
@@ -69,7 +118,8 @@ export const Index = () => {
           error: error.message
         }
       });
-      return { data: null, error };
+
+      return { data: null, error, lockoutInfo: lockoutData };
     } catch (error: any) {
       console.error(`[Login] Error during attempt with ${attemptedFormat}:`, error);
       return { data: null, error };
@@ -141,7 +191,6 @@ export const Index = () => {
         p_member_number: memberNumber
       });
 
-      // Cast the response after converting to unknown first
       const authSetup = (data as unknown) as AuthSetupResponse;
 
       if (rpcError || !authSetup?.success) {
@@ -172,53 +221,51 @@ export const Index = () => {
         return;
       }
 
-      // Check if account is locked
-      if (member.locked_until && new Date(member.locked_until) > new Date()) {
-        const waitTime = Math.ceil(
-          (new Date(member.locked_until).getTime() - new Date().getTime()) / 1000 / 60
-        );
-        toast({
-          variant: "destructive",
-          title: "Account Locked",
-          description: `Account is temporarily locked. Please try again in ${waitTime} minutes or contact support.`,
-        });
-        setIsLoading(false);
-        return;
-      }
-
       // Define email formats to try
-      const emailFormats = [];
-      
-      // Add standardized format first (this is now the primary format)
-      emailFormats.push({
-        email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-        format: "Standard format"
-      });
+      const emailFormats = [
+        {
+          email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+          format: "Standard format",
+          description: "Using your standardized member email"
+        }
+      ];
 
       // If member has a personal email, try that next
       if (member.email && !member.email.includes('@temp')) {
         emailFormats.push({
           email: member.email,
-          format: "Personal email"
+          format: "Personal email",
+          description: "Using your personal email"
         });
       }
 
       // Add legacy format as last resort
       emailFormats.push({
         email: `${memberNumber.toLowerCase()}@temp.com`,
-        format: "Legacy format"
+        format: "Legacy format",
+        description: "Using legacy email format"
       });
 
       let loginSuccess = false;
       let lastError = null;
       let successfulEmail = '';
+      let lastLockoutInfo = null;
       let attemptedFormats: string[] = [];
 
       // Try each format in sequence
-      for (const { email, format } of emailFormats) {
+      for (const { email, format, description } of emailFormats) {
         attemptedFormats.push(format);
+        console.log(`[Login] Trying ${format}: ${description}`);
+        
         const result = await tryLogin(email, format);
         
+        // Update remaining attempts if available
+        if (result.lockoutInfo) {
+          lastLockoutInfo = result.lockoutInfo;
+          const remainingAttempts = result.lockoutInfo.attempts;
+          setRemainingAttempts(remainingAttempts);
+        }
+
         if (result.error) {
           lastError = result.error;
           continue;
@@ -230,20 +277,25 @@ export const Index = () => {
       }
 
       if (!loginSuccess) {
-        // Handle failed login
-        const { error: loginError } = await supabase.rpc("handle_failed_login", {
-          member_number: memberNumber,
-        });
-
-        if (loginError) {
-          console.error("[Login] Error handling failed login:", loginError);
+        // Check if account is locked
+        if (lastLockoutInfo?.locked) {
+          const lockedUntil = new Date(lastLockoutInfo.locked_until!);
+          const minutesLeft = Math.ceil((lockedUntil.getTime() - new Date().getTime()) / 1000 / 60);
+          
+          toast({
+            variant: "destructive",
+            title: "Account Locked",
+            description: `Account is temporarily locked. Please try again in ${minutesLeft} minutes or contact support.`,
+          });
+        } else {
+          const attemptsLeft = 5 - (lastLockoutInfo?.attempts || 0);
+          toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: `Invalid credentials. ${attemptsLeft} attempts remaining before temporary lockout. Your member number is your password. Please contact support if you continue having issues.`,
+          });
         }
-
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: `Invalid credentials. Your member number is your password. Please contact support if you continue having issues.`,
-        });
+        
         setIsLoading(false);
         return;
       }
@@ -258,11 +310,6 @@ export const Index = () => {
       const currentTime = new Date().toISOString();
       localStorage.setItem("lastLoginTime", currentTime);
       setLastLogin(currentTime);
-
-      // Reset failed login attempts on success
-      await supabase.rpc("cleanup_failed_attempts", {
-        p_member_number: memberNumber
-      });
 
       toast({
         title: "Welcome back!",
