@@ -25,7 +25,15 @@ export const Index = () => {
 
   const tryLogin = async (email: string, attemptedFormat: string) => {
     try {
-      console.log(`Attempting login with ${attemptedFormat}:`, email);
+      console.log(`[Login] Attempting login with ${attemptedFormat}:`, email);
+      
+      // Log the attempt for tracking
+      await supabase.from('login_attempt_tracking').insert({
+        member_number: memberNumber,
+        attempted_email: email,
+        status: 'attempting',
+        error_details: { format: attemptedFormat }
+      });
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -33,14 +41,31 @@ export const Index = () => {
       });
       
       if (!error) {
-        console.log(`Login successful with ${attemptedFormat}`);
+        console.log(`[Login] Successful with ${attemptedFormat}`);
+        // Log successful attempt
+        await supabase.from('login_attempt_tracking').insert({
+          member_number: memberNumber,
+          attempted_email: email,
+          status: 'success',
+          error_details: { format: attemptedFormat }
+        });
         return { data, error: null };
       }
       
-      console.log(`Login failed with ${attemptedFormat}:`, error.message);
+      console.log(`[Login] Failed with ${attemptedFormat}:`, error.message);
+      // Log failed attempt
+      await supabase.from('login_attempt_tracking').insert({
+        member_number: memberNumber,
+        attempted_email: email,
+        status: 'failed',
+        error_details: { 
+          format: attemptedFormat,
+          error: error.message
+        }
+      });
       return { data: null, error };
     } catch (error: any) {
-      console.error(`Error during login attempt with ${attemptedFormat}:`, error);
+      console.error(`[Login] Error during attempt with ${attemptedFormat}:`, error);
       return { data: null, error };
     }
   };
@@ -130,7 +155,7 @@ export const Index = () => {
         toast({
           variant: "destructive",
           title: "Account Locked",
-          description: `Please try again in ${waitTime} minutes or contact support`,
+          description: `Account is temporarily locked. Please try again in ${waitTime} minutes or contact support.`,
         });
         setIsLoading(false);
         return;
@@ -162,9 +187,11 @@ export const Index = () => {
       let loginSuccess = false;
       let lastError = null;
       let successfulEmail = '';
+      let attemptedFormats: string[] = [];
 
       // Try each format in sequence
       for (const { email, format } of emailFormats) {
+        attemptedFormats.push(format);
         const result = await tryLogin(email, format);
         
         if (result.error) {
@@ -184,13 +211,13 @@ export const Index = () => {
         });
 
         if (loginError) {
-          console.error("Error handling failed login:", loginError);
+          console.error("[Login] Error handling failed login:", loginError);
         }
 
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: "Invalid credentials. If you're having trouble, please contact support.",
+          description: `Invalid credentials. Attempted formats: ${attemptedFormats.join(', ')}. Please contact support if you continue having issues.`,
         });
         setIsLoading(false);
         return;
@@ -214,13 +241,13 @@ export const Index = () => {
 
       toast({
         title: "Welcome back!",
-        description: "Successfully logged in",
+        description: `Successfully logged in using ${successfulEmail}`,
       });
 
       navigate("/profile");
 
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("[Login] Unexpected error:", error);
       toast({
         variant: "destructive",
         title: "Error",
