@@ -130,7 +130,24 @@ export const Index = () => {
     try {
       await supabase.auth.signOut();
       
-      // Get member details first
+      // First ensure auth user exists
+      const { data: authSetup, error: authSetupError } = await supabase
+        .rpc('ensure_auth_user_exists', {
+          p_member_number: memberNumber
+        });
+
+      if (authSetupError || !authSetup?.success) {
+        console.error("[Login] Auth setup error:", authSetupError || authSetup?.error);
+        toast({
+          variant: "destructive",
+          title: "Login Error",
+          description: "Unable to setup authentication. Please contact support.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Get member details
       const { data: member, error: memberError } = await supabase
         .from("members")
         .select("*, auth_user_id, email")
@@ -164,7 +181,13 @@ export const Index = () => {
       // Define email formats to try
       const emailFormats = [];
       
-      // If member has a personal email, try that first
+      // Add standardized format first (this is now the primary format)
+      emailFormats.push({
+        email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+        format: "Standard format"
+      });
+
+      // If member has a personal email, try that next
       if (member.email && !member.email.includes('@temp')) {
         emailFormats.push({
           email: member.email,
@@ -172,13 +195,7 @@ export const Index = () => {
         });
       }
 
-      // Add standardized format
-      emailFormats.push({
-        email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-        format: "Standard format"
-      });
-
-      // Add legacy format as fallback
+      // Add legacy format as last resort
       emailFormats.push({
         email: `${memberNumber.toLowerCase()}@temp.com`,
         format: "Legacy format"
@@ -217,7 +234,7 @@ export const Index = () => {
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: `Invalid credentials. Attempted formats: ${attemptedFormats.join(', ')}. Please contact support if you continue having issues.`,
+          description: `Invalid credentials. Your member number is your password. Please contact support if you continue having issues.`,
         });
         setIsLoading(false);
         return;
