@@ -112,6 +112,7 @@ export type Database = {
           compressed: boolean | null
           id: string
           impact_level: string | null
+          metadata: Json | null
           new_values: Json | null
           old_values: Json | null
           operation: Database["public"]["Enums"]["audit_operation"]
@@ -128,6 +129,7 @@ export type Database = {
           compressed?: boolean | null
           id?: string
           impact_level?: string | null
+          metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
           operation: Database["public"]["Enums"]["audit_operation"]
@@ -144,6 +146,7 @@ export type Database = {
           compressed?: boolean | null
           id?: string
           impact_level?: string | null
+          metadata?: Json | null
           new_values?: Json | null
           old_values?: Json | null
           operation?: Database["public"]["Enums"]["audit_operation"]
@@ -449,6 +452,7 @@ export type Database = {
           id: string
           member_email: string | null
           member_number: string | null
+          metadata: Json | null
         }
         Insert: {
           auth_email?: string | null
@@ -457,6 +461,7 @@ export type Database = {
           id?: string
           member_email?: string | null
           member_number?: string | null
+          metadata?: Json | null
         }
         Update: {
           auth_email?: string | null
@@ -465,6 +470,7 @@ export type Database = {
           id?: string
           member_email?: string | null
           member_number?: string | null
+          metadata?: Json | null
         }
         Relationships: [
           {
