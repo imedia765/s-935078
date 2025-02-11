@@ -6,7 +6,19 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type StandardizationStatus = Database["public"]["CompositeTypes"]["email_standardization_status"];
+type StandardizationStatus = {
+  total_members: number;
+  standardized_count: number;
+  legacy_count: number;
+  personal_email_count: number;
+  failed_migrations_count: number;
+  last_migration_timestamp: string | null;
+  recent_failures: Array<{
+    member_number: string;
+    error: string;
+    attempted_at: string;
+  }>;
+};
 
 export function EmailStandardizationCard() {
   const { data: standardizationStatus, isLoading } = useQuery({
