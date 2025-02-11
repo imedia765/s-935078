@@ -69,14 +69,15 @@ export function useProfileData(): UseProfileDataReturn {
           .from('email_audit')
           .select('member_number')
           .eq('auth_user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .maybeSingle();
 
         if (emailAuditError) {
           console.error('Failed to fetch email audit:', emailAuditError);
         }
 
-        const emailAudit = emailAuditRecords?.[0];
+        console.log("[useProfileData] Email audit records:", emailAuditRecords);
+
+        const emailAudit = emailAuditRecords;
         console.log("[useProfileData] Email audit data:", { emailAudit });
 
         const memberNumber = emailAudit?.member_number || user.user_metadata?.member_number;
