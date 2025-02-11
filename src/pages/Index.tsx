@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,7 +117,8 @@ export const Index = () => {
           p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
           p_status: 'member_not_found',
           p_error_details: { error: memberError?.message || 'Member not found' },
-          p_user_agent: navigator.userAgent
+          p_user_agent: navigator.userAgent,
+          p_ip_address: window.location.hostname
         });
 
         toast({
@@ -139,7 +141,8 @@ export const Index = () => {
           p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
           p_status: 'account_locked',
           p_error_details: { wait_time: waitTime },
-          p_user_agent: navigator.userAgent
+          p_user_agent: navigator.userAgent,
+          p_ip_address: window.location.hostname
         });
 
         toast({
@@ -171,7 +174,8 @@ export const Index = () => {
             p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
             p_status: 'account_locked',
             p_error_details: { reason: 'too_many_attempts' },
-            p_user_agent: navigator.userAgent
+            p_user_agent: navigator.userAgent,
+            p_ip_address: window.location.hostname
           });
 
           toast({
@@ -184,7 +188,8 @@ export const Index = () => {
             p_member_number: memberNumber,
             p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
             p_status: 'account_inactive',
-            p_user_agent: navigator.userAgent
+            p_user_agent: navigator.userAgent,
+            p_ip_address: window.location.hostname
           });
 
           toast({
@@ -220,7 +225,8 @@ export const Index = () => {
           p_attempted_email: loginEmail,
           p_status: 'auth_failed',
           p_error_details: { error: signInError.message },
-          p_user_agent: navigator.userAgent
+          p_user_agent: navigator.userAgent,
+          p_ip_address: window.location.hostname
         });
 
         if (loginError) {
@@ -241,7 +247,8 @@ export const Index = () => {
         p_member_number: memberNumber,
         p_attempted_email: loginEmail,
         p_status: 'success',
-        p_user_agent: navigator.userAgent
+        p_user_agent: navigator.userAgent,
+        p_ip_address: window.location.hostname
       });
 
       // If rememberMe is checked, store the member number
@@ -261,7 +268,7 @@ export const Index = () => {
             member_id: member.id,
             login_time: new Date().toISOString(),
             device_info: deviceInfo,
-            ip_address: "Captured server-side",
+            ip_address: window.location.hostname,
             status: "success"
           },
           severity: "info"
@@ -294,7 +301,8 @@ export const Index = () => {
         p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
         p_status: 'error',
         p_error_details: { error: error.message },
-        p_user_agent: navigator.userAgent
+        p_user_agent: navigator.userAgent,
+        p_ip_address: window.location.hostname
       });
 
       toast({
