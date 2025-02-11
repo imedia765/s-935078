@@ -70,16 +70,16 @@ export function useProfileData(): UseProfileDataReturn {
           .select('member_number')
           .eq('auth_user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
 
-        if (emailAuditError && emailAuditError.code !== 'PGRST116') {
+        if (emailAuditError) {
           console.error('Failed to fetch email audit:', emailAuditError);
         }
 
-        console.log("[useProfileData] Email audit records:", emailAuditRecords);
+        const latestEmailAudit = emailAuditRecords?.[0];
+        console.log("[useProfileData] Latest email audit:", latestEmailAudit);
 
-        const memberNumber = emailAuditRecords?.member_number || user.user_metadata?.member_number;
+        const memberNumber = latestEmailAudit?.member_number || user.user_metadata?.member_number;
         console.log("[useProfileData] Using member number:", memberNumber);
 
         if (memberNumber) {
@@ -145,15 +145,13 @@ export function useProfileData(): UseProfileDataReturn {
           `)
           .eq("auth_user_id", user.id)
           .order('updated_at', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
 
         if (membersError) {
-          if (membersError.code === 'PGRST116') {
-            return null;  // No member found
-          }
           throw new Error(`Failed to fetch member data: ${membersError.message}`);
         }
+
+        const latestMember = members?.[0];
 
         const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
@@ -164,15 +162,15 @@ export function useProfileData(): UseProfileDataReturn {
           throw new Error(`Failed to fetch user roles: ${rolesError.message}`);
         }
 
-        if (members) {
+        if (latestMember) {
           const memberWithRelations: MemberWithRelations = {
-            ...members,
+            ...latestMember,
             user_roles: roles?.map(r => ({ role: r.role })) || [],
             roles: roles?.map(r => r.role) || [],
-            member_notes: members.member_notes || [],
-            family_members: members.family_members || [],
-            payment_requests: members.payment_requests || [],
-            failed_login_attempts: members.failed_login_attempts || 0
+            member_notes: latestMember.member_notes || [],
+            family_members: latestMember.family_members || [],
+            payment_requests: latestMember.payment_requests || [],
+            failed_login_attempts: latestMember.failed_login_attempts || 0
           };
           
           return memberWithRelations;
