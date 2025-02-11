@@ -2990,6 +2990,10 @@ export type Database = {
         }
         Returns: number
       }
+      get_email_standardization_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["CompositeTypes"]["email_standardization_status"]
+      }
       get_maintenance_history: {
         Args: {
           days?: number
@@ -3329,6 +3333,15 @@ export type Database = {
       token_type: "password_reset" | "magic_link"
     }
     CompositeTypes: {
+      email_standardization_status: {
+        total_members: number | null
+        standardized_count: number | null
+        legacy_count: number | null
+        personal_email_count: number | null
+        failed_migrations_count: number | null
+        last_migration_timestamp: string | null
+        recent_failures: Json[] | null
+      }
       reset_rate_limit_error: {
         message: string | null
       }
