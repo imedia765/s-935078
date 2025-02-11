@@ -453,6 +453,7 @@ export type Database = {
           member_email: string | null
           member_number: string | null
           metadata: Json | null
+          status: string | null
         }
         Insert: {
           auth_email?: string | null
@@ -462,6 +463,7 @@ export type Database = {
           member_email?: string | null
           member_number?: string | null
           metadata?: Json | null
+          status?: string | null
         }
         Update: {
           auth_email?: string | null
@@ -471,6 +473,7 @@ export type Database = {
           member_email?: string | null
           member_number?: string | null
           metadata?: Json | null
+          status?: string | null
         }
         Relationships: [
           {
