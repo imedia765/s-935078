@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Eye, Loader2 } from "lucide-react";
@@ -30,28 +29,37 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
   const fetchDocuments = async () => {
     try {
       setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { data: files, error } = await supabase.storage
         .from('profile_documents')
-        .list();
+        .list(`${user.id}/`, {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'updated_at', order: 'desc' }
+        });
 
       if (error) {
         console.error('Error fetching documents:', error);
         throw error;
       }
 
-      // Only proceed if we have files
       if (files && files.length > 0) {
         const formattedDocs: Document[] = await Promise.all(
           files.map(async (file) => {
             const { data: { publicUrl } } = supabase.storage
               .from('profile_documents')
-              .getPublicUrl(file.name);
+              .getPublicUrl(`${user.id}/${file.name}`);
 
             const sizeInMB = (file.metadata.size / (1024 * 1024)).toFixed(2);
             
             return {
               id: file.id,
-              title: file.name.split('-').slice(1).join('-'), // Remove timestamp prefix
+              title: file.name.split('-').slice(1).join('-'),
               type: file.metadata.mimetype || 'Unknown',
               size: `${sizeInMB}MB`,
               updated_at: file.updated_at,
@@ -75,10 +83,6 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
 
   const checkQuota = async (fileSize: number): Promise<boolean> => {
     try {
@@ -117,6 +121,11 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
     try {
       setIsUploading(true);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Check quota before upload
       const canUpload = await checkQuota(file.size);
       if (!canUpload) {
@@ -124,7 +133,7 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
         return;
       }
 
-      const fileName = `${Date.now()}-${file.name}`;
+      const fileName = `${user.id}/${Date.now()}-${file.name}`;
       
       const { error } = await supabase.storage
         .from('profile_documents')
@@ -140,7 +149,6 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
         description: "Document uploaded successfully"
       });
 
-      // Refresh the documents list
       await fetchDocuments();
 
     } catch (error: any) {
