@@ -137,13 +137,15 @@ export const Index = () => {
       await supabase.auth.signOut();
       
       // First ensure auth user exists
-      const { data: authSetup, error: authSetupError } = await supabase.rpc<AuthSetupResponse, { p_member_number: string }>(
+      const { data, error: rpcError } = await supabase.rpc(
         'ensure_auth_user_exists',
         { p_member_number: memberNumber }
       );
 
-      if (authSetupError || !authSetup?.success) {
-        console.error("[Login] Auth setup error:", authSetupError || authSetup?.error);
+      const authSetup = data as AuthSetupResponse;
+
+      if (rpcError || !authSetup?.success) {
+        console.error("[Login] Auth setup error:", rpcError || authSetup?.error);
         toast({
           variant: "destructive",
           title: "Login Error",
