@@ -10,6 +10,12 @@ import { WhatsAppSupport } from "@/components/WhatsAppSupport";
 import { validateField } from "@/types/member";
 import { Checkbox } from "@/components/ui/checkbox";
 
+interface AuthSetupResponse {
+  success: boolean;
+  error?: string;
+  auth_user_id?: string;
+}
+
 export const Index = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -132,7 +138,7 @@ export const Index = () => {
       
       // First ensure auth user exists
       const { data: authSetup, error: authSetupError } = await supabase
-        .rpc('ensure_auth_user_exists', {
+        .rpc<AuthSetupResponse>('ensure_auth_user_exists', {
           p_member_number: memberNumber
         });
 
