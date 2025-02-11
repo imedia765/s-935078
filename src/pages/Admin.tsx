@@ -7,6 +7,7 @@ import { MaintenanceManagement } from "@/components/admin/MaintenanceManagement"
 import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
 import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashboard";
 import { DatabaseManagement } from "@/components/admin/database/DatabaseManagement";
+import { EmailStandardizationManager } from "@/components/admin/email/EmailStandardizationManager";
 import { useState } from "react";
 
 export default function Admin() {
@@ -24,6 +25,7 @@ export default function Admin() {
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
           <TabsTrigger value="email">Email Server</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
+          <TabsTrigger value="standardization">Email Standardization</TabsTrigger>
         </TabsList>
 
         <TabsContent value="audit">
@@ -62,6 +64,10 @@ export default function Admin() {
 
         <TabsContent value="email">
           <EmailServerDashboard />
+        </TabsContent>
+
+        <TabsContent value="standardization">
+          <EmailStandardizationManager />
         </TabsContent>
       </Tabs>
     </div>

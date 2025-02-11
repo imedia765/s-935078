@@ -2803,6 +2803,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_email_standardization: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          member_number: string
+          current_auth_email: string
+          current_member_email: string
+          standardization_status: string
+          issues: string[]
+        }[]
+      }
       check_error_rates: {
         Args: Record<PropertyKey, never>
         Returns: {
