@@ -137,7 +137,7 @@ export const Index = () => {
       await supabase.auth.signOut();
       
       // First ensure auth user exists
-      const { data, error: rpcError } = await supabase.rpc('ensure_auth_user_exists', {
+      const { data, error: rpcError } = await supabase.rpc('ensure_auth_setup', {
         p_member_number: memberNumber
       });
 
