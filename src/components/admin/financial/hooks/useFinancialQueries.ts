@@ -12,7 +12,31 @@ export function useFinancialQueries() {
     queryKey: ["payments"],
     queryFn: async () => {
       console.log('Fetching payments...');
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      // Get user roles
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      const isAdmin = roles?.some(r => r.role === 'admin');
+
+      // Get collector ID if user is a collector
+      const { data: collectorInfo } = await supabase
+        .from('members_collectors')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      console.log('User roles:', roles);
+      console.log('Collector info:', collectorInfo);
+
+      let query = supabase
         .from('payment_requests')
         .select(`
           id,
@@ -22,6 +46,7 @@ export function useFinancialQueries() {
           status,
           created_at,
           payment_number,
+          collector_id,
           members!payment_requests_member_number_fkey (
             full_name,
             email
@@ -37,13 +62,22 @@ export function useFinancialQueries() {
             generated_at
           )
         `)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
+
+      // Filter by collector ID if user is not admin
+      if (!isAdmin && collectorInfo?.id) {
+        console.log('Filtering by collector ID:', collectorInfo.id);
+        query = query.eq('collector_id', collectorInfo.id);
+      }
+
+      const { data, error } = await query.limit(50);
       
       if (error) {
         console.error('Error fetching payments:', error);
         throw error;
       }
+
+      console.log('Fetched payments:', data);
 
       return (data as any[]).map(payment => ({
         ...payment,
@@ -51,8 +85,8 @@ export function useFinancialQueries() {
         members_collectors: payment.members_collectors?.[0]
       })) as Payment[];
     },
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10,   // 10 minutes
     retry: 2,
     refetchOnWindowFocus: false,
     refetchOnMount: false
@@ -67,7 +101,20 @@ export function useFinancialQueries() {
     queryKey: ["collectors"],
     queryFn: async () => {
       console.log('Fetching collectors...');
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      const isAdmin = roles?.some(r => r.role === 'admin');
+
+      let query = supabase
         .from("members_collectors")
         .select(`
           *,
@@ -81,13 +128,23 @@ export function useFinancialQueries() {
             amount,
             created_at
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      // If not admin, only show the collector's own data
+      if (!isAdmin) {
+        query = query.eq('auth_user_id', user.id);
+      }
+
+      query = query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error('Error fetching collectors:', error);
         throw error;
       }
+
+      console.log('Fetched collectors:', data);
       return data as Collector[];
     },
     staleTime: 1000 * 60 * 5,
