@@ -24,9 +24,10 @@ export function EmailStandardizationCard() {
   const { data: standardizationStatus, isLoading } = useQuery({
     queryKey: ["emailStandardization"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc<StandardizationStatus, Record<PropertyKey, never>>('get_email_standardization_status');
+      type RPCReturnType = StandardizationStatus;
+      const { data, error } = await supabase.rpc('get_email_standardization_status');
       if (error) throw error;
-      return data;
+      return data as RPCReturnType;
     },
     refetchInterval: 30000 // Refresh every 30 seconds
   });
