@@ -26,12 +26,12 @@ export function useFinancialQueries() {
 
       const isAdmin = roles?.some(r => r.role === 'admin');
 
-      // Get collector ID if user is a collector
+      // Get collector ID if user is a collector - using maybeSingle() instead of single()
       const { data: collectorInfo } = await supabase
         .from('members_collectors')
         .select('id')
         .eq('auth_user_id', user.id)
-        .single();
+        .maybeSingle();
 
       console.log('User roles:', roles);
       console.log('Collector info:', collectorInfo);
@@ -47,11 +47,12 @@ export function useFinancialQueries() {
           created_at,
           payment_number,
           collector_id,
-          members!payment_requests_member_number_fkey (
+          member_number,
+          members:member_number(
             full_name,
             email
           ),
-          members_collectors!payment_requests_collector_id_fkey (
+          collector:collector_id(
             id,
             name
           ),
@@ -64,7 +65,7 @@ export function useFinancialQueries() {
         `)
         .order('created_at', { ascending: false });
 
-      // Filter by collector ID if user is not admin
+      // Filter by collector ID if user is not admin and is a collector
       if (!isAdmin && collectorInfo?.id) {
         console.log('Filtering by collector ID:', collectorInfo.id);
         query = query.eq('collector_id', collectorInfo.id);
@@ -81,8 +82,8 @@ export function useFinancialQueries() {
 
       return (data as any[]).map(payment => ({
         ...payment,
-        members: payment.members?.[0],
-        members_collectors: payment.members_collectors?.[0]
+        members: payment.members,
+        members_collectors: payment.collector
       })) as Payment[];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -118,7 +119,7 @@ export function useFinancialQueries() {
         .from("members_collectors")
         .select(`
           *,
-          members!members_collectors_member_number_fkey (
+          member:member_number(
             member_number,
             full_name,
             email
