@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,19 @@ export const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Load remembered credentials on mount
+  const tryLogin = async (email: string, attemptedFormat: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (!error) {
+      console.log(`Login successful with ${attemptedFormat} format:`, email);
+    }
+    
+    return { data, error };
+  };
+
   useEffect(() => {
     const rememberedMember = localStorage.getItem("rememberedMember");
     if (rememberedMember) {
@@ -37,7 +48,6 @@ export const Index = () => {
     }
   }, []);
 
-  // Enable browser auto-fill by using proper input names
   const getInputProps = (type: "memberNumber" | "password") => {
     const baseProps = {
       memberNumber: {
@@ -52,13 +62,11 @@ export const Index = () => {
     return baseProps[type];
   };
 
-  // Simplified password validation for login - no requirements
   const validatePassword = (pass: string) => {
     if (!pass.trim()) return "Password is required";
     return "";
   };
 
-  // Member number validation
   const validateMemberNumber = (num: string) => {
     const regex = /^[A-Z]{2}\d{5}$/;
     if (!regex.test(num)) {
@@ -70,10 +78,8 @@ export const Index = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Reset validation errors
     setValidationErrors({});
 
-    // Validate inputs
     const memberNumberError = validateMemberNumber(memberNumber);
     const passwordError = validatePassword(password);
 
@@ -88,12 +94,10 @@ export const Index = () => {
     setIsLoading(true);
 
     try {
-      // First clear any existing sessions to prevent refresh token errors
       await supabase.auth.signOut();
       
       console.log("Attempting login for member:", memberNumber);
       
-      // Get device information
       const deviceInfo = {
         userAgent: navigator.userAgent,
         platform: navigator.platform,
@@ -101,17 +105,15 @@ export const Index = () => {
         screenResolution: `${window.screen.width}x${window.screen.height}`,
       };
 
-      // Check if member exists and is active
       const { data: member, error: memberError } = await supabase
         .from("members")
-        .select("*, auth_user_id")
+        .select("*, auth_user_id, email")
         .eq("member_number", memberNumber)
         .single();
 
       console.log("Member lookup result:", { member, memberError });
 
       if (memberError || !member) {
-        // Log failed attempt
         await supabase.rpc('log_login_attempt', {
           p_member_number: memberNumber,
           p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
@@ -130,7 +132,6 @@ export const Index = () => {
         return;
       }
 
-      // Check if account is locked
       if (member.locked_until && new Date(member.locked_until) > new Date()) {
         const waitTime = Math.ceil(
           (new Date(member.locked_until).getTime() - new Date().getTime()) / 1000 / 60
@@ -154,20 +155,7 @@ export const Index = () => {
         return;
       }
 
-      // Get user roles if auth_user_id exists
-      let userRoles = [];
-      if (member.auth_user_id) {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", member.auth_user_id);
-        userRoles = roles || [];
-      }
-
-      console.log("User roles:", userRoles);
-
       if (member.status !== "active") {
-        // Check for failed login attempts
         if (member.failed_login_attempts && member.failed_login_attempts > 3) {
           await supabase.rpc('log_login_attempt', {
             p_member_number: memberNumber,
@@ -202,29 +190,52 @@ export const Index = () => {
         return;
       }
 
-      // Attempt to sign in with standardized email format
-      const loginEmail = `${memberNumber.toLowerCase()}@temp.pwaburton.org`;
-      console.log("Attempting auth with email:", loginEmail);
-      
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password,
-      });
+      const emailFormats = [
+        {
+          email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+          format: "standard"
+        },
+        {
+          email: `${memberNumber.toLowerCase()}@temp.com`,
+          format: "legacy"
+        }
+      ];
 
-      console.log("Auth result:", { authData, signInError });
+      if (member.email && member.email.includes('@') && !member.email.includes('@temp')) {
+        emailFormats.push({
+          email: member.email,
+          format: "personal"
+        });
+      }
 
-      if (signInError) {
-        // Handle failed login attempt
+      let loginSuccess = false;
+      let authData = null;
+      let signInError = null;
+      let usedEmail = '';
+
+      for (const { email, format } of emailFormats) {
+        console.log(`Trying login with ${format} format:`, email);
+        const result = await tryLogin(email, format);
+        
+        if (!result.error) {
+          loginSuccess = true;
+          authData = result.data;
+          usedEmail = email;
+          break;
+        }
+        signInError = result.error;
+      }
+
+      if (!loginSuccess) {
         const { error: loginError } = await supabase.rpc("handle_failed_login", {
           member_number: memberNumber,
         });
 
-        // Log the failed attempt
         await supabase.rpc('log_login_attempt', {
           p_member_number: memberNumber,
-          p_attempted_email: loginEmail,
+          p_attempted_email: usedEmail || `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
           p_status: 'auth_failed',
-          p_error_details: { error: signInError.message },
+          p_error_details: { error: signInError?.message },
           p_user_agent: navigator.userAgent,
           p_ip_address: window.location.hostname
         });
@@ -242,23 +253,20 @@ export const Index = () => {
         return;
       }
 
-      // Log successful login
       await supabase.rpc('log_login_attempt', {
         p_member_number: memberNumber,
-        p_attempted_email: loginEmail,
+        p_attempted_email: usedEmail,
         p_status: 'success',
         p_user_agent: navigator.userAgent,
         p_ip_address: window.location.hostname
       });
 
-      // If rememberMe is checked, store the member number
       if (rememberMe) {
         localStorage.setItem("rememberedMember", memberNumber);
       } else {
         localStorage.removeItem("rememberedMember");
       }
 
-      // Log login activity
       await supabase
         .from("audit_logs")
         .insert({
@@ -274,18 +282,15 @@ export const Index = () => {
           severity: "info"
         });
 
-      // Update last login time
       const currentTime = new Date().toISOString();
       localStorage.setItem("lastLoginTime", currentTime);
       setLastLogin(currentTime);
 
-      // Verify session is established
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("Failed to establish session");
       }
 
-      // Success - redirect to profile
       toast({
         title: "Welcome back!",
         description: "Successfully logged in",
@@ -295,7 +300,6 @@ export const Index = () => {
     } catch (error: any) {
       console.error("Login error:", error);
       
-      // Log unexpected error
       await supabase.rpc('log_login_attempt', {
         p_member_number: memberNumber,
         p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
@@ -318,9 +322,7 @@ export const Index = () => {
   return (
     <div className="min-h-screen p-4 login-container">
       <div className="w-full max-w-7xl mx-auto space-y-8">
-        {/* Login Section */}
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left side - Features */}
           <div className="glass-card p-8 space-y-8">
             <div className="text-left">
               <h1 className="text-4xl sm:text-5xl font-bold text-gradient mb-4">Member Portal</h1>
@@ -356,7 +358,6 @@ export const Index = () => {
             </div>
           </div>
 
-          {/* Right side - Login Form */}
           <div className="glass-card p-8 flex flex-col justify-center">
             <div className="text-center mb-8">
               <p className="text-lg mb-4 font-arabic">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
@@ -462,7 +463,6 @@ export const Index = () => {
           </div>
         </div>
 
-        {/* Announcements Section */}
         <div className="glass-card p-8">
           <h2 className="text-3xl font-bold text-gradient mb-6 text-left">Latest Announcements</h2>
           <div className="space-y-6">
@@ -505,7 +505,6 @@ export const Index = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center text-sm text-gray-400 pt-8">
           <p>© 2024 SmartFIX Tech, Burton Upon Trent. All rights reserved.</p>
           <p className="mt-2">Website created and coded by Zaheer Asghar</p>
