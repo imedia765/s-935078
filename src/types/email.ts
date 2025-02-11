@@ -46,3 +46,4 @@ export interface SmtpHealthCheck {
     host: string;
   };
 }
+

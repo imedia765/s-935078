@@ -252,3 +252,4 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
     </Card>
   );
 }
+
