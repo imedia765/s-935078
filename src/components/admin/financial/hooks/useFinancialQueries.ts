@@ -146,7 +146,12 @@ export function useFinancialQueries() {
       }
 
       console.log('Fetched collectors:', data);
-      return data as Collector[];
+      
+      // Map the data to match the Collector type
+      return (data as any[]).map(collector => ({
+        ...collector,
+        members: collector.member // Map 'member' to 'members' to match the type
+      })) as Collector[];
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
