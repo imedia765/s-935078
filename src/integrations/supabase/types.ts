@@ -495,6 +495,42 @@ export type Database = {
           },
         ]
       }
+      email_audit_backup: {
+        Row: {
+          auth_email: string | null
+          auth_user_id: string | null
+          created_at: string | null
+          id: string | null
+          member_email: string | null
+          member_number: string | null
+          metadata: Json | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auth_email?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          member_email?: string | null
+          member_number?: string | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auth_email?: string | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          member_email?: string | null
+          member_number?: string | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           bounce_type: string | null
@@ -735,6 +771,27 @@ export type Database = {
           daily_limit?: number
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      email_standardization_results: {
+        Row: {
+          member_number: string | null
+          new_email: string | null
+          old_email: string | null
+          status: string | null
+        }
+        Insert: {
+          member_number?: string | null
+          new_email?: string | null
+          old_email?: string | null
+          status?: string | null
+        }
+        Update: {
+          member_number?: string | null
+          new_email?: string | null
+          old_email?: string | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -1096,6 +1153,42 @@ export type Database = {
           resolved_by?: string | null
           severity?: string
           table_name?: string | null
+        }
+        Relationships: []
+      }
+      login_attempt_tracking: {
+        Row: {
+          actual_email: string | null
+          attempted_email: string
+          created_at: string | null
+          error_details: Json | null
+          id: string
+          ip_address: string | null
+          member_number: string
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          actual_email?: string | null
+          attempted_email: string
+          created_at?: string | null
+          error_details?: Json | null
+          id?: string
+          ip_address?: string | null
+          member_number: string
+          status: string
+          user_agent?: string | null
+        }
+        Update: {
+          actual_email?: string | null
+          attempted_email?: string
+          created_at?: string | null
+          error_details?: Json | null
+          id?: string
+          ip_address?: string | null
+          member_number?: string
+          status?: string
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -3036,6 +3129,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_login_attempt: {
+        Args: {
+          p_member_number: string
+          p_attempted_email: string
+          p_status: string
+          p_error_details?: Json
+          p_ip_address?: string
+          p_user_agent?: string
+        }
+        Returns: undefined
+      }
       maintain_collector_roles: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3112,6 +3216,15 @@ export type Database = {
           schedule?: string
         }
         Returns: undefined
+      }
+      standardize_auth_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          member_number: string
+          old_email: string
+          new_email: string
+          status: string
+        }[]
       }
       update_collector_profiles: {
         Args: Record<PropertyKey, never>

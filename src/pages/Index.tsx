@@ -110,6 +110,15 @@ export const Index = () => {
       console.log("Member lookup result:", { member, memberError });
 
       if (memberError || !member) {
+        // Log failed attempt
+        await supabase.rpc('log_login_attempt', {
+          p_member_number: memberNumber,
+          p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+          p_status: 'member_not_found',
+          p_error_details: { error: memberError?.message || 'Member not found' },
+          p_user_agent: navigator.userAgent
+        });
+
         toast({
           variant: "destructive",
           title: "Login Failed",
@@ -124,6 +133,15 @@ export const Index = () => {
         const waitTime = Math.ceil(
           (new Date(member.locked_until).getTime() - new Date().getTime()) / 1000 / 60
         );
+
+        await supabase.rpc('log_login_attempt', {
+          p_member_number: memberNumber,
+          p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+          p_status: 'account_locked',
+          p_error_details: { wait_time: waitTime },
+          p_user_agent: navigator.userAgent
+        });
+
         toast({
           variant: "destructive",
           title: "Account Temporarily Locked",
@@ -148,12 +166,27 @@ export const Index = () => {
       if (member.status !== "active") {
         // Check for failed login attempts
         if (member.failed_login_attempts && member.failed_login_attempts > 3) {
+          await supabase.rpc('log_login_attempt', {
+            p_member_number: memberNumber,
+            p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+            p_status: 'account_locked',
+            p_error_details: { reason: 'too_many_attempts' },
+            p_user_agent: navigator.userAgent
+          });
+
           toast({
             variant: "destructive",
             title: "Account Locked",
             description: "Too many failed attempts. Please contact support.",
           });
         } else {
+          await supabase.rpc('log_login_attempt', {
+            p_member_number: memberNumber,
+            p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+            p_status: 'account_inactive',
+            p_user_agent: navigator.userAgent
+          });
+
           toast({
             variant: "destructive",
             title: "Account Inactive",
@@ -164,8 +197,8 @@ export const Index = () => {
         return;
       }
 
-      // Attempt to sign in
-      const loginEmail = `${memberNumber.toLowerCase()}@temp.com`;
+      // Attempt to sign in with standardized email format
+      const loginEmail = `${memberNumber.toLowerCase()}@temp.pwaburton.org`;
       console.log("Attempting auth with email:", loginEmail);
       
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -181,6 +214,15 @@ export const Index = () => {
           member_number: memberNumber,
         });
 
+        // Log the failed attempt
+        await supabase.rpc('log_login_attempt', {
+          p_member_number: memberNumber,
+          p_attempted_email: loginEmail,
+          p_status: 'auth_failed',
+          p_error_details: { error: signInError.message },
+          p_user_agent: navigator.userAgent
+        });
+
         if (loginError) {
           console.error("Error handling failed login:", loginError);
         }
@@ -194,6 +236,14 @@ export const Index = () => {
         return;
       }
 
+      // Log successful login
+      await supabase.rpc('log_login_attempt', {
+        p_member_number: memberNumber,
+        p_attempted_email: loginEmail,
+        p_status: 'success',
+        p_user_agent: navigator.userAgent
+      });
+
       // If rememberMe is checked, store the member number
       if (rememberMe) {
         localStorage.setItem("rememberedMember", memberNumber);
@@ -201,8 +251,8 @@ export const Index = () => {
         localStorage.removeItem("rememberedMember");
       }
 
-      // Log login activity using audit_logs
-      const { error: logError } = await supabase
+      // Log login activity
+      await supabase
         .from("audit_logs")
         .insert({
           operation: "INSERT",
@@ -211,16 +261,11 @@ export const Index = () => {
             member_id: member.id,
             login_time: new Date().toISOString(),
             device_info: deviceInfo,
-            ip_address: "Captured server-side", // Note: actual IP should be captured server-side
+            ip_address: "Captured server-side",
             status: "success"
           },
-          severity: "info",
-          timestamp: new Date().toISOString()
+          severity: "info"
         });
-
-      if (logError) {
-        console.error("Error logging login activity:", logError);
-      }
 
       // Update last login time
       const currentTime = new Date().toISOString();
@@ -242,6 +287,16 @@ export const Index = () => {
 
     } catch (error: any) {
       console.error("Login error:", error);
+      
+      // Log unexpected error
+      await supabase.rpc('log_login_attempt', {
+        p_member_number: memberNumber,
+        p_attempted_email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+        p_status: 'error',
+        p_error_details: { error: error.message },
+        p_user_agent: navigator.userAgent
+      });
+
       toast({
         variant: "destructive",
         title: "Error",
