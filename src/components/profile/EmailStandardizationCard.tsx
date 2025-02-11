@@ -4,26 +4,15 @@ import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-interface StandardizationStatus {
-  total_members: string; // bigint is returned as string from Supabase
-  standardized_count: string;
-  legacy_count: string;
-  personal_email_count: string;
-  failed_migrations_count: string;
-  last_migration_timestamp: string | null;
-  recent_failures: Array<{
-    member_number: string;
-    error: string;
-    attempted_at: string;
-  }>;
-}
+type StandardizationStatus = Database["public"]["CompositeTypes"]["email_standardization_status"];
 
 export function EmailStandardizationCard() {
   const { data: standardizationStatus, isLoading } = useQuery({
     queryKey: ["emailStandardization"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc<StandardizationStatus>('get_email_standardization_status');
+      const { data, error } = await supabase.rpc<StandardizationStatus, Record<PropertyKey, never>>('get_email_standardization_status');
       if (error) throw error;
       return data;
     },
@@ -42,8 +31,9 @@ export function EmailStandardizationCard() {
 
   if (!standardizationStatus) return null;
 
-  const standardizedPercentage = 
-    (Number(standardizationStatus.standardized_count) / Number(standardizationStatus.total_members)) * 100;
+  const standardizedPercentage = standardizationStatus.standardized_count && standardizationStatus.total_members 
+    ? (standardizationStatus.standardized_count / standardizationStatus.total_members) * 100
+    : 0;
 
   return (
     <Card className="p-6 space-y-6">
@@ -59,23 +49,23 @@ export function EmailStandardizationCard() {
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <p className="text-muted-foreground">Standardized</p>
-          <p className="font-medium">{Number(standardizationStatus.standardized_count).toLocaleString()}</p>
+          <p className="font-medium">{standardizationStatus.standardized_count?.toLocaleString() ?? 0}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Legacy Format</p>
-          <p className="font-medium">{Number(standardizationStatus.legacy_count).toLocaleString()}</p>
+          <p className="font-medium">{standardizationStatus.legacy_count?.toLocaleString() ?? 0}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Personal Emails</p>
-          <p className="font-medium">{Number(standardizationStatus.personal_email_count).toLocaleString()}</p>
+          <p className="font-medium">{standardizationStatus.personal_email_count?.toLocaleString() ?? 0}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Failed Migrations</p>
-          <p className="font-medium">{Number(standardizationStatus.failed_migrations_count).toLocaleString()}</p>
+          <p className="font-medium">{standardizationStatus.failed_migrations_count?.toLocaleString() ?? 0}</p>
         </div>
       </div>
 
-      {standardizationStatus.recent_failures?.length > 0 && (
+      {standardizationStatus.recent_failures && standardizationStatus.recent_failures.length > 0 && (
         <div className="mt-4">
           <h4 className="text-sm font-medium mb-2">Recent Issues</h4>
           <div className="space-y-2">
