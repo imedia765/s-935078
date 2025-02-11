@@ -34,28 +34,36 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
         .from('profile_documents')
         .list();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching documents:', error);
+        throw error;
+      }
 
-      const formattedDocs: Document[] = await Promise.all(
-        files.map(async (file) => {
-          const { data: { publicUrl } } = supabase.storage
-            .from('profile_documents')
-            .getPublicUrl(file.name);
+      // Only proceed if we have files
+      if (files && files.length > 0) {
+        const formattedDocs: Document[] = await Promise.all(
+          files.map(async (file) => {
+            const { data: { publicUrl } } = supabase.storage
+              .from('profile_documents')
+              .getPublicUrl(file.name);
 
-          const sizeInMB = (file.metadata.size / (1024 * 1024)).toFixed(2);
-          
-          return {
-            id: file.id,
-            title: file.name.split('-').slice(1).join('-'), // Remove timestamp prefix
-            type: file.metadata.mimetype || 'Unknown',
-            size: `${sizeInMB}MB`,
-            updated_at: file.updated_at,
-            url: publicUrl
-          };
-        })
-      );
+            const sizeInMB = (file.metadata.size / (1024 * 1024)).toFixed(2);
+            
+            return {
+              id: file.id,
+              title: file.name.split('-').slice(1).join('-'), // Remove timestamp prefix
+              type: file.metadata.mimetype || 'Unknown',
+              size: `${sizeInMB}MB`,
+              updated_at: file.updated_at,
+              url: publicUrl
+            };
+          })
+        );
 
-      setDocuments(formattedDocs);
+        setDocuments(formattedDocs);
+      } else {
+        setDocuments([]);
+      }
     } catch (error: any) {
       console.error('Error fetching documents:', error);
       toast({
@@ -252,4 +260,3 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
     </Card>
   );
 }
-
