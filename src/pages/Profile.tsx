@@ -13,6 +13,7 @@ import { Navigation } from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { MouseEvent } from "react";
+import { EmailStandardizationCard } from "@/components/profile/EmailStandardizationCard";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -123,6 +124,8 @@ const Profile = () => {
     );
   }
 
+  const hasCollectorRole = memberData?.user_roles?.some(role => role.role === 'collector');
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -148,6 +151,7 @@ const Profile = () => {
                 onCancel={handleCancel}
                 onEdit={handleEdit}
               />
+              {hasCollectorRole && <EmailStandardizationCard />}
               <BankDetailsCard 
                 memberNumber={memberData?.member_number}
               />
