@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -68,9 +67,11 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
+      // Filter by collector ID if provided (for collectors)
       if (collectorId) {
         query = query.eq('collector_id', collectorId);
       } 
+      // Otherwise, if a specific collector is selected (for admins)
       else if (selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
       }
