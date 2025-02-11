@@ -2692,6 +2692,12 @@ export type Database = {
           details: Json
         }[]
       }
+      check_email_attachment_size: {
+        Args: {
+          p_size_bytes: number
+        }
+        Returns: boolean
+      }
       check_error_rates: {
         Args: Record<PropertyKey, never>
         Returns: {
