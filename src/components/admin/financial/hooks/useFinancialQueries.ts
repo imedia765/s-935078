@@ -48,11 +48,11 @@ export function useFinancialQueries() {
           payment_number,
           collector_id,
           member_number,
-          members:member_number(
+          members!payment_requests_member_number_fkey (
             full_name,
             email
           ),
-          collector:collector_id(
+          collector:collector_id (
             id,
             name
           ),
