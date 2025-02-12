@@ -1,11 +1,12 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, Info, RefreshCw, Shield, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 type CollectorStatus = {
   collector_name: string;
@@ -35,12 +36,39 @@ type CollectorStatus = {
 };
 
 export function CollectorsView() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: collectors, isLoading, error } = useQuery({
     queryKey: ["collectors-status"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_collectors_role_status');
       if (error) throw error;
       return data as CollectorStatus[];
+    }
+  });
+
+  const syncRoleMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.rpc('fix_collector_role_sync', {
+        p_user_id: userId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collectors-status"] });
+      toast({
+        title: "Success",
+        description: "Role synchronization completed successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: "Failed to sync roles: " + error.message,
+        variant: "destructive",
+      });
     }
   });
 
@@ -114,9 +142,21 @@ export function CollectorsView() {
                   variant="outline" 
                   size="sm"
                   className="flex items-center gap-2"
+                  onClick={() => {
+                    if (collector.auth_status.has_auth_id) {
+                      syncRoleMutation.mutate(collector.member_number);
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: "Cannot sync roles: No auth ID found",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={!collector.auth_status.has_auth_id || syncRoleMutation.isPending}
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  Sync Roles
+                  <RefreshCw className={`h-4 w-4 ${syncRoleMutation.isPending ? 'animate-spin' : ''}`} />
+                  {syncRoleMutation.isPending ? 'Syncing...' : 'Sync Roles'}
                 </Button>
               </TableCell>
             </TableRow>
