@@ -75,38 +75,6 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
 
     yPosition = (doc as any).lastAutoTable.finalY + 10;
 
-    // Family Members
-    if (member.familyMembers.length > 0) {
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Family Members']],
-        body: member.familyMembers.map((fm: any) => [
-          `${fm.full_name} (${fm.relationship}) - ${fm.gender || 'N/A'} - DOB: ${fm.date_of_birth || 'N/A'}`
-        ]),
-        theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 5 }
-      });
-
-      yPosition = (doc as any).lastAutoTable.finalY + 10;
-    }
-
-    // Payment History
-    autoTable(doc, {
-      startY: yPosition,
-      head: [['Payment Date', 'Amount', 'Status', 'Method', 'Reference']],
-      body: member.paymentHistory.map((payment: any) => [
-        payment.created_at,
-        payment.amount ? `£${payment.amount.toFixed(2)}` : '£0.00',
-        payment.status,
-        payment.payment_method,
-        payment.payment_number
-      ]),
-      theme: 'grid',
-      styles: { fontSize: 10, cellPadding: 5 }
-    });
-
-    yPosition = (doc as any).lastAutoTable.finalY + 10;
-
     // Payment Summary
     autoTable(doc, {
       startY: yPosition,
@@ -119,6 +87,25 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
       theme: 'grid',
       styles: { fontSize: 10, cellPadding: 5 }
     });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+    // Only add payment history if it exists
+    if (member.paymentHistory && member.paymentHistory.length > 0) {
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Payment Date', 'Amount', 'Status', 'Method', 'Reference']],
+        body: member.paymentHistory.map((payment: any) => [
+          payment.created_at,
+          payment.amount ? `£${payment.amount.toFixed(2)}` : '£0.00',
+          payment.status,
+          payment.payment_method,
+          payment.payment_number
+        ]),
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 5 }
+      });
+    }
   } else if (exportType === 'all-collectors') {
     data.forEach((collector, index) => {
       if (index > 0) {
@@ -150,7 +137,7 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
         head: [['Member', 'Contact', 'Status', 'Payments', 'Amount']],
         body: collector.members.map((member: any) => [
           `${member.full_name}\n${member.member_number}`,
-          `${member.email}\n${member.phone}`,
+          `${member.email || 'N/A'}\n${member.phone || 'N/A'}`,
           member.status,
           `Total: ${member.payments.total}\nApproved: ${member.payments.approved}\nPending: ${member.payments.pending}`,
           `£${(member.payments.amount || 0).toFixed(2)}`
@@ -167,7 +154,7 @@ export const generatePDF = (data: any[], title: string, exportType: 'all-collect
       body: data.map((member) => [
         member.member_number,
         member.full_name,
-        `${member.email}\n${member.phone}`,
+        `${member.email || 'N/A'}\n${member.phone || 'N/A'}`,
         member.status,
         `Total: ${member.total_payments}\nApproved: ${member.approved_payments}\nPending: ${member.pending_payments}`,
         `£${(member.total_amount || 0).toFixed(2)}`
