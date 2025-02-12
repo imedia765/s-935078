@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,7 +32,7 @@ export function MemberSearch() {
             note_text,
             note_type
           ),
-          payment_requests:payment_requests_member_id_fkey (
+          payment_requests!payment_requests_member_number_fkey (
             id,
             status,
             amount,
