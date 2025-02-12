@@ -7,6 +7,8 @@ import { EmailTemplateList } from "./EmailTemplateList";
 import { SmtpConfigList } from "./SmtpConfigList";
 import { EmailQueueStatus } from "./EmailQueueStatus";
 import { EmailMetrics } from "./EmailMetrics";
+import { DnsMonitoring } from "./DnsMonitoring";
+import { SmtpHealthStatus } from "./SmtpHealthStatus";
 
 export function EmailServerDashboard() {
   const { data: emailStats, isLoading } = useQuery({
@@ -57,8 +59,10 @@ export function EmailServerDashboard() {
       <Tabs defaultValue="metrics" className="w-full">
         <TabsList className="w-full justify-start bg-black/40 backdrop-blur-xl border border-white/10">
           <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          <TabsTrigger value="dns">DNS Status</TabsTrigger>
+          <TabsTrigger value="smtp">SMTP Health</TabsTrigger>
           <TabsTrigger value="templates">Email Templates</TabsTrigger>
-          <TabsTrigger value="smtp">SMTP Config</TabsTrigger>
+          <TabsTrigger value="config">SMTP Config</TabsTrigger>
           <TabsTrigger value="queue">Queue Status</TabsTrigger>
         </TabsList>
 
@@ -66,11 +70,19 @@ export function EmailServerDashboard() {
           <EmailMetrics />
         </TabsContent>
 
+        <TabsContent value="dns">
+          <DnsMonitoring />
+        </TabsContent>
+
+        <TabsContent value="smtp">
+          <SmtpHealthStatus />
+        </TabsContent>
+
         <TabsContent value="templates">
           <EmailTemplateList />
         </TabsContent>
 
-        <TabsContent value="smtp">
+        <TabsContent value="config">
           <SmtpConfigList />
         </TabsContent>
 
