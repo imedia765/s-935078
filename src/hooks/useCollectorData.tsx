@@ -2,8 +2,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+type CollectorData = {
+  isAdmin: boolean;
+  collectorId: string | null;
+  collectorPrefix: string | null;
+  collectorName: string | null;
+  collectorNumber: string | null;
+};
+
 export function useCollectorData() {
-  return useQuery({
+  return useQuery<CollectorData | null>({
     queryKey: ["currentUser"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -14,13 +22,12 @@ export function useCollectorData() {
         .select("role")
         .eq("user_id", user.id);
 
-      const { data: collectorData } = await supabase
+      const { data: collectors } = await supabase
         .from("members_collectors")
         .select("id, prefix, name, number")
         .eq("user_id", user.id);
 
-      // Safely handle the case where no collector data is found
-      const collector = collectorData && collectorData.length > 0 ? collectorData[0] : null;
+      const collector = collectors && collectors.length > 0 ? collectors[0] : null;
 
       return {
         isAdmin: roles?.some(r => r.role === "admin") || false,

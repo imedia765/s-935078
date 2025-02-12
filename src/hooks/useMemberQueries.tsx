@@ -4,6 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { MemberFormData } from "@/types/member";
 
+type UserInfo = {
+  roles: string[];
+  collectorId: string | null;
+  collectorPrefix: string | null;
+};
+
+type MembersData = {
+  members: any[];
+  totalCount: number;
+};
+
 export function useMemberQueries(
   selectedCollector: string,
   searchTerm: string,
@@ -15,7 +26,7 @@ export function useMemberQueries(
 ) {
   const { toast } = useToast();
 
-  const { data: userInfo } = useQuery({
+  const { data: userInfo } = useQuery<UserInfo | null>({
     queryKey: ["userInfo"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -26,13 +37,12 @@ export function useMemberQueries(
         .select("role")
         .eq("user_id", user.id);
 
-      const { data: collectorData } = await supabase
+      const { data: collectors } = await supabase
         .from("members_collectors")
         .select("id, prefix")
         .eq("user_id", user.id);
 
-      // Safely handle the case where no collector data is found
-      const collector = collectorData && collectorData.length > 0 ? collectorData[0] : null;
+      const collector = collectors && collectors.length > 0 ? collectors[0] : null;
 
       return {
         roles: roles?.map(r => r.role) || [],
@@ -56,7 +66,7 @@ export function useMemberQueries(
     enabled: userInfo?.roles.includes("admin") || false
   });
 
-  const { data: membersData, isLoading: loadingMembers } = useQuery({
+  const { data: membersData, isLoading: loadingMembers } = useQuery<MembersData>({
     queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
       let query = supabase
