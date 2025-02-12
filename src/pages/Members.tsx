@@ -123,10 +123,11 @@ export default function Members() {
     return <MembersLoading />;
   }
 
-  const currentCollector = currentUser?.isAdmin ? null : {
-    id: currentUser?.collectorId || '',
-    name: currentUser?.collectorName || ''
-  };
+  const currentCollector = currentUser?.isAdmin ? null : 
+    (currentUser?.collectorId && currentUser?.collectorName) ? {
+      id: currentUser.collectorId,
+      name: currentUser.collectorName
+    } : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">

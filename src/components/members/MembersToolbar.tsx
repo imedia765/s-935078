@@ -66,14 +66,16 @@ export function MembersToolbar({
             {isAdmin && <SelectItem value="all">All Collectors</SelectItem>}
             {isAdmin ? (
               collectors?.map((collector) => (
-                <SelectItem key={collector.id} value={collector.id}>
-                  {collector.name || `Collector ${collector.number}`}
-                </SelectItem>
+                collector.id && (
+                  <SelectItem key={collector.id} value={collector.id}>
+                    {collector.name || `Collector ${collector.number}`}
+                  </SelectItem>
+                )
               ))
             ) : (
-              currentCollector && (
+              currentCollector?.id && (
                 <SelectItem value={currentCollector.id}>
-                  {currentCollector.name}
+                  {currentCollector.name || 'Current Collector'}
                 </SelectItem>
               )
             )}
