@@ -207,7 +207,7 @@ export function MemberStats() {
         return {
           collectors: collectorStats,
           totals: {
-            members: totalMembers,
+            members: totalMembers + (familyMembersCount || 0), // Total is direct + family
             directMembers: totalMembers,
             familyMembers: familyMembersCount || 0,
             activeCollectors: collectorStats.length
