@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -109,14 +110,7 @@ export function useMemberQueries(
   const membersQuery = useQuery({
     queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
-      console.log('Fetching members with params:', {
-        selectedCollector,
-        searchTerm,
-        sortField,
-        sortDirection,
-        collectorId,
-        page
-      });
+      console.log('Starting member fetch with collector ID:', collectorId);
 
       let query = supabase
         .from("members")
@@ -134,18 +128,28 @@ export function useMemberQueries(
       const isAdmin = userRolesQuery.data?.includes("admin");
       const userCollector = userCollectorQuery.data;
 
-      if (!isAdmin && userCollector?.member_number) {
-        const prefix = userCollector.member_number.substring(0, 2);
-        const number = userCollector.member_number.substring(2, 4);
-        const collectorPrefix = prefix + number;
-        console.log('Filtering by collector prefix:', collectorPrefix);
+      // First check: Is the user an admin?
+      console.log('User is admin:', isAdmin);
+      console.log('Current collector data:', userCollector);
+
+      if (!isAdmin) {
+        // Non-admin case: Must always filter by their collector_id
+        if (!userCollector?.id) {
+          console.error('Non-admin user without collector ID detected');
+          throw new Error('Collector ID not found');
+        }
+        console.log('Applying non-admin filter with collector ID:', userCollector.id);
         query = query.eq('collector_id', userCollector.id);
-      } else if (isAdmin && selectedCollector !== 'all') {
+      } else if (selectedCollector !== 'all') {
+        // Admin case with specific collector selected
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
+      } else {
+        console.log('Admin viewing all members');
       }
 
       if (searchTerm) {
+        console.log('Applying search term:', searchTerm);
         query = query.or(`
           full_name.ilike.%${searchTerm}%,
           member_number.ilike.%${searchTerm}%,
@@ -160,7 +164,7 @@ export function useMemberQueries(
       const from = (page - 1) * ITEMS_PER_PAGE;
       query = query.range(from, from + ITEMS_PER_PAGE - 1);
 
-      console.log('Final query:', query);
+      console.log('Executing final query...');
       const { data, error, count } = await query;
       
       if (error) {
@@ -173,7 +177,12 @@ export function useMemberQueries(
         throw error;
       }
 
-      console.log('Query results:', { count, results: data?.length, firstResult: data?.[0] });
+      console.log('Query completed successfully:', {
+        totalCount: count,
+        resultsCount: data?.length,
+        firstMember: data?.[0]?.member_number
+      });
+
       return {
         members: data || [],
         totalCount: count || 0
