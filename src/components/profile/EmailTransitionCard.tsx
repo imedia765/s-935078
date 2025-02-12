@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Database } from "@/types/supabase";
 
 type EmailTransition = Database['public']['Tables']['email_transitions']['Row'];
+type TransitionRpcResponse = Database['public']['Functions']['initiate_email_transition']['Returns'];
 
 interface EmailTransitionProps {
   memberNumber: string;
@@ -26,16 +27,16 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
   const { data: transitionStatus, refetch: refetchStatus } = useQuery<EmailTransition | null>({
     queryKey: ['emailTransition', memberNumber],
     queryFn: async () => {
-      const { data: result, error } = await supabase
-        .from('email_transitions')
-        .select()
+      const { data, error } = await supabase
+        .from('email_transitions' as any) // Type assertion needed due to Supabase client limitation
+        .select('*')
         .eq('member_number', memberNumber)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return result as EmailTransition | null;
+      return data as EmailTransition | null;
     },
     staleTime: 1000 * 60 // 1 minute
   });
@@ -55,15 +56,15 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
       }
 
       // Call the initiate_email_transition function
-      const { data: result, error } = await supabase
-        .rpc('initiate_email_transition', {
+      const { data, error } = await supabase
+        .rpc('initiate_email_transition' as any, {
           p_member_number: memberNumber,
           p_new_email: newEmail
         });
 
       if (error) throw error;
 
-      const transitionResult = result as Database['public']['Functions']['initiate_email_transition']['Returns'];
+      const transitionResult = data as TransitionRpcResponse;
 
       if (!transitionResult.success) {
         toast({
