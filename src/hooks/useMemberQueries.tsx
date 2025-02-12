@@ -81,8 +81,8 @@ export function useMemberQueries(
         .select("id, prefix, name, number")
         .eq("auth_user_id", userQuery.data.id)
         .eq("active", true)
-        .single();
-      return data as CollectorBase | null;
+        .maybeSingle();
+      return data;
     },
     enabled: !!userQuery.data?.id
   });
@@ -96,7 +96,7 @@ export function useMemberQueries(
         .eq("active", true);
       
       if (error) throw error;
-      return data as Collector[];
+      return data;
     },
     enabled: userRolesQuery.data?.includes("admin") || false
   });
@@ -117,7 +117,7 @@ export function useMemberQueries(
         .from("members")
         .select(`
           *,
-          members_collectors!inner (
+          members_collectors (
             name,
             number,
             active,
@@ -125,12 +125,13 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
+      // If user is not admin, filter by their collector ID
       if (!userRolesQuery.data?.includes("admin")) {
-        if (!collectorId) {
+        if (!userCollectorQuery.data?.id) {
           throw new Error("Collector ID not found");
         }
-        console.log('Filtering by collector ID:', collectorId);
-        query = query.eq('collector_id', collectorId);
+        console.log('Filtering by collector ID:', userCollectorQuery.data.id);
+        query = query.eq('collector_id', userCollectorQuery.data.id);
       } else if (selectedCollector !== 'all') {
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
@@ -161,7 +162,7 @@ export function useMemberQueries(
         totalCount: count || 0
       } as QueryResult;
     },
-    enabled: !!userQuery.data
+    enabled: !!userQuery.data && (!!userCollectorQuery.data?.id || userRolesQuery.data?.includes("admin"))
   });
 
   return {
