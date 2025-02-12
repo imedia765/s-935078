@@ -36,7 +36,8 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return data as EmailTransition | null;
+      // Convert to unknown first, then assert the type
+      return (data as unknown) as EmailTransition | null;
     },
     staleTime: 1000 * 60 // 1 minute
   });
@@ -64,7 +65,8 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
 
       if (error) throw error;
 
-      const transitionResult = data as TransitionRpcResponse;
+      // Convert to unknown first, then assert the type
+      const transitionResult = (data as unknown) as TransitionRpcResponse;
 
       if (!transitionResult.success) {
         toast({
