@@ -27,14 +27,18 @@ export function useMemberQueries(
         .select("role")
         .eq("user_id", user.id);
 
-      // Use maybeSingle() instead of single() to handle no results
-      const { data: collectorInfo } = await supabase
+      // First get the collector info without single/maybeSingle
+      const { data: collectorData, error: collectorError } = await supabase
         .from("members_collectors")
         .select("id")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
+        .eq("auth_user_id", user.id);
 
-      const collectorId = collectorInfo ? collectorInfo.id : null;
+      if (collectorError) {
+        console.error('Error fetching collector info:', collectorError);
+      }
+
+      // Safely access the first item if it exists
+      const collectorId = collectorData && collectorData.length > 0 ? collectorData[0].id : null;
 
       return {
         roles: roles?.map(r => r.role) || [],
