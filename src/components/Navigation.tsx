@@ -1,6 +1,6 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
-import { User, Settings, Users, LogOut, Loader2, Sun, Moon, Wallet, Download } from "lucide-react"
+import { User, Settings, Users, LogOut, Loader2, Sun, Moon, Wallet } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
@@ -14,14 +14,6 @@ export const Navigation = () => {
   const location = useLocation()
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
-
-  const handleInstallPWA = () => {
-    // We'll just show a toast for now
-    toast({
-      title: "Install App",
-      description: "This feature will be available soon"
-    })
-  }
 
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session"],
@@ -46,25 +38,6 @@ export const Navigation = () => {
     },
     enabled: !!session
   })
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut()
-      navigate("/")
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error signing out",
-        description: error.message
-      })
-    }
-  }
-
-  const isActive = (path: string) => location.pathname === path
-  const hasAccess = (requiredRole: UserRole) => {
-    if (!userRoles) return false
-    return userRoles.includes('admin' as UserRole) || userRoles.includes(requiredRole)
-  }
 
   const menuItems = [
     { 
@@ -100,15 +73,7 @@ export const Navigation = () => {
       <div className="max-w-7xl mx-auto">
         <div className="py-2 border-b border-white/10">
           <div className="flex items-center justify-between px-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary"
-              onClick={handleInstallPWA}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Install App
-            </Button>
+            <h3 className="text-sm font-medium text-primary">PWA Button</h3>
             <p className="text-lg font-arabic text-primary tracking-wider">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
             <div className="w-[88px]" /> {/* Spacer to balance the layout */}
           </div>
