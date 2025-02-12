@@ -48,11 +48,11 @@ export function useFinancialQueries() {
           payment_number,
           collector_id,
           member_number,
-          members!payment_requests_member_number_fkey (
+          members (
             full_name,
-            email
+            member_number
           ),
-          members_collectors!payment_requests_collector_id_fkey (
+          members_collectors (
             id,
             name
           ),
@@ -119,12 +119,12 @@ export function useFinancialQueries() {
         .from("members_collectors")
         .select(`
           *,
-          members!members_collectors_member_number_fkey (
+          members (
             member_number,
             full_name,
             email
           ),
-          payment_requests!payment_requests_collector_id_fkey (
+          payment_requests (
             status,
             amount,
             created_at
