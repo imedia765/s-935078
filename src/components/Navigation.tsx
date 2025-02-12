@@ -92,7 +92,7 @@ export const Navigation = () => {
     <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
       <div className="max-w-7xl mx-auto">
         <div className="py-2 border-b border-white/10">
-          <p className="text-lg font-arabic text-primary tracking-wider">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
+          <p className="text-lg font-arabic text-primary tracking-wider text-center">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
         </div>
 
         {session && (
