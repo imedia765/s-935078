@@ -9,7 +9,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { Database } from "@/types/supabase";
 
-type EmailTransition = Database['public']['Tables']['email_transitions']['Row'];
+type TransitionStatus = "completed" | "failed" | "pending" | "verifying";
+
+interface EmailTransition {
+  id: string;
+  member_number: string;
+  old_auth_email: string;
+  new_profile_email: string;
+  verification_token: string | null;
+  verification_sent_at: string | null;
+  verification_expires_at: string | null;
+  status: TransitionStatus;
+  completed_at: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 type TransitionRpcResponse = Database['public']['Functions']['initiate_email_transition']['Returns'];
 
 interface EmailTransitionProps {
@@ -36,7 +52,15 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return data;
+      
+      // Cast the status to ensure type safety
+      if (data) {
+        return {
+          ...data,
+          status: data.status as TransitionStatus
+        } as EmailTransition;
+      }
+      return null;
     },
     staleTime: 1000 * 60 // 1 minute
   });
