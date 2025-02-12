@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,16 +38,6 @@ interface MemberWithPayments extends Member {
   payment_requests: PaymentRequest[];
 }
 
-// Raw response type from Supabase
-interface RawCollectorData {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  active: boolean;
-  members: Member | null;
-}
-
 interface CollectorData {
   id: string;
   name: string;
@@ -56,6 +45,7 @@ interface CollectorData {
   phone: string | null;
   active: boolean;
   members: Member[];
+  member_count: number;
 }
 
 interface CollectorWithPayments extends Omit<CollectorData, 'members'> {
@@ -91,7 +81,8 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        const { data: rawCollectors, error: collectorError } = await supabase
+        // Get collectors with their member counts and associated members
+        const { data: collectors, error: collectorError } = await supabase
           .from('members_collectors')
           .select(`
             id,
@@ -99,7 +90,8 @@ export function MemberStats() {
             email,
             phone,
             active,
-            members:members (
+            member_count:members(count),
+            members!members_collector_id_fkey (
               id,
               member_number,
               full_name,
@@ -111,15 +103,18 @@ export function MemberStats() {
 
         if (collectorError) throw collectorError;
 
-        // Transform raw data to ensure members is always an array
-        const collectorsData: CollectorData[] = (rawCollectors || []).map(
-          (collector: RawCollectorData) => ({
-            ...collector,
-            members: collector.members ? [collector.members] : []
-          })
-        );
+        // Transform and ensure members arrays
+        const collectorsData: CollectorData[] = (collectors || []).map(collector => ({
+          id: collector.id,
+          name: collector.name,
+          email: collector.email,
+          phone: collector.phone,
+          active: collector.active,
+          members: Array.isArray(collector.members) ? collector.members : [],
+          member_count: collector.member_count
+        }));
 
-        // Then get payment requests for each member
+        // Get payment requests for each member
         const enrichedCollectors: CollectorWithPayments[] = await Promise.all(
           collectorsData.map(async (collector) => {
             const memberPayments = await Promise.all(
@@ -171,7 +166,7 @@ export function MemberStats() {
             email: collector.email,
             phone: collector.phone,
             members,
-            totalMembers: members.length,
+            totalMembers: collector.member_count || 0,
             totalPayments,
             approvedPayments,
             pendingPayments,
@@ -179,13 +174,16 @@ export function MemberStats() {
           };
         });
 
+        // Calculate overall totals
+        const totalMembers = collectorStats.reduce((sum, c) => sum + c.totalMembers, 0);
+
         console.log('Processed collector stats:', collectorStats);
         return {
           collectors: collectorStats,
           totals: {
-            members: collectorStats.reduce((sum, c) => sum + c.totalMembers, 0),
-            directMembers: collectorStats.reduce((sum, c) => sum + c.totalMembers, 0),
-            familyMembers: 0,
+            members: totalMembers,
+            directMembers: totalMembers, // All members are direct for now
+            familyMembers: 0, // Family members feature not implemented yet
             activeCollectors: collectorStats.length
           }
         };
