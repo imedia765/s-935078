@@ -49,9 +49,10 @@ export function CollectorsView() {
   });
 
   const syncRoleMutation = useMutation({
-    mutationFn: async (userId: string) => {
+    mutationFn: async (memberNumber: string) => {
+      console.log('Syncing roles for member:', memberNumber);
       const { data, error } = await supabase.rpc('fix_collector_role_sync', {
-        p_user_id: userId
+        p_member_number: memberNumber
       });
       if (error) throw error;
       return data;
@@ -64,6 +65,7 @@ export function CollectorsView() {
       });
     },
     onError: (error: Error) => {
+      console.error('Role sync error:', error);
       toast({
         title: "Error",
         description: "Failed to sync roles: " + error.message,

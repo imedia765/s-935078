@@ -3177,6 +3177,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      fix_collector_role_sync: {
+        Args: {
+          p_member_number: string
+        }
+        Returns: Json
+      }
       fix_role_error: {
         Args: {
           p_error_type: string
