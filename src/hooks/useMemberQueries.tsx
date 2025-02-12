@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,12 +27,14 @@ export function useMemberQueries(
         .select("role")
         .eq("user_id", user.id);
 
+      // Use maybeSingle() instead of single() to handle no results
       const { data: collectorInfo } = await supabase
         .from("members_collectors")
         .select("id")
-        .eq("auth_user_id", user.id);
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
 
-      const collectorId = collectorInfo && collectorInfo.length > 0 ? collectorInfo[0].id : null;
+      const collectorId = collectorInfo ? collectorInfo.id : null;
 
       return {
         roles: roles?.map(r => r.role) || [],
