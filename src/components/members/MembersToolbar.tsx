@@ -28,6 +28,7 @@ interface MembersToolbarProps {
   onAddMember: (data: any) => void;
   collectors: any[];
   isAdmin?: boolean;
+  currentCollector?: { id: string; name: string } | null;
 }
 
 export function MembersToolbar({
@@ -41,6 +42,7 @@ export function MembersToolbar({
   onAddMember,
   collectors,
   isAdmin = false,
+  currentCollector,
 }: MembersToolbarProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -52,24 +54,31 @@ export function MembersToolbar({
           onSearch={onSearch}
         />
         
-        {isAdmin && (
-          <Select
-            value={selectedCollector}
-            onValueChange={onCollectorChange}
-          >
-            <SelectTrigger className="w-[200px] glass-card">
-              <SelectValue placeholder="Filter by collector" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Collectors</SelectItem>
-              {collectors?.map((collector) => (
+        <Select
+          value={selectedCollector}
+          onValueChange={onCollectorChange}
+          disabled={!isAdmin}
+        >
+          <SelectTrigger className="w-[200px] glass-card">
+            <SelectValue placeholder="Filter by collector" />
+          </SelectTrigger>
+          <SelectContent>
+            {isAdmin && <SelectItem value="all">All Collectors</SelectItem>}
+            {isAdmin ? (
+              collectors?.map((collector) => (
                 <SelectItem key={collector.id} value={collector.id}>
                   {collector.name || `Collector ${collector.number}`}
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+              ))
+            ) : (
+              currentCollector && (
+                <SelectItem value={currentCollector.id}>
+                  {currentCollector.name}
+                </SelectItem>
+              )
+            )}
+          </SelectContent>
+        </Select>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

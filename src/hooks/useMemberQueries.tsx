@@ -115,7 +115,7 @@ export function useMemberQueries(
         searchTerm,
         sortField,
         sortDirection,
-        collectorId: userCollectorQuery.data?.id,
+        collectorId,
         page
       });
 
@@ -131,13 +131,11 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      // If admin and collector is selected, filter by collector
+      // The RLS policy will automatically filter based on user role and collector_id
+      // We only need to add additional filters for admin selection
       if (userRolesQuery.data?.includes("admin") && selectedCollector !== 'all') {
+        console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
-      } 
-      // If not admin but is a collector, filter by their collector_id
-      else if (!userRolesQuery.data?.includes("admin") && userCollectorQuery.data?.id) {
-        query = query.eq('collector_id', userCollectorQuery.data.id);
       }
 
       if (searchTerm) {
@@ -156,6 +154,11 @@ export function useMemberQueries(
       
       if (error) {
         console.error('Query error:', error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching members",
+          description: error.message
+        });
         throw error;
       }
 

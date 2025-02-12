@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF, exportToExcel } from "@/utils/exportUtils";
@@ -19,7 +18,10 @@ import { supabase } from "@/integrations/supabase/client";
 const ITEMS_PER_PAGE = 10;
 
 export default function Members() {
-  const [selectedCollector, setSelectedCollector] = useState<string>('all');
+  const { data: currentUser, isLoading: isUserLoading } = useCollectorData();
+  const [selectedCollector, setSelectedCollector] = useState<string>(
+    currentUser?.isAdmin ? 'all' : (currentUser?.collectorId || 'all')
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('full_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -30,8 +32,6 @@ export default function Members() {
   const [page, setPage] = useState(1);
   const [deleteConfirmMember, setDeleteConfirmMember] = useState<any>(null);
   const [statusConfirmMember, setStatusConfirmMember] = useState<any>(null);
-
-  const { data: currentUser } = useCollectorData();
 
   const { userInfo, collectors, membersData, isLoading } = useMemberQueries(
     selectedCollector,
@@ -119,9 +119,14 @@ export default function Members() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return <MembersLoading />;
   }
+
+  const currentCollector = currentUser?.isAdmin ? null : {
+    id: currentUser?.collectorId || '',
+    name: currentUser?.collectorName || ''
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -137,6 +142,7 @@ export default function Members() {
           onAddMember={(data) => addMemberMutation.mutate(data)}
           collectors={collectors || []}
           isAdmin={currentUser?.isAdmin || false}
+          currentCollector={currentCollector}
         />
 
         <Card className="glass-card p-6">
