@@ -8,6 +8,7 @@ type CollectorData = {
   collectorPrefix: string | null;
   collectorName: string | null;
   collectorNumber: string | null;
+  member_number: string | null;
 };
 
 export function useCollectorData() {
@@ -22,7 +23,8 @@ export function useCollectorData() {
           collectorId: null,
           collectorPrefix: null,
           collectorName: null,
-          collectorNumber: null
+          collectorNumber: null,
+          member_number: null
         };
       }
 
@@ -35,17 +37,26 @@ export function useCollectorData() {
       // Then fetch collector data
       const { data: collectors } = await supabase
         .from("members_collectors")
-        .select("id, prefix, name, number")
+        .select("id, prefix, name, number, member_number")
         .eq("auth_user_id", user.id)
         .eq("active", true)
-        .maybeSingle(); // Changed from .single() to .maybeSingle()
+        .maybeSingle();
+
+      // Calculate collector prefix from member number if available
+      let collectorPrefix = null;
+      if (collectors?.member_number) {
+        const prefix = collectors.member_number.substring(0, 2); // Get letters (e.g., "TM")
+        const number = collectors.member_number.substring(2, 4); // Get digits (e.g., "10")
+        collectorPrefix = prefix + number;
+      }
 
       return {
         isAdmin: roles?.some(r => r.role === "admin") || false,
         collectorId: collectors?.id || null,
-        collectorPrefix: collectors?.prefix || null,
+        collectorPrefix,
         collectorName: collectors?.name || null,
-        collectorNumber: collectors?.number || null
+        collectorNumber: collectors?.number || null,
+        member_number: collectors?.member_number || null
       };
     },
     meta: {

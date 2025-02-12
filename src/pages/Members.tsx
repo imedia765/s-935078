@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF, exportToExcel } from "@/utils/exportUtils";
@@ -65,11 +66,14 @@ export default function Members() {
           )
         `);
 
-      // Strictly enforce collector filtering for non-admins
-      if (!currentUser?.isAdmin) {
-        query = query.eq('collector_id', currentUser?.collectorId);
+      // Apply the same prefix-based filtering logic
+      if (!currentUser?.isAdmin && currentUser?.member_number) {
+        const prefix = currentUser.member_number.substring(0, 2);
+        const number = currentUser.member_number.substring(2, 4);
+        const collectorPrefix = prefix + number;
+        query = query.ilike('member_number', `${collectorPrefix}%`);
       } 
-      else if (selectedCollector !== 'all') {
+      else if (currentUser?.isAdmin && selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
       }
 
