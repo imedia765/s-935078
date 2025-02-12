@@ -33,7 +33,7 @@ interface MemberWithPayments {
   member_number: string;
   full_name: string;
   status: string;
-  payment_requests?: PaymentRequest[];
+  payment_requests: PaymentRequest[];
 }
 
 interface CollectorData {
@@ -42,7 +42,7 @@ interface CollectorData {
   email: string | null;
   phone: string | null;
   active: boolean;
-  members?: MemberWithPayments[];
+  members: MemberWithPayments[];
 }
 
 interface CollectorStats {
@@ -74,6 +74,7 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
+        // First get collectors with their members
         const { data: collectors, error: collectorError } = await supabase
           .from('members_collectors')
           .select(`
@@ -82,17 +83,11 @@ export function MemberStats() {
             email,
             phone,
             active,
-            members:members_collectors_member_number_fkey (
+            members:members (
               id,
               member_number,
               full_name,
-              status,
-              payment_requests:payment_requests_member_number_fkey (
-                id,
-                amount,
-                status,
-                created_at
-              )
+              status
             )
           `)
           .eq('active', true)
@@ -100,10 +95,29 @@ export function MemberStats() {
 
         if (collectorError) throw collectorError;
 
+        // Then get payment requests for each member
+        const enrichedCollectors = await Promise.all((collectors || []).map(async (collector) => {
+          const memberPayments = await Promise.all((collector.members || []).map(async (member) => {
+            const { data: payments } = await supabase
+              .from('payment_requests')
+              .select('*')
+              .eq('member_number', member.member_number);
+            
+            return {
+              ...member,
+              payment_requests: payments || []
+            };
+          }));
+
+          return {
+            ...collector,
+            members: memberPayments
+          };
+        }));
+
         // Transform the data to include aggregated stats
-        const collectorStats: CollectorStats[] = (collectors as CollectorData[]).map(collector => {
-          const membersList = collector.members || [];
-          const members = membersList.map(member => {
+        const collectorStats: CollectorStats[] = enrichedCollectors.map(collector => {
+          const members = collector.members.map(member => {
             const payments = member.payment_requests || [];
             return {
               member_number: member.member_number,
@@ -143,7 +157,7 @@ export function MemberStats() {
           totals: {
             members: collectorStats.reduce((sum, c) => sum + c.totalMembers, 0),
             directMembers: collectorStats.reduce((sum, c) => sum + c.totalMembers, 0),
-            familyMembers: 0, // This would need a separate query to get family members
+            familyMembers: 0,
             activeCollectors: collectorStats.length
           }
         };
