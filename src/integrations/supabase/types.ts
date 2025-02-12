@@ -2323,47 +2323,6 @@ export type Database = {
         }
         Relationships: []
       }
-      receipt_email_tracking: {
-        Row: {
-          delivery_attempts: number | null
-          email_sent_at: string | null
-          email_status: string
-          id: string
-          last_error: string | null
-          metadata: Json | null
-          receipt_id: string | null
-          recipient_email: string
-        }
-        Insert: {
-          delivery_attempts?: number | null
-          email_sent_at?: string | null
-          email_status: string
-          id?: string
-          last_error?: string | null
-          metadata?: Json | null
-          receipt_id?: string | null
-          recipient_email: string
-        }
-        Update: {
-          delivery_attempts?: number | null
-          email_sent_at?: string | null
-          email_status?: string
-          id?: string
-          last_error?: string | null
-          metadata?: Json | null
-          receipt_id?: string | null
-          recipient_email?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "receipt_email_tracking_receipt_id_fkey"
-            columns: ["receipt_id"]
-            isOneToOne: false
-            referencedRelation: "receipts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       receipt_templates: {
         Row: {
           created_at: string | null
@@ -2396,50 +2355,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
-      }
-      receipts: {
-        Row: {
-          created_at: string | null
-          generated_at: string | null
-          id: string
-          metadata: Json | null
-          payment_id: string | null
-          receipt_number: string
-          receipt_url: string | null
-          template_version: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          generated_at?: string | null
-          id?: string
-          metadata?: Json | null
-          payment_id?: string | null
-          receipt_number: string
-          receipt_url?: string | null
-          template_version?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          generated_at?: string | null
-          id?: string
-          metadata?: Json | null
-          payment_id?: string | null
-          receipt_number?: string
-          receipt_url?: string | null
-          template_version?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "receipts_payment_id_fkey"
-            columns: ["payment_id"]
-            isOneToOne: false
-            referencedRelation: "payment_requests"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       role_change_requests: {
         Row: {
