@@ -54,10 +54,15 @@ export function CollectorsView() {
       const { data, error } = await supabase.rpc('fix_collector_role_sync', {
         p_member_number: memberNumber
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase RPC error:', error);
+        throw error;
+      }
+      console.log('Role sync response:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Role sync success:', data);
       queryClient.invalidateQueries({ queryKey: ["collectors-status"] });
       toast({
         title: "Success",
