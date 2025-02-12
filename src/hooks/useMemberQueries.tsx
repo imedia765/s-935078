@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -132,14 +131,10 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      // For collectors (non-admin), only show members if their member number matches
-      if (!userRolesQuery.data?.includes("admin") && userCollectorQuery.data?.member_number) {
-        console.log('Filtering by collector member number:', userCollectorQuery.data.member_number);
-        query = query.eq('collector_id', userCollectorQuery.data.id);
-      }
-      // For admin selections
-      else if (userRolesQuery.data?.includes("admin") && selectedCollector !== 'all') {
-        console.log('Admin filtering by selected collector:', selectedCollector);
+      // Simple filtering: collectors see only their members, admins can see all or filter by collector
+      if (!userRolesQuery.data?.includes("admin")) {
+        query = query.eq('collector_id', userCollectorQuery.data?.id);
+      } else if (selectedCollector !== 'all') {
         query = query.eq('collector_id', selectedCollector);
       }
 
