@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { generateReceipt, getPaymentReceipt } from "@/utils/receiptGenerator";
 
 interface PaymentHistoryCardProps {
   memberData: MemberWithRelations | null;
@@ -26,16 +27,37 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
   const [downloadingReceipt, setDownloadingReceipt] = useState<string | null>(null);
   const payments = memberData?.payment_requests || [];
 
-  const downloadReceipt = async (paymentId: string) => {
+  const downloadReceipt = async (payment: any) => {
     try {
-      setDownloadingReceipt(paymentId);
-      // TODO: Implement actual receipt download logic
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated delay
+      setDownloadingReceipt(payment.id);
+      
+      // First check if receipt already exists
+      const existingReceipt = await getPaymentReceipt(payment.id);
+      
+      if (existingReceipt) {
+        // If receipt exists, open it in a new tab
+        window.open(existingReceipt, '_blank');
+      } else {
+        // Generate new receipt
+        const receiptBlob = await generateReceipt(payment);
+        
+        // Create a download link
+        const url = window.URL.createObjectURL(receiptBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${payment.payment_number}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+
       toast({
         title: "Receipt downloaded",
         description: "Your payment receipt has been downloaded successfully."
       });
     } catch (error) {
+      console.error('Receipt download error:', error);
       toast({
         variant: "destructive",
         title: "Download failed",
@@ -115,9 +137,10 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => downloadReceipt(payment.id)}
-                        disabled={downloadingReceipt === payment.id}
-                        className="h-8 w-8"
+                        onClick={() => downloadReceipt(payment)}
+                        disabled={downloadingReceipt === payment.id || payment.status !== 'approved'}
+                        className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                        title={payment.status !== 'approved' ? 'Only approved payments have receipts' : 'Download receipt'}
                       >
                         {downloadingReceipt === payment.id ? (
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
