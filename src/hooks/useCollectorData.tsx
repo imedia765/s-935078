@@ -36,8 +36,9 @@ export function useCollectorData() {
       const { data: collectors } = await supabase
         .from("members_collectors")
         .select("id, prefix, name, number")
-        .eq("auth_id", user.id)
-        .single();
+        .eq("auth_user_id", user.id)
+        .eq("active", true)
+        .maybeSingle(); // Changed from .single() to .maybeSingle()
 
       return {
         isAdmin: roles?.some(r => r.role === "admin") || false,

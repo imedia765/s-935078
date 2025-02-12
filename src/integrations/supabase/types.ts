@@ -966,6 +966,51 @@ export type Database = {
         }
         Relationships: []
       }
+      email_transitions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          member_number: string
+          new_profile_email: string
+          old_auth_email: string
+          status: string
+          updated_at: string
+          verification_expires_at: string | null
+          verification_sent_at: string | null
+          verification_token: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          member_number: string
+          new_profile_email: string
+          old_auth_email: string
+          status?: string
+          updated_at?: string
+          verification_expires_at?: string | null
+          verification_sent_at?: string | null
+          verification_token?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          member_number?: string
+          new_profile_email?: string
+          old_auth_email?: string
+          status?: string
+          updated_at?: string
+          verification_expires_at?: string | null
+          verification_sent_at?: string | null
+          verification_token?: string | null
+        }
+        Relationships: []
+      }
       email_whitelist: {
         Row: {
           approved_at: string | null
@@ -3159,6 +3204,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      complete_email_transition: {
+        Args: {
+          p_token: string
+        }
+        Returns: Json
+      }
       create_auth_user_for_collector: {
         Args: {
           member_num: string
@@ -3385,6 +3436,13 @@ export type Database = {
             }
             Returns: Json
           }
+      initiate_email_transition: {
+        Args: {
+          p_member_number: string
+          p_new_email: string
+        }
+        Returns: Json
+      }
       is_admin: {
         Args: {
           user_uid: string
