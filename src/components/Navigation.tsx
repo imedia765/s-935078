@@ -94,7 +94,7 @@ export const Navigation = () => {
       <div className="max-w-7xl mx-auto">
         <div className="py-2 border-b border-white/10">
           <div className="flex items-center justify-between px-4">
-            <h3 className="text-sm font-medium text-primary">PWA Button</h3>
+            <h3 className="text-sm font-medium text-primary">PWA Burton</h3>
             <p className="text-lg font-arabic text-primary tracking-wider">بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
             <div className="w-[88px]" /> {/* Spacer to balance the layout */}
           </div>
