@@ -7,6 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, CheckCircle, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import type { Database } from "@/types/supabase";
+
+type EmailTransition = Database['public']['Tables']['email_transitions']['Row'];
 
 interface EmailTransitionProps {
   memberNumber: string;
@@ -20,7 +23,7 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
   const { toast } = useToast();
 
   // Fetch current transition status if any exists
-  const { data: transitionStatus, refetch: refetchStatus } = useQuery({
+  const { data: transitionStatus, refetch: refetchStatus } = useQuery<EmailTransition | null>({
     queryKey: ['emailTransition', memberNumber],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,10 +62,10 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
 
       if (error) throw error;
 
-      if (!data.success) {
+      if (!data?.success) {
         toast({
           title: "Error",
-          description: data.error || "Failed to initiate email transition",
+          description: data?.error || "Failed to initiate email transition",
           variant: "destructive",
         });
         return;
@@ -110,7 +113,7 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
       verifying: "text-blue-500",
       completed: "text-green-500",
       failed: "text-red-500"
-    };
+    } as const;
 
     return (
       <div className="flex items-center gap-2 mt-4">

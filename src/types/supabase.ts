@@ -254,5 +254,27 @@ export interface Database {
         }
       }
     }
+    Functions: {
+      initiate_email_transition: {
+        Args: {
+          p_member_number: string
+          p_new_email: string
+        }
+        Returns: {
+          success: boolean
+          error?: string
+          token?: string
+        }
+      }
+      complete_email_transition: {
+        Args: {
+          p_token: string
+        }
+        Returns: {
+          success: boolean
+          error?: string
+        }
+      }
+    }
   }
 }
