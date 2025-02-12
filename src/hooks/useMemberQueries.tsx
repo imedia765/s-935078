@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -130,6 +131,12 @@ export function useMemberQueries(
             member_number
           )
         `, { count: 'exact' });
+
+      // Add collector filtering based on selected collector
+      if (selectedCollector && selectedCollector !== 'all') {
+        console.log('Filtering by selected collector:', selectedCollector);
+        query = query.eq('collector_id', selectedCollector);
+      }
 
       if (sortField) {
         query = query.order(sortField, { ascending: sortDirection === 'asc' });

@@ -57,28 +57,19 @@ export function MembersToolbar({
         <Select
           value={selectedCollector}
           onValueChange={onCollectorChange}
-          disabled={!isAdmin}
         >
           <SelectTrigger className="w-[200px] glass-card">
-            <SelectValue placeholder="Filter by collector" />
+            <SelectValue placeholder="Select Collector" />
           </SelectTrigger>
           <SelectContent>
-            {isAdmin && <SelectItem value="all">All Collectors</SelectItem>}
-            {isAdmin ? (
-              collectors?.map((collector) => (
-                collector.id && (
-                  <SelectItem key={collector.id} value={collector.id}>
-                    {collector.name || `Collector ${collector.member_number}`} (#{collector.member_number})
-                  </SelectItem>
-                )
-              ))
-            ) : (
-              currentCollector?.id && (
-                <SelectItem value={currentCollector.id}>
-                  {currentCollector.name || 'Current Collector'}
+            <SelectItem value="all">All Collectors</SelectItem>
+            {collectors?.map((collector) => (
+              collector.id && (
+                <SelectItem key={collector.id} value={collector.id}>
+                  {collector.name || `Collector ${collector.member_number}`} (#{collector.member_number})
                 </SelectItem>
               )
-            )}
+            ))}
           </SelectContent>
         </Select>
 
