@@ -136,16 +136,26 @@ export function useMemberQueries(
       const userCollector = userCollectorQuery.data;
 
       if (!isAdmin && userCollector?.member_number) {
-        // For collectors, filter by the first 4 characters of their member number
-        const collectorPrefix = userCollector.member_number.substring(0, 4);
+        // Get the collector prefix from their member number (first 2 letters + next 2 digits)
+        const prefix = userCollector.member_number.substring(0, 2); // Get letters (e.g., "TM")
+        const number = userCollector.member_number.substring(2, 4); // Get digits (e.g., "10")
+        const collectorPrefix = prefix + number;
         console.log('Filtering by collector prefix:', collectorPrefix);
         
-        // Filter directly on the member_number field
+        // Filter members whose member_number starts with the collector's prefix
         query = query.ilike('member_number', `${collectorPrefix}%`);
       } else if (isAdmin && selectedCollector && selectedCollector !== 'all') {
         // For admins, respect their collector filter selection
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
+      }
+
+      if (searchTerm) {
+        query = query.or(`
+          full_name.ilike.%${searchTerm}%,
+          member_number.ilike.%${searchTerm}%,
+          email.ilike.%${searchTerm}%
+        `);
       }
 
       if (sortField) {
