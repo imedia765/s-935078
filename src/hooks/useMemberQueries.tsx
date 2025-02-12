@@ -2,38 +2,38 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { MemberFormData } from "@/types/member";
 
-type UserInfo = {
-  roles: string[];
-  collectorId: string | null;
-  collectorPrefix: string | null;
+// Simplified, flattened types
+type UserRole = {
+  role: string;
 };
 
-type MembersData = {
-  members: Array<{
-    id: string;
-    full_name: string;
-    email: string;
-    member_number: string;
-    phone: string;
-    collector_id: string;
-    members_collectors: {
-      name: string;
-      number: string;
-      active: boolean;
-      prefix: string;
-    } | null;
-  }>;
-  totalCount: number;
+type CollectorBasic = {
+  id: string;
+  prefix: string | null;
 };
 
-type CollectorType = {
+type CollectorFull = {
   id: string;
   name: string | null;
   number: string | null;
   prefix: string | null;
   active: boolean;
+};
+
+type Member = {
+  id: string;
+  full_name: string;
+  email: string;
+  member_number: string;
+  phone: string;
+  collector_id: string;
+  members_collectors: {
+    name: string;
+    number: string;
+    active: boolean;
+    prefix: string;
+  } | null;
 };
 
 export function useMemberQueries(
@@ -53,7 +53,7 @@ export function useMemberQueries(
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
-      const { data: roles } = await supabase
+      const { data: userRoles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
@@ -63,13 +63,13 @@ export function useMemberQueries(
         .select("id, prefix")
         .eq("user_id", user.id);
 
-      const collector = collectors && collectors.length > 0 ? collectors[0] : null;
+      const collector = collectors?.[0] || null;
 
       return {
-        roles: roles?.map(r => r.role) || [],
+        roles: userRoles?.map(r => r.role) || [],
         collectorId: collector?.id || null,
         collectorPrefix: collector?.prefix || null
-      } as UserInfo;
+      };
     }
   });
 
@@ -82,7 +82,7 @@ export function useMemberQueries(
         .eq("active", true);
       
       if (error) throw error;
-      return (data || []) as CollectorType[];
+      return data || [];
     },
     enabled: userInfoQuery.data?.roles.includes("admin") || false
   });
@@ -128,7 +128,7 @@ export function useMemberQueries(
       return {
         members: data || [],
         totalCount: count || 0
-      } as MembersData;
+      };
     }
   });
 
