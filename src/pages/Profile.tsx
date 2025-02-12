@@ -7,13 +7,13 @@ import { FamilyMembersCard } from "@/components/profile/FamilyMembersCard";
 import { AnnouncementsCard } from "@/components/profile/AnnouncementsCard";
 import { DocumentsCard } from "@/components/profile/DocumentsCard";
 import { FamilyMemberDialogs } from "@/components/profile/FamilyMemberDialogs";
+import { EmailTransitionCard } from "@/components/profile/EmailTransitionCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { MouseEvent } from "react";
-import { EmailStandardizationCard } from "@/components/profile/EmailStandardizationCard";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -151,7 +151,11 @@ const Profile = () => {
                 onCancel={handleCancel}
                 onEdit={handleEdit}
               />
-              {hasCollectorRole && <EmailStandardizationCard />}
+              {hasCollectorRole && <EmailTransitionCard 
+                memberNumber={memberData?.member_number || ''}
+                currentEmail={memberData?.email || ''}
+                onComplete={fetchData}
+              />}
               <BankDetailsCard 
                 memberNumber={memberData?.member_number}
               />
