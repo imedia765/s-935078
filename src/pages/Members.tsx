@@ -1,27 +1,20 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF, exportToExcel } from "@/utils/exportUtils";
 import { MembersToolbar } from "@/components/members/MembersToolbar";
 import { MembersTable } from "@/components/members/MembersTable";
 import { EditMemberDialog } from "@/components/members/EditMemberDialog";
 import { MoveMemberDialog } from "@/components/members/MoveMemberDialog";
 import { MembersPagination } from "@/components/members/MembersPagination";
+import { DeleteMemberDialog } from "@/components/members/DeleteMemberDialog";
+import { StatusMemberDialog } from "@/components/members/StatusMemberDialog";
+import { MembersLoading } from "@/components/members/MembersLoading";
 import { useMemberQueries } from "@/hooks/useMemberQueries";
 import { useMemberMutations } from "@/hooks/useMemberMutations";
+import { useCollectorData } from "@/hooks/useCollectorData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -38,30 +31,7 @@ export default function Members() {
   const [deleteConfirmMember, setDeleteConfirmMember] = useState<any>(null);
   const [statusConfirmMember, setStatusConfirmMember] = useState<any>(null);
 
-  // Get current user's role and collector ID if they're a collector
-  const { data: currentUser } = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      // Get collector info without using single()
-      const { data: collectorData } = await supabase
-        .from("members_collectors")
-        .select("id")
-        .eq("auth_user_id", user.id);
-
-      return {
-        isAdmin: roles?.some(r => r.role === "admin") || false,
-        collectorId: collectorData && collectorData.length > 0 ? collectorData[0]?.id : null
-      };
-    }
-  });
+  const { data: currentUser } = useCollectorData();
 
   const { userInfo, collectors, membersData, isLoading } = useMemberQueries(
     selectedCollector,
@@ -95,7 +65,6 @@ export default function Members() {
           )
         `);
 
-      // Only filter by collector if user is not an admin
       if (!currentUser?.isAdmin) {
         query = query.eq('collector_id', currentUser?.collectorId);
       } 
@@ -150,19 +119,7 @@ export default function Members() {
   };
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-[200px]" />
-          <Skeleton className="h-10 w-[150px]" />
-        </div>
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="p-6">
-            <Skeleton className="h-[120px] w-full" />
-          </Card>
-        ))}
-      </div>
-    );
+    return <MembersLoading />;
   }
 
   return (
@@ -225,47 +182,17 @@ export default function Members() {
           collectors={collectors || []}
         />
 
-        <AlertDialog open={!!deleteConfirmMember} onOpenChange={() => setDeleteConfirmMember(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Member</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete {deleteConfirmMember?.full_name}? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => deleteMemberMutation.mutate(deleteConfirmMember.id)}
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeleteMemberDialog
+          member={deleteConfirmMember}
+          onDelete={(id) => deleteMemberMutation.mutate(id)}
+          onClose={() => setDeleteConfirmMember(null)}
+        />
 
-        <AlertDialog open={!!statusConfirmMember} onOpenChange={() => setStatusConfirmMember(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Change Member Status</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to {statusConfirmMember?.status === 'active' ? 'pause' : 'activate'} {statusConfirmMember?.full_name}?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => toggleStatusMutation.mutate({
-                  id: statusConfirmMember.id,
-                  currentStatus: statusConfirmMember.status
-                })}
-              >
-                Confirm
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <StatusMemberDialog
+          member={statusConfirmMember}
+          onToggleStatus={toggleStatusMutation.mutate}
+          onClose={() => setStatusConfirmMember(null)}
+        />
       </div>
     </div>
   );
