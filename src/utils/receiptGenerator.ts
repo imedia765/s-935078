@@ -90,11 +90,11 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
       payment_id: payment.id,
       receipt_number: receiptNumber,
       receipt_url: publicUrl,
+      generated_by: (await supabase.auth.getUser()).data.user?.id,
       metadata: {
         payment_number: payment.payment_number,
         member_name: payment.members?.full_name,
-        amount: payment.amount,
-        generated_by: (await supabase.auth.getUser()).data.user?.id
+        amount: payment.amount
       }
     });
 
@@ -119,9 +119,8 @@ export async function getPaymentReceipt(paymentId: string): Promise<string | nul
     .from('receipts')
     .select('receipt_url')
     .eq('payment_id', paymentId)
-    .maybeSingle(); // Changed from .single() to .maybeSingle()
+    .maybeSingle();
 
   if (error) throw error;
   return data?.receipt_url || null;
 }
-
