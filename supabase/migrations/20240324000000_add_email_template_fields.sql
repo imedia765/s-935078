@@ -59,3 +59,4 @@ WHERE category IS NULL OR is_system IS NULL;
 
 -- Commit the transaction
 COMMIT;
+
