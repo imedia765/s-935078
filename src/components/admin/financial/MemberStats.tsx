@@ -39,6 +39,16 @@ interface MemberWithPayments extends Member {
   payment_requests: PaymentRequest[];
 }
 
+// Raw response type from Supabase
+interface RawCollectorData {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  active: boolean;
+  members: Member | null;
+}
+
 interface CollectorData {
   id: string;
   name: string;
@@ -81,7 +91,7 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        const { data: collectors, error: collectorError } = await supabase
+        const { data: rawCollectors, error: collectorError } = await supabase
           .from('members_collectors')
           .select(`
             id,
@@ -101,13 +111,19 @@ export function MemberStats() {
 
         if (collectorError) throw collectorError;
 
-        const collectorsData = (collectors || []) as CollectorData[];
+        // Transform raw data to ensure members is always an array
+        const collectorsData: CollectorData[] = (rawCollectors || []).map(
+          (collector: RawCollectorData) => ({
+            ...collector,
+            members: collector.members ? [collector.members] : []
+          })
+        );
 
         // Then get payment requests for each member
         const enrichedCollectors: CollectorWithPayments[] = await Promise.all(
           collectorsData.map(async (collector) => {
             const memberPayments = await Promise.all(
-              (collector.members || []).map(async (member) => {
+              collector.members.map(async (member) => {
                 const { data: payments } = await supabase
                   .from('payment_requests')
                   .select('*')
@@ -130,7 +146,7 @@ export function MemberStats() {
         // Transform the data to include aggregated stats
         const collectorStats: CollectorStats[] = enrichedCollectors.map(collector => {
           const members = collector.members.map(member => {
-            const payments = member.payment_requests || [];
+            const payments = member.payment_requests;
             return {
               member_number: member.member_number,
               full_name: member.full_name,
