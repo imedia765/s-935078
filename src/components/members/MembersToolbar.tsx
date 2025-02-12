@@ -54,24 +54,30 @@ export function MembersToolbar({
           onSearch={onSearch}
         />
         
-        <Select
-          value={selectedCollector}
-          onValueChange={onCollectorChange}
-        >
-          <SelectTrigger className="w-[200px] glass-card">
-            <SelectValue placeholder="Select Collector" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Collectors</SelectItem>
-            {collectors?.map((collector) => (
-              collector.id && (
-                <SelectItem key={collector.id} value={collector.id}>
-                  {collector.name || `Collector ${collector.member_number}`} (#{collector.member_number})
-                </SelectItem>
-              )
-            ))}
-          </SelectContent>
-        </Select>
+        {isAdmin ? (
+          <Select
+            value={selectedCollector}
+            onValueChange={onCollectorChange}
+          >
+            <SelectTrigger className="w-[200px] glass-card">
+              <SelectValue placeholder="Filter by collector" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Collectors</SelectItem>
+              {collectors?.map((collector) => (
+                collector.id && (
+                  <SelectItem key={collector.id} value={collector.id}>
+                    {collector.name || `Collector ${collector.member_number}`} (#{collector.member_number})
+                  </SelectItem>
+                )
+              ))}
+            </SelectContent>
+          </Select>
+        ) : currentCollector && (
+          <div className="w-[200px] px-4 py-2 glass-card rounded-md text-sm">
+            Current Group: {currentCollector.name}
+          </div>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

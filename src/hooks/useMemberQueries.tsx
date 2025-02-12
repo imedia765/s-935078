@@ -132,9 +132,18 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      // Add collector filtering based on selected collector
-      if (selectedCollector && selectedCollector !== 'all') {
-        console.log('Filtering by selected collector:', selectedCollector);
+      const isAdmin = userRolesQuery.data?.includes("admin");
+      const userCollector = userCollectorQuery.data;
+
+      if (!isAdmin && userCollector?.member_number) {
+        // For collectors, filter by the first 4 characters of their member number
+        const collectorPrefix = userCollector.member_number.substring(0, 4);
+        console.log('Filtering by collector prefix:', collectorPrefix);
+        
+        query = query.filter('members_collectors.member_number', 'ilike', `${collectorPrefix}%`);
+      } else if (isAdmin && selectedCollector && selectedCollector !== 'all') {
+        // For admins, respect their collector filter selection
+        console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
       }
 
