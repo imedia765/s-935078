@@ -71,8 +71,8 @@ export function useMemberQueries(
       if (!userQuery.data?.id) return null;
       const { data } = await supabase
         .from("members_collectors")
-        .select("id, prefix")
-        .eq("user_id", userQuery.data.id)
+        .select("id, prefix, name, number")
+        .eq("auth_id", userQuery.data.id)
         .single();
       return data as Collector | null;
     },
