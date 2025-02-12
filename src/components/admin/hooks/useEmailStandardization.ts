@@ -19,10 +19,21 @@ interface StandardizationResult {
   issues: string[];
 }
 
+interface StandardizationLog {
+  member_number: string;
+  old_email: string;
+  new_email: string;
+  status: string;
+  attempted_at: string;
+  completed_at: string | null;
+  error_message: string | null;
+}
+
 export const useEmailStandardization = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch standardization results
   const { data: standardizationResults, isLoading: isLoadingResults } = useQuery({
     queryKey: ["emailStandardization"],
     queryFn: async () => {
@@ -32,6 +43,7 @@ export const useEmailStandardization = () => {
     }
   });
 
+  // Fetch whitelist
   const { data: whitelistedEmails, isLoading: isLoadingWhitelist } = useQuery({
     queryKey: ["emailWhitelist"],
     queryFn: async () => {
@@ -43,19 +55,36 @@ export const useEmailStandardization = () => {
     }
   });
 
+  // Fetch standardization logs
+  const { data: standardizationLogs } = useQuery({
+    queryKey: ["emailStandardizationLogs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('email_standardization_logs')
+        .select('*')
+        .order('attempted_at', { ascending: false });
+      if (error) throw error;
+      return data as StandardizationLog[];
+    }
+  });
+
+  // Standardize email mutation
   const standardizeEmailMutation = useMutation({
     mutationFn: async (memberNumber: string) => {
-      const { data, error } = await supabase.rpc('standardize_auth_emails', {
-        p_member_number: memberNumber
+      const { data, error } = await supabase.rpc('handle_email_standardization', {
+        p_member_number: memberNumber,
+        p_attempt_legacy: true,
+        p_check_whitelist: true
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["emailStandardization"] });
+      queryClient.invalidateQueries({ queryKey: ["emailStandardizationLogs"] });
       toast({
         title: "Success",
-        description: "Email standardization completed successfully",
+        description: data.message || "Email standardization completed successfully",
       });
     },
     onError: (error: Error) => {
@@ -67,8 +96,16 @@ export const useEmailStandardization = () => {
     }
   });
 
+  // Whitelist email mutation
   const whitelistEmailMutation = useMutation({
     mutationFn: async ({ email, memberNumber, reason }: { email: string; memberNumber: string; reason: string }) => {
+      // First add to whitelist logs
+      const { error: logError } = await supabase
+        .from('email_whitelist_logs')
+        .insert([{ email, member_number: memberNumber, reason }]);
+      if (logError) throw logError;
+
+      // Then add to whitelist
       const { data, error } = await supabase
         .from('email_whitelist')
         .insert([{ email, member_number: memberNumber, reason }]);
@@ -91,6 +128,7 @@ export const useEmailStandardization = () => {
     }
   });
 
+  // Remove from whitelist mutation
   const removeFromWhitelistMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -118,6 +156,7 @@ export const useEmailStandardization = () => {
   return {
     standardizationResults,
     whitelistedEmails,
+    standardizationLogs,
     isLoadingResults,
     isLoadingWhitelist,
     standardizeEmail: standardizeEmailMutation.mutate,

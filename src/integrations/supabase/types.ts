@@ -774,6 +774,48 @@ export type Database = {
         }
         Relationships: []
       }
+      email_standardization_logs: {
+        Row: {
+          attempted_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          member_number: string
+          metadata: Json | null
+          new_email: string | null
+          old_email: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          attempted_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          member_number: string
+          metadata?: Json | null
+          new_email?: string | null
+          old_email?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          attempted_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          member_number?: string
+          metadata?: Json | null
+          new_email?: string | null
+          old_email?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_standardization_results: {
         Row: {
           member_number: string | null
@@ -915,6 +957,42 @@ export type Database = {
           id?: string
           member_number?: string
           reason?: string | null
+        }
+        Relationships: []
+      }
+      email_whitelist_logs: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          email: string
+          id: string
+          member_number: string
+          metadata: Json | null
+          reason: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          member_number: string
+          metadata?: Json | null
+          reason: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          member_number?: string
+          metadata?: Json | null
+          reason?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -3190,6 +3268,14 @@ export type Database = {
           last_login: string
           is_active: boolean
         }[]
+      }
+      handle_email_standardization: {
+        Args: {
+          p_member_number: string
+          p_attempt_legacy?: boolean
+          p_check_whitelist?: boolean
+        }
+        Returns: Json
       }
       handle_email_sync: {
         Args: Record<PropertyKey, never>

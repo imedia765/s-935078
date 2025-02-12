@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, AlertCircle, CheckCircle, Mail, Shield, Plus, Trash } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, Mail, Shield, Plus, Trash, History } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const whitelistSchema = z.object({
   email: z.string().email(),
@@ -40,6 +41,7 @@ export function EmailStandardizationManager() {
   const {
     standardizationResults,
     whitelistedEmails,
+    standardizationLogs,
     isLoadingResults,
     isLoadingWhitelist,
     standardizeEmail,
@@ -171,102 +173,151 @@ export function EmailStandardizationManager() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Whitelisted Emails</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Member Number</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Approved At</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {whitelistedEmails?.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.email}</TableCell>
-                    <TableCell>{item.member_number}</TableCell>
-                    <TableCell>{item.reason}</TableCell>
-                    <TableCell>{new Date(item.approved_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removeFromWhitelist(item.id)}
-                        disabled={isRemoving}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+        <Tabs defaultValue="status">
+          <TabsList>
+            <TabsTrigger value="status">Current Status</TabsTrigger>
+            <TabsTrigger value="whitelist">Whitelist</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
 
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Email Standardization Status</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member Number</TableHead>
-                  <TableHead>Current Auth Email</TableHead>
-                  <TableHead>Member Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Issues</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {standardizationResults?.map((result) => (
-                  <TableRow key={result.member_number}>
-                    <TableCell>{result.member_number}</TableCell>
-                    <TableCell>{result.current_auth_email}</TableCell>
-                    <TableCell>{result.current_member_email}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {result.standardization_status === 'standardized' ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : result.standardization_status === 'legacy' ? (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        ) : (
-                          <Mail className="h-4 w-4 text-blue-500" />
-                        )}
-                        {result.standardization_status}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {result.issues.length > 0 ? (
-                        <ul className="list-disc list-inside text-sm">
-                          {result.issues.map((issue, index) => (
-                            <li key={index} className="text-red-500">{issue}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-green-500">No issues</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {result.standardization_status === 'legacy' && (
-                        <Button
-                          size="sm"
-                          onClick={() => standardizeEmail(result.member_number)}
-                          disabled={isStandardizing}
-                        >
-                          {isStandardizing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                          Standardize
-                        </Button>
-                      )}
-                    </TableCell>
+          <TabsContent value="status">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Email Standardization Status</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member Number</TableHead>
+                    <TableHead>Current Auth Email</TableHead>
+                    <TableHead>Member Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Issues</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {standardizationResults?.map((result) => (
+                    <TableRow key={result.member_number}>
+                      <TableCell>{result.member_number}</TableCell>
+                      <TableCell>{result.current_auth_email}</TableCell>
+                      <TableCell>{result.current_member_email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {result.standardization_status === 'standardized' ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : result.standardization_status === 'legacy' ? (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <Mail className="h-4 w-4 text-blue-500" />
+                          )}
+                          {result.standardization_status}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {result.issues.length > 0 ? (
+                          <ul className="list-disc list-inside text-sm">
+                            {result.issues.map((issue, index) => (
+                              <li key={index} className="text-red-500">{issue}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-green-500">No issues</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {result.standardization_status === 'legacy' && (
+                          <Button
+                            size="sm"
+                            onClick={() => standardizeEmail(result.member_number)}
+                            disabled={isStandardizing}
+                          >
+                            {isStandardizing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Standardize
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="whitelist">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Whitelisted Emails</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Member Number</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Approved At</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {whitelistedEmails?.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.email}</TableCell>
+                      <TableCell>{item.member_number}</TableCell>
+                      <TableCell>{item.reason}</TableCell>
+                      <TableCell>{new Date(item.approved_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeFromWhitelist(item.id)}
+                          disabled={isRemoving}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Standardization History</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member Number</TableHead>
+                    <TableHead>Old Email</TableHead>
+                    <TableHead>New Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Attempted At</TableHead>
+                    <TableHead>Completed At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {standardizationLogs?.map((log) => (
+                    <TableRow key={`${log.member_number}-${log.attempted_at}`}>
+                      <TableCell>{log.member_number}</TableCell>
+                      <TableCell>{log.old_email}</TableCell>
+                      <TableCell>{log.new_email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {log.status === 'completed' ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                          )}
+                          {log.status}
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(log.attempted_at).toLocaleString()}</TableCell>
+                      <TableCell>{log.completed_at ? new Date(log.completed_at).toLocaleString() : '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Card>
   );
