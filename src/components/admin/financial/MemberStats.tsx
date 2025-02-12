@@ -82,7 +82,7 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        // Get collectors with their member counts and associated members
+        // First, get all active collectors
         const { data: collectors, error: collectorError } = await supabase
           .from('members_collectors')
           .select(`
@@ -90,29 +90,36 @@ export function MemberStats() {
             name,
             email,
             phone,
-            active,
-            member_count:members(count),
-            members!members_collector_id_fkey (
-              id,
-              member_number,
-              full_name,
-              status
-            )
+            active
           `)
           .eq('active', true)
           .order('name');
 
         if (collectorError) throw collectorError;
 
-        // Transform and ensure members arrays, properly extract member_count
-        const collectorsData: CollectorData[] = (collectors || []).map(collector => ({
-          id: collector.id,
-          name: collector.name,
-          email: collector.email,
-          phone: collector.phone,
-          active: collector.active,
-          members: Array.isArray(collector.members) ? collector.members : [],
-          member_count: collector.member_count?.count || 0 // Extract count from the object
+        // Then, for each collector, get their members
+        const collectorsData: CollectorData[] = await Promise.all((collectors || []).map(async (collector) => {
+          const { data: members, error: memberError } = await supabase
+            .from('members')
+            .select(`
+              id,
+              member_number,
+              full_name,
+              status
+            `)
+            .eq('collector', collector.name);
+
+          if (memberError) throw memberError;
+
+          return {
+            id: collector.id,
+            name: collector.name,
+            email: collector.email,
+            phone: collector.phone,
+            active: collector.active,
+            members: members || [],
+            member_count: members?.length || 0
+          };
         }));
 
         // Get payment requests for each member
