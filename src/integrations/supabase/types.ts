@@ -3210,6 +3210,12 @@ export type Database = {
         }
         Returns: Json
       }
+      convert_member_number_to_uuid: {
+        Args: {
+          member_number: string
+        }
+        Returns: string
+      }
       create_auth_user_for_collector: {
         Args: {
           member_num: string
