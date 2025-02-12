@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -136,16 +135,12 @@ export function useMemberQueries(
       const userCollector = userCollectorQuery.data;
 
       if (!isAdmin && userCollector?.member_number) {
-        // Get the collector prefix from their member number (first 2 letters + next 2 digits)
-        const prefix = userCollector.member_number.substring(0, 2); // Get letters (e.g., "TM")
-        const number = userCollector.member_number.substring(2, 4); // Get digits (e.g., "10")
+        const prefix = userCollector.member_number.substring(0, 2);
+        const number = userCollector.member_number.substring(2, 4);
         const collectorPrefix = prefix + number;
         console.log('Filtering by collector prefix:', collectorPrefix);
-        
-        // Filter members whose member_number starts with the collector's prefix
-        query = query.ilike('member_number', `${collectorPrefix}%`);
-      } else if (isAdmin && selectedCollector && selectedCollector !== 'all') {
-        // For admins, respect their collector filter selection
+        query = query.eq('collector_id', userCollector.id);
+      } else if (isAdmin && selectedCollector !== 'all') {
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
       }
