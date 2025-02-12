@@ -47,7 +47,7 @@ export function useMemberQueries(
 ) {
   const { toast } = useToast();
 
-  const { data: userInfo } = useQuery<UserInfo>({
+  const userInfoQuery = useQuery({
     queryKey: ["userInfo"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -69,11 +69,11 @@ export function useMemberQueries(
         roles: roles?.map(r => r.role) || [],
         collectorId: collector?.id || null,
         collectorPrefix: collector?.prefix || null
-      };
+      } as UserInfo;
     }
   });
 
-  const { data: collectors, isLoading: loadingCollectors } = useQuery<CollectorType[]>({
+  const collectorsQuery = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -82,12 +82,12 @@ export function useMemberQueries(
         .eq("active", true);
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as CollectorType[];
     },
-    enabled: userInfo?.roles.includes("admin") || false
+    enabled: userInfoQuery.data?.roles.includes("admin") || false
   });
 
-  const { data: membersData, isLoading: loadingMembers } = useQuery<MembersData>({
+  const membersQuery = useQuery({
     queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
       let query = supabase
@@ -102,7 +102,7 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      if (!userInfo?.roles.includes("admin")) {
+      if (!userInfoQuery.data?.roles.includes("admin")) {
         if (!collectorId) {
           throw new Error("Collector ID not found");
         }
@@ -128,14 +128,14 @@ export function useMemberQueries(
       return {
         members: data || [],
         totalCount: count || 0
-      };
+      } as MembersData;
     }
   });
 
   return {
-    userInfo,
-    collectors,
-    membersData,
-    isLoading: loadingMembers || loadingCollectors
+    userInfo: userInfoQuery.data,
+    collectors: collectorsQuery.data,
+    membersData: membersQuery.data,
+    isLoading: membersQuery.isLoading || collectorsQuery.isLoading
   };
 }
