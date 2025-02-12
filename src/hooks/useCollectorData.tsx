@@ -47,6 +47,11 @@ export function useCollectorData() {
         collectorName: collectors?.name || null,
         collectorNumber: collectors?.number || null
       };
+    },
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error fetching collector data:", error);
+      }
     }
   });
 }
