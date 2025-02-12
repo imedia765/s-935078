@@ -13,6 +13,7 @@ import Members from "./pages/Members"
 import Financials from "./pages/Financials"
 import Documentation from "./pages/Documentation"
 import ResetPassword from "./pages/ResetPassword"
+import VerifyEmail from "./pages/VerifyEmail"
 import NotFound from "./pages/NotFound"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
@@ -69,6 +70,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/documentation" element={<Documentation />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route 
                   path="/admin" 
                   element={
