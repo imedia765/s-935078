@@ -1,3 +1,4 @@
+
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
 import { User, Settings, Users, LogOut, Loader2, Sun, Moon, Wallet } from "lucide-react"
@@ -38,6 +39,26 @@ export const Navigation = () => {
     },
     enabled: !!session
   })
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      navigate("/")
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error signing out",
+        description: error.message
+      })
+    }
+  }
+
+  const isActive = (path: string) => location.pathname === path
+
+  const hasAccess = (requiredRole: UserRole) => {
+    if (!userRoles) return false
+    return userRoles.includes('admin' as UserRole) || userRoles.includes(requiredRole)
+  }
 
   const menuItems = [
     { 
