@@ -12,22 +12,27 @@ type CollectorData = {
 
 export function useCollectorData() {
   return useQuery<CollectorData>({
-    queryKey: ["currentUser"],
+    queryKey: ["collectorData"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return {
-        isAdmin: false,
-        collectorId: null,
-        collectorPrefix: null,
-        collectorName: null,
-        collectorNumber: null
-      };
+      
+      if (!user) {
+        return {
+          isAdmin: false,
+          collectorId: null,
+          collectorPrefix: null,
+          collectorName: null,
+          collectorNumber: null
+        };
+      }
 
+      // Fetch roles first
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
 
+      // Then fetch collector data
       const { data: collectors } = await supabase
         .from("members_collectors")
         .select("id, prefix, name, number")
