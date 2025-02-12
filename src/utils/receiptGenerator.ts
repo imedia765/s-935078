@@ -56,7 +56,11 @@ export async function generateReceipt(payment: Payment): Promise<Blob> {
   doc.setFontSize(10);
   doc.text('This is an electronically generated receipt.', 105, pageHeight - 20, { align: 'center' });
   
-  return doc.output('blob');
+  // Save the receipt and get the URL
+  const receiptBlob = doc.output('blob');
+  const receiptUrl = await saveReceiptToStorage(payment, receiptBlob);
+  
+  return receiptBlob;
 }
 
 export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob): Promise<string> {
@@ -115,7 +119,7 @@ export async function getPaymentReceipt(paymentId: string): Promise<string | nul
     .from('receipts')
     .select('receipt_url')
     .eq('payment_id', paymentId)
-    .single();
+    .maybeSingle(); // Changed from .single() to .maybeSingle()
 
   if (error) throw error;
   return data?.receipt_url || null;
