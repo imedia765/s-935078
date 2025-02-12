@@ -28,11 +28,14 @@ interface PaymentRequest {
   created_at: string;
 }
 
-interface MemberWithPayments {
+interface Member {
   id: string;
   member_number: string;
   full_name: string;
   status: string;
+}
+
+interface MemberWithPayments extends Member {
   payment_requests: PaymentRequest[];
 }
 
@@ -42,6 +45,10 @@ interface CollectorData {
   email: string | null;
   phone: string | null;
   active: boolean;
+  members: Member[];
+}
+
+interface CollectorWithPayments extends Omit<CollectorData, 'members'> {
   members: MemberWithPayments[];
 }
 
@@ -74,7 +81,6 @@ export function MemberStats() {
     queryFn: async () => {
       console.log('Fetching member stats...');
       try {
-        // First get collectors with their members
         const { data: collectors, error: collectorError } = await supabase
           .from('members_collectors')
           .select(`
@@ -95,25 +101,31 @@ export function MemberStats() {
 
         if (collectorError) throw collectorError;
 
-        // Then get payment requests for each member
-        const enrichedCollectors = await Promise.all((collectors || []).map(async (collector) => {
-          const memberPayments = await Promise.all((collector.members || []).map(async (member) => {
-            const { data: payments } = await supabase
-              .from('payment_requests')
-              .select('*')
-              .eq('member_number', member.member_number);
-            
-            return {
-              ...member,
-              payment_requests: payments || []
-            };
-          }));
+        const collectorsData = (collectors || []) as CollectorData[];
 
-          return {
-            ...collector,
-            members: memberPayments
-          };
-        }));
+        // Then get payment requests for each member
+        const enrichedCollectors: CollectorWithPayments[] = await Promise.all(
+          collectorsData.map(async (collector) => {
+            const memberPayments = await Promise.all(
+              (collector.members || []).map(async (member) => {
+                const { data: payments } = await supabase
+                  .from('payment_requests')
+                  .select('*')
+                  .eq('member_number', member.member_number);
+                
+                return {
+                  ...member,
+                  payment_requests: payments || []
+                };
+              })
+            );
+
+            return {
+              ...collector,
+              members: memberPayments
+            };
+          })
+        );
 
         // Transform the data to include aggregated stats
         const collectorStats: CollectorStats[] = enrichedCollectors.map(collector => {
