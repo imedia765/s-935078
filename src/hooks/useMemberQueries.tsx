@@ -2,18 +2,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { UserRole } from "@/types/auth";
 
-// Define specific return types
-type UserRole = {
-  role: string;
-};
-
+// Simplified type definitions
 type Collector = {
   id: string;
   prefix: string | null;
-  name?: string;
-  number?: string;
-  active?: boolean;
+  name: string;
+  number: string;
+  active: boolean;
 };
 
 type Member = {
@@ -42,7 +39,6 @@ export function useMemberQueries(
 ) {
   const { toast } = useToast();
 
-  // Use explicit return types for each query
   const userQuery = useQuery({
     queryKey: ["user"],
     queryFn: async () => {
@@ -52,10 +48,10 @@ export function useMemberQueries(
     }
   });
 
-  const userRolesQuery = useQuery({
+  const userRolesQuery = useQuery<string[]>({
     queryKey: ["userRoles", userQuery.data?.id],
     queryFn: async () => {
-      if (!userQuery.data?.id) return [] as string[];
+      if (!userQuery.data?.id) return [];
       const { data } = await supabase
         .from("user_roles")
         .select("role")
@@ -65,7 +61,7 @@ export function useMemberQueries(
     enabled: !!userQuery.data?.id
   });
 
-  const userCollectorQuery = useQuery({
+  const userCollectorQuery = useQuery<Collector | null>({
     queryKey: ["userCollector", userQuery.data?.id],
     queryFn: async () => {
       if (!userQuery.data?.id) return null;
@@ -74,12 +70,12 @@ export function useMemberQueries(
         .select("id, prefix, name, number")
         .eq("auth_id", userQuery.data.id)
         .single();
-      return data as Collector | null;
+      return data;
     },
     enabled: !!userQuery.data?.id
   });
 
-  const collectorsQuery = useQuery({
+  const collectorsQuery = useQuery<Collector[]>({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -88,12 +84,12 @@ export function useMemberQueries(
         .eq("active", true);
       
       if (error) throw error;
-      return (data || []) as Collector[];
+      return data || [];
     },
     enabled: userRolesQuery.data?.includes("admin") || false
   });
 
-  const membersQuery = useQuery({
+  const membersQuery = useQuery<{ members: Member[]; totalCount: number }>({
     queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
       let query = supabase
@@ -132,7 +128,7 @@ export function useMemberQueries(
       if (error) throw error;
 
       return {
-        members: (data || []) as Member[],
+        members: data || [],
         totalCount: count || 0
       };
     },
