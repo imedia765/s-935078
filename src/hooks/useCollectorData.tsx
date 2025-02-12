@@ -16,12 +16,16 @@ export function useCollectorData() {
 
       const { data: collectorData } = await supabase
         .from("members_collectors")
-        .select("id")
-        .eq("auth_user_id", user.id);
+        .select("id, prefix, name, number")
+        .eq("auth_user_id", user.id)
+        .single();
 
       return {
         isAdmin: roles?.some(r => r.role === "admin") || false,
-        collectorId: collectorData && collectorData.length > 0 ? collectorData[0]?.id : null
+        collectorId: collectorData?.id || null,
+        collectorPrefix: collectorData?.prefix || null,
+        collectorName: collectorData?.name || null,
+        collectorNumber: collectorData?.number || null
       };
     }
   });

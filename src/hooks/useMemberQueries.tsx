@@ -1,5 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { MemberFormData } from "@/types/member";
@@ -14,7 +14,6 @@ export function useMemberQueries(
   ITEMS_PER_PAGE: number
 ) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const { data: userInfo } = useQuery({
     queryKey: ["userInfo"],
@@ -27,22 +26,16 @@ export function useMemberQueries(
         .select("role")
         .eq("user_id", user.id);
 
-      // First get the collector info without single/maybeSingle
-      const { data: collectorData, error: collectorError } = await supabase
+      const { data: collectorData } = await supabase
         .from("members_collectors")
-        .select("id")
-        .eq("auth_user_id", user.id);
-
-      if (collectorError) {
-        console.error('Error fetching collector info:', collectorError);
-      }
-
-      // Safely access the first item if it exists
-      const collectorId = collectorData && collectorData.length > 0 ? collectorData[0].id : null;
+        .select("id, prefix")
+        .eq("auth_user_id", user.id)
+        .single();
 
       return {
         roles: roles?.map(r => r.role) || [],
-        collectorId
+        collectorId: collectorData?.id || null,
+        collectorPrefix: collectorData?.prefix || null
       };
     }
   });
@@ -57,7 +50,8 @@ export function useMemberQueries(
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: userInfo?.roles.includes("admin") || false
   });
 
   const { data: membersData, isLoading: loadingMembers } = useQuery({
@@ -70,16 +64,19 @@ export function useMemberQueries(
           members_collectors!members_collectors_member_number_fkey (
             name,
             number,
-            active
+            active,
+            prefix
           )
         `, { count: 'exact' });
 
-      // If user is not admin, strictly filter by collector_id
-      if (collectorId) {
+      // For non-admin users, strictly filter by their collector ID
+      if (!userInfo?.roles.includes("admin")) {
+        if (!collectorId) {
+          throw new Error("Collector ID not found");
+        }
         query = query.eq('collector_id', collectorId);
-      } 
-      // Only allow collector selection for admins
-      else if (selectedCollector !== 'all') {
+      } else if (selectedCollector !== 'all') {
+        // For admins, allow filtering by selected collector
         query = query.eq('collector_id', selectedCollector);
       }
 
