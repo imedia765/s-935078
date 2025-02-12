@@ -3,10 +3,32 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Basic types without nesting
-type QueryResult<T> = {
-  data: T | null;
-  error: Error | null;
+// Define specific return types
+type UserRole = {
+  role: string;
+};
+
+type Collector = {
+  id: string;
+  prefix: string | null;
+  name?: string;
+  number?: string;
+  active?: boolean;
+};
+
+type Member = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  member_number: string;
+  collector_id: string;
+  members_collectors: {
+    name: string;
+    number: string;
+    active: boolean;
+    prefix: string;
+  } | null;
 };
 
 export function useMemberQueries(
@@ -20,7 +42,7 @@ export function useMemberQueries(
 ) {
   const { toast } = useToast();
 
-  // Split into separate queries to avoid deep nesting
+  // Use explicit return types for each query
   const userQuery = useQuery({
     queryKey: ["user"],
     queryFn: async () => {
@@ -33,12 +55,12 @@ export function useMemberQueries(
   const userRolesQuery = useQuery({
     queryKey: ["userRoles", userQuery.data?.id],
     queryFn: async () => {
-      if (!userQuery.data?.id) return [];
+      if (!userQuery.data?.id) return [] as string[];
       const { data } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userQuery.data.id);
-      return data?.map(r => r.role) || [];
+      return (data || []).map(r => r.role);
     },
     enabled: !!userQuery.data?.id
   });
@@ -50,8 +72,9 @@ export function useMemberQueries(
       const { data } = await supabase
         .from("members_collectors")
         .select("id, prefix")
-        .eq("user_id", userQuery.data.id);
-      return data?.[0] || null;
+        .eq("user_id", userQuery.data.id)
+        .single();
+      return data as Collector | null;
     },
     enabled: !!userQuery.data?.id
   });
@@ -65,7 +88,7 @@ export function useMemberQueries(
         .eq("active", true);
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as Collector[];
     },
     enabled: userRolesQuery.data?.includes("admin") || false
   });
@@ -109,14 +132,13 @@ export function useMemberQueries(
       if (error) throw error;
 
       return {
-        members: data || [],
+        members: (data || []) as Member[],
         totalCount: count || 0
       };
     },
     enabled: !!userQuery.data
   });
 
-  // Combine the data for the return value
   const userInfo = {
     roles: userRolesQuery.data || [],
     collectorId: userCollectorQuery.data?.id || null,
