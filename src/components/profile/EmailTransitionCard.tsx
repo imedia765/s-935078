@@ -26,17 +26,18 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
   const { data: transitionStatus, refetch: refetchStatus } = useQuery<EmailTransition | null>({
     queryKey: ['emailTransition', memberNumber],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: result, error } = await supabase
         .from('email_transitions')
-        .select('*')
+        .select()
         .eq('member_number', memberNumber)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    }
+      return result as EmailTransition | null;
+    },
+    staleTime: 1000 * 60 // 1 minute
   });
 
   const initiateTransition = async () => {
@@ -54,7 +55,7 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
       }
 
       // Call the initiate_email_transition function
-      const { data, error } = await supabase
+      const { data: result, error } = await supabase
         .rpc('initiate_email_transition', {
           p_member_number: memberNumber,
           p_new_email: newEmail
@@ -62,10 +63,12 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
 
       if (error) throw error;
 
-      if (!data?.success) {
+      const transitionResult = result as Database['public']['Functions']['initiate_email_transition']['Returns'];
+
+      if (!transitionResult.success) {
         toast({
           title: "Error",
-          description: data?.error || "Failed to initiate email transition",
+          description: transitionResult.error || "Failed to initiate email transition",
           variant: "destructive",
         });
         return;
@@ -79,7 +82,7 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
           html: `
             <h2>Email Verification Required</h2>
             <p>Please click the link below to verify your new email address:</p>
-            <a href="${window.location.origin}/verify-email?token=${data.token}">
+            <a href="${window.location.origin}/verify-email?token=${transitionResult.token}">
               Verify Email Address
             </a>
             <p>This link will expire in 24 hours.</p>
