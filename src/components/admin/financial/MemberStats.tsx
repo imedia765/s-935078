@@ -21,17 +21,19 @@ import { FileDown, Loader2 } from "lucide-react";
 import { generatePDF } from "@/utils/exportUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+interface PaymentRequest {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+}
+
 interface MemberWithPayments {
   id: string;
   member_number: string;
   full_name: string;
   status: string;
-  payment_requests: Array<{
-    id: string;
-    amount: number;
-    status: string;
-    created_at: string;
-  }>;
+  payment_requests?: PaymentRequest[];
 }
 
 interface CollectorData {
@@ -40,7 +42,7 @@ interface CollectorData {
   email: string | null;
   phone: string | null;
   active: boolean;
-  members: MemberWithPayments[];
+  members?: MemberWithPayments[];
 }
 
 interface CollectorStats {
@@ -100,8 +102,9 @@ export function MemberStats() {
 
         // Transform the data to include aggregated stats
         const collectorStats: CollectorStats[] = (collectors as CollectorData[]).map(collector => {
-          const members = (Array.isArray(collector.members) ? collector.members : []).map(member => {
-            const payments = Array.isArray(member.payment_requests) ? member.payment_requests : [];
+          const membersList = collector.members || [];
+          const members = membersList.map(member => {
+            const payments = member.payment_requests || [];
             return {
               member_number: member.member_number,
               full_name: member.full_name,
