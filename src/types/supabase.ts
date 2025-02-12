@@ -209,6 +209,50 @@ export interface Database {
           created_at?: string
         }
       }
+      email_transitions: {
+        Row: {
+          id: string
+          member_number: string
+          old_auth_email: string
+          new_profile_email: string
+          verification_token: string | null
+          verification_sent_at: string | null
+          verification_expires_at: string | null
+          status: 'pending' | 'verifying' | 'completed' | 'failed'
+          completed_at: string | null
+          error_message: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          member_number: string
+          old_auth_email: string
+          new_profile_email: string
+          verification_token?: string | null
+          verification_sent_at?: string | null
+          verification_expires_at?: string | null
+          status?: 'pending' | 'verifying' | 'completed' | 'failed'
+          completed_at?: string | null
+          error_message?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          member_number?: string
+          old_auth_email?: string
+          new_profile_email?: string
+          verification_token?: string | null
+          verification_sent_at?: string | null
+          verification_expires_at?: string | null
+          status?: 'pending' | 'verifying' | 'completed' | 'failed'
+          completed_at?: string | null
+          error_message?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
