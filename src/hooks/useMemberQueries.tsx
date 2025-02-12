@@ -140,7 +140,8 @@ export function useMemberQueries(
         const collectorPrefix = userCollector.member_number.substring(0, 4);
         console.log('Filtering by collector prefix:', collectorPrefix);
         
-        query = query.filter('members_collectors.member_number', 'ilike', `${collectorPrefix}%`);
+        // Filter directly on the member_number field
+        query = query.ilike('member_number', `${collectorPrefix}%`);
       } else if (isAdmin && selectedCollector && selectedCollector !== 'all') {
         // For admins, respect their collector filter selection
         console.log('Admin filtering by selected collector:', selectedCollector);
