@@ -85,7 +85,8 @@ export const useEmailStandardization = () => {
         p_check_whitelist: true
       });
       if (error) throw error;
-      return data as StandardizationResponse;
+      // Safe type casting using a two-step process
+      return (data as unknown) as StandardizationResponse;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["emailStandardization"] });
