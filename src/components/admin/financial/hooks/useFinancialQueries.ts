@@ -26,7 +26,7 @@ export function useFinancialQueries() {
 
       const isAdmin = roles?.some(r => r.role === 'admin');
 
-      // Get collector ID if user is a collector - using maybeSingle() instead of single()
+      // Get collector ID if user is a collector
       const { data: collectorInfo } = await supabase
         .from('members_collectors')
         .select('id')
@@ -48,11 +48,11 @@ export function useFinancialQueries() {
           payment_number,
           collector_id,
           member_number,
-          members!payment_requests_member_number_fkey (
+          members:members!payment_requests_member_number_fkey (
             full_name,
             email
           ),
-          collector:collector_id (
+          members_collectors:collector_id!members_collectors!inner (
             id,
             name
           ),
@@ -83,7 +83,7 @@ export function useFinancialQueries() {
       return (data as any[]).map(payment => ({
         ...payment,
         members: payment.members,
-        members_collectors: payment.collector
+        members_collectors: payment.members_collectors
       })) as Payment[];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -119,7 +119,7 @@ export function useFinancialQueries() {
         .from("members_collectors")
         .select(`
           *,
-          member:member_number(
+          member:member_number!members_collectors_member_number_fkey(
             member_number,
             full_name,
             email
