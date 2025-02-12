@@ -11,11 +11,17 @@ type CollectorData = {
 };
 
 export function useCollectorData() {
-  return useQuery<CollectorData | null>({
+  return useQuery<CollectorData>({
     queryKey: ["currentUser"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) return {
+        isAdmin: false,
+        collectorId: null,
+        collectorPrefix: null,
+        collectorName: null,
+        collectorNumber: null
+      };
 
       const { data: roles } = await supabase
         .from("user_roles")
@@ -25,16 +31,15 @@ export function useCollectorData() {
       const { data: collectors } = await supabase
         .from("members_collectors")
         .select("id, prefix, name, number")
-        .eq("user_id", user.id);
-
-      const collector = collectors && collectors.length > 0 ? collectors[0] : null;
+        .eq("auth_id", user.id)
+        .single();
 
       return {
         isAdmin: roles?.some(r => r.role === "admin") || false,
-        collectorId: collector?.id || null,
-        collectorPrefix: collector?.prefix || null,
-        collectorName: collector?.name || null,
-        collectorNumber: collector?.number || null
+        collectorId: collectors?.id || null,
+        collectorPrefix: collectors?.prefix || null,
+        collectorName: collectors?.name || null,
+        collectorNumber: collectors?.number || null
       };
     }
   });

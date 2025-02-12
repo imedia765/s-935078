@@ -31,6 +31,11 @@ type Member = {
   } | null;
 };
 
+type QueryResult = {
+  members: Member[];
+  totalCount: number;
+};
+
 export function useMemberQueries(
   selectedCollector: string,
   searchTerm: string,
@@ -51,7 +56,7 @@ export function useMemberQueries(
     }
   });
 
-  const userRolesQuery = useQuery<string[]>({
+  const userRolesQuery = useQuery({
     queryKey: ["userRoles", userQuery.data?.id],
     queryFn: async () => {
       if (!userQuery.data?.id) return [];
@@ -64,7 +69,7 @@ export function useMemberQueries(
     enabled: !!userQuery.data?.id
   });
 
-  const userCollectorQuery = useQuery<CollectorBase | null>({
+  const userCollectorQuery = useQuery({
     queryKey: ["userCollector", userQuery.data?.id],
     queryFn: async () => {
       if (!userQuery.data?.id) return null;
@@ -78,7 +83,7 @@ export function useMemberQueries(
     enabled: !!userQuery.data?.id
   });
 
-  const collectorsQuery = useQuery<Collector[]>({
+  const collectorsQuery = useQuery({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -92,7 +97,7 @@ export function useMemberQueries(
     enabled: userRolesQuery.data?.includes("admin") || false
   });
 
-  const membersQuery = useQuery<{ members: Member[]; totalCount: number }>({
+  const membersQuery = useQuery<QueryResult>({
     queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
       let query = supabase
