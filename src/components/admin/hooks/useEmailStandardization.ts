@@ -29,6 +29,14 @@ interface StandardizationLog {
   error_message: string | null;
 }
 
+interface StandardizationResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  old_email?: string;
+  new_email?: string;
+}
+
 export const useEmailStandardization = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -77,7 +85,7 @@ export const useEmailStandardization = () => {
         p_check_whitelist: true
       });
       if (error) throw error;
-      return data;
+      return data as StandardizationResponse;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["emailStandardization"] });
