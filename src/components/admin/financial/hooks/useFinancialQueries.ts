@@ -52,7 +52,7 @@ export function useFinancialQueries() {
             full_name,
             email
           ),
-          members_collectors (
+          members_collectors!payment_requests_collector_id_fkey (
             id,
             name
           ),
@@ -124,7 +124,7 @@ export function useFinancialQueries() {
             full_name,
             email
           ),
-          payment_requests (
+          payment_requests!payment_requests_collector_id_fkey (
             status,
             amount,
             created_at

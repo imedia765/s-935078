@@ -2142,7 +2142,6 @@ export type Database = {
           created_at: string | null
           has_supporting_docs: boolean | null
           id: string
-          member_id: string
           member_number: string
           notes: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
@@ -2160,7 +2159,6 @@ export type Database = {
           created_at?: string | null
           has_supporting_docs?: boolean | null
           id?: string
-          member_id: string
           member_number: string
           notes?: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
@@ -2178,7 +2176,6 @@ export type Database = {
           created_at?: string | null
           has_supporting_docs?: boolean | null
           id?: string
-          member_id?: string
           member_number?: string
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
@@ -2194,13 +2191,6 @@ export type Database = {
             columns: ["collector_id"]
             isOneToOne: false
             referencedRelation: "members_collectors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_requests_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
