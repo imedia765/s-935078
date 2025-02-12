@@ -48,11 +48,11 @@ export function useFinancialQueries() {
           payment_number,
           collector_id,
           member_number,
-          members!payment_requests_member_number_fkey (
+          members (
             full_name,
             email
           ),
-          members_collectors!payment_requests_collector_id_fkey (
+          members_collectors (
             id,
             name
           ),
@@ -119,7 +119,7 @@ export function useFinancialQueries() {
         .from("members_collectors")
         .select(`
           *,
-          members!members_collectors_member_number_fkey (
+          members (
             member_number,
             full_name,
             email
@@ -147,10 +147,9 @@ export function useFinancialQueries() {
 
       console.log('Fetched collectors:', data);
       
-      // Map the data to match the Collector type
       return (data as any[]).map(collector => ({
         ...collector,
-        members: collector.members // Map directly since we fixed the relationship name
+        members: collector.members
       })) as Collector[];
     },
     staleTime: 1000 * 60 * 5,
