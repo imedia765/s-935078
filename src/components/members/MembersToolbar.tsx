@@ -68,7 +68,7 @@ export function MembersToolbar({
               collectors?.map((collector) => (
                 collector.id && (
                   <SelectItem key={collector.id} value={collector.id}>
-                    {collector.name || `Collector ${collector.number}`}
+                    {collector.name || `Collector ${collector.number}`} ({collector.number})
                   </SelectItem>
                 )
               ))
