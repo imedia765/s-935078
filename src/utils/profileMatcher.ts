@@ -60,16 +60,6 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
         throw updateError;
       }
 
-      // Clear any existing email audit entries
-      const { error: auditClearError } = await supabase
-        .from('email_audit')
-        .delete()
-        .eq('member_number', memberNumber);
-
-      if (auditClearError) {
-        console.error('Error clearing email audit:', auditClearError);
-      }
-
       // Now try to link again
       const { error: linkError } = await supabase
         .from('members')
@@ -98,20 +88,19 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
       }
     }
 
-    // Record the successful link in email_audit with fallback
+    // Record the successful link in audit_logs table
     try {
       const { error: auditError } = await supabase
-        .from('email_audit')
+        .from('audit_logs')
         .insert({
-          auth_user_id: authUserId,
-          member_number: memberNumber,
-          status: 'linked',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          metadata: {
-            linked_at: new Date().toISOString(),
-            user_agent: navigator.userAgent
-          }
+          operation: 'update',
+          table_name: 'members',
+          record_id: existingLink.id, // Using the actual UUID here
+          metadata: { 
+            event: 'profile_matched',
+            member_number: memberNumber
+          },
+          severity: 'info'
         });
 
       if (auditError) {
@@ -121,27 +110,13 @@ export async function matchAndLinkProfile(authUserId: string, memberNumber: stri
       console.error('Failed to insert audit record:', auditError);
     }
 
-    try {
-      await logAuditEvent({
-        operation: 'update',
-        tableName: 'members',
-        recordId: existingLink.id,
-        metadata: { 
-          event: 'profile_matched',
-          member_number: memberNumber
-        },
-        severity: 'info'
-      });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
-    }
-
     return { 
       success: true, 
       memberId: existingLink.id 
     };
   } catch (error: any) {
     console.error('Profile matching error:', error);
+    
     try {
       await logAuditEvent({
         operation: 'update',
