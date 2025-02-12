@@ -17,15 +17,17 @@ export function useCollectorData() {
       const { data: collectorData } = await supabase
         .from("members_collectors")
         .select("id, prefix, name, number")
-        .eq("auth_user_id", user.id)
-        .single();
+        .eq("user_id", user.id);
+
+      // Safely handle the case where no collector data is found
+      const collector = collectorData && collectorData.length > 0 ? collectorData[0] : null;
 
       return {
         isAdmin: roles?.some(r => r.role === "admin") || false,
-        collectorId: collectorData?.id || null,
-        collectorPrefix: collectorData?.prefix || null,
-        collectorName: collectorData?.name || null,
-        collectorNumber: collectorData?.number || null
+        collectorId: collector?.id || null,
+        collectorPrefix: collector?.prefix || null,
+        collectorName: collector?.name || null,
+        collectorNumber: collector?.number || null
       };
     }
   });

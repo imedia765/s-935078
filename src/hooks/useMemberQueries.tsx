@@ -29,13 +29,15 @@ export function useMemberQueries(
       const { data: collectorData } = await supabase
         .from("members_collectors")
         .select("id, prefix")
-        .eq("auth_user_id", user.id)
-        .single();
+        .eq("user_id", user.id);
+
+      // Safely handle the case where no collector data is found
+      const collector = collectorData && collectorData.length > 0 ? collectorData[0] : null;
 
       return {
         roles: roles?.map(r => r.role) || [],
-        collectorId: collectorData?.id || null,
-        collectorPrefix: collectorData?.prefix || null
+        collectorId: collector?.id || null,
+        collectorPrefix: collector?.prefix || null
       };
     }
   });
