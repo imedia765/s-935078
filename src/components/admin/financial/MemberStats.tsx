@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,7 +104,7 @@ export function MemberStats() {
 
         if (collectorError) throw collectorError;
 
-        // Transform and ensure members arrays
+        // Transform and ensure members arrays, properly extract member_count
         const collectorsData: CollectorData[] = (collectors || []).map(collector => ({
           id: collector.id,
           name: collector.name,
@@ -111,7 +112,7 @@ export function MemberStats() {
           phone: collector.phone,
           active: collector.active,
           members: Array.isArray(collector.members) ? collector.members : [],
-          member_count: collector.member_count
+          member_count: collector.member_count?.count || 0 // Extract count from the object
         }));
 
         // Get payment requests for each member
@@ -166,7 +167,7 @@ export function MemberStats() {
             email: collector.email,
             phone: collector.phone,
             members,
-            totalMembers: collector.member_count || 0,
+            totalMembers: collector.member_count,
             totalPayments,
             approvedPayments,
             pendingPayments,
