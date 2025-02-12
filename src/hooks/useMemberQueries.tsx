@@ -11,8 +11,29 @@ type UserInfo = {
 };
 
 type MembersData = {
-  members: any[];
+  members: Array<{
+    id: string;
+    full_name: string;
+    email: string;
+    member_number: string;
+    phone: string;
+    collector_id: string;
+    members_collectors: {
+      name: string;
+      number: string;
+      active: boolean;
+      prefix: string;
+    } | null;
+  }>;
   totalCount: number;
+};
+
+type CollectorType = {
+  id: string;
+  name: string | null;
+  number: string | null;
+  prefix: string | null;
+  active: boolean;
 };
 
 export function useMemberQueries(
@@ -26,11 +47,11 @@ export function useMemberQueries(
 ) {
   const { toast } = useToast();
 
-  const { data: userInfo } = useQuery<UserInfo | null>({
+  const { data: userInfo } = useQuery<UserInfo>({
     queryKey: ["userInfo"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) throw new Error("No user found");
 
       const { data: roles } = await supabase
         .from("user_roles")
@@ -52,7 +73,7 @@ export function useMemberQueries(
     }
   });
 
-  const { data: collectors, isLoading: loadingCollectors } = useQuery({
+  const { data: collectors, isLoading: loadingCollectors } = useQuery<CollectorType[]>({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -61,7 +82,7 @@ export function useMemberQueries(
         .eq("active", true);
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: userInfo?.roles.includes("admin") || false
   });
@@ -81,14 +102,12 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      // For non-admin users, strictly filter by their collector ID
       if (!userInfo?.roles.includes("admin")) {
         if (!collectorId) {
           throw new Error("Collector ID not found");
         }
         query = query.eq('collector_id', collectorId);
       } else if (selectedCollector !== 'all') {
-        // For admins, allow filtering by selected collector
         query = query.eq('collector_id', selectedCollector);
       }
 
