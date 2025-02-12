@@ -19,10 +19,8 @@ interface EmailStandardization {
 interface EmailMigrationResult {
   status: string;
   message: string;
-}
-
-interface EmailMigrationParams {
-  p_member_number: string;
+  old_email?: string;
+  new_email?: string;
 }
 
 export function EmailStandardizationManager() {
@@ -39,7 +37,7 @@ export function EmailStandardizationManager() {
 
   const handleMigration = async (memberNumber: string) => {
     try {
-      const { data, error } = await supabase.rpc<EmailMigrationResult, EmailMigrationParams>('standardize_auth_emails', {
+      const { data, error } = await supabase.rpc('standardize_auth_emails', {
         p_member_number: memberNumber
       });
       
@@ -52,9 +50,20 @@ export function EmailStandardizationManager() {
         return;
       }
 
+      const result = data as EmailMigrationResult;
+      
+      if (result.status === 'error') {
+        toast({
+          title: "Migration Failed",
+          description: result.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
-        title: "Email Migration Initiated",
-        description: "The email standardization process has been started.",
+        title: "Email Migration Successful",
+        description: result.message,
       });
 
       refetch();

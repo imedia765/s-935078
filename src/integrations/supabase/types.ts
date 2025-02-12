@@ -3231,15 +3231,22 @@ export type Database = {
         }
         Returns: undefined
       }
-      standardize_auth_emails: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          member_number: string
-          old_email: string
-          new_email: string
-          status: string
-        }[]
-      }
+      standardize_auth_emails:
+        | {
+            Args: Record<PropertyKey, never>
+            Returns: {
+              member_number: string
+              old_email: string
+              new_email: string
+              status: string
+            }[]
+          }
+        | {
+            Args: {
+              p_member_number: string
+            }
+            Returns: Json
+          }
       update_collector_profiles: {
         Args: Record<PropertyKey, never>
         Returns: undefined
