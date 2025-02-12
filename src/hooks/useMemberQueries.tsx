@@ -78,7 +78,7 @@ export function useMemberQueries(
       if (!userQuery.data?.id) return null;
       const { data, error } = await supabase
         .from("members_collectors")
-        .select("id, prefix, name, number")
+        .select("id, prefix, name, number, member_number")
         .eq("auth_user_id", userQuery.data.id)
         .eq("active", true)
         .maybeSingle();
@@ -127,13 +127,18 @@ export function useMemberQueries(
             name,
             number,
             active,
-            prefix
+            prefix,
+            member_number
           )
         `, { count: 'exact' });
 
-      // The RLS policy will automatically filter based on user role and collector_id
-      // We only need to add additional filters for admin selection
-      if (userRolesQuery.data?.includes("admin") && selectedCollector !== 'all') {
+      // For collectors (non-admin), only show members if their member number matches
+      if (!userRolesQuery.data?.includes("admin") && userCollectorQuery.data?.member_number) {
+        console.log('Filtering by collector member number:', userCollectorQuery.data.member_number);
+        query = query.eq('collector_id', userCollectorQuery.data.id);
+      }
+      // For admin selections
+      else if (userRolesQuery.data?.includes("admin") && selectedCollector !== 'all') {
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
       }
@@ -166,7 +171,7 @@ export function useMemberQueries(
       return {
         members: data || [],
         totalCount: count || 0
-      } as QueryResult;
+      };
     },
     enabled: !!userQuery.data && (!!userCollectorQuery.data?.id || userRolesQuery.data?.includes("admin"))
   });
