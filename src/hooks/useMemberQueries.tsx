@@ -79,7 +79,8 @@ export function useMemberQueries(
       const { data } = await supabase
         .from("members_collectors")
         .select("id, prefix, name, number")
-        .eq("auth_id", userQuery.data.id)
+        .eq("auth_user_id", userQuery.data.id)
+        .eq("active", true)
         .single();
       return data as CollectorBase | null;
     },
@@ -103,11 +104,20 @@ export function useMemberQueries(
   const membersQuery = useQuery({
     queryKey: ["members", selectedCollector, searchTerm, sortField, sortDirection, collectorId, page],
     queryFn: async () => {
+      console.log('Fetching members with params:', {
+        selectedCollector,
+        searchTerm,
+        sortField,
+        sortDirection,
+        collectorId,
+        page
+      });
+
       let query = supabase
         .from("members")
         .select(`
           *,
-          members_collectors!members_collectors_member_number_fkey (
+          members_collectors!inner (
             name,
             number,
             active,
@@ -119,8 +129,10 @@ export function useMemberQueries(
         if (!collectorId) {
           throw new Error("Collector ID not found");
         }
+        console.log('Filtering by collector ID:', collectorId);
         query = query.eq('collector_id', collectorId);
       } else if (selectedCollector !== 'all') {
+        console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
       }
 
@@ -135,9 +147,15 @@ export function useMemberQueries(
       const from = (page - 1) * ITEMS_PER_PAGE;
       query = query.range(from, from + ITEMS_PER_PAGE - 1);
 
+      console.log('Final query params:', query);
       const { data, error, count } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Query error:', error);
+        throw error;
+      }
 
+      console.log('Query results:', { count, results: data?.length });
       return {
         members: data || [],
         totalCount: count || 0
