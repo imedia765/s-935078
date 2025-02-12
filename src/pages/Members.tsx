@@ -50,15 +50,15 @@ export default function Members() {
         .select("role")
         .eq("user_id", user.id);
 
-      const { data: collectorInfo } = await supabase
+      // Get collector info without using single()
+      const { data: collectorData } = await supabase
         .from("members_collectors")
         .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
+        .eq("auth_user_id", user.id);
 
       return {
         isAdmin: roles?.some(r => r.role === "admin") || false,
-        collectorId: collectorInfo?.id || null
+        collectorId: collectorData && collectorData.length > 0 ? collectorData[0]?.id : null
       };
     }
   });
@@ -68,7 +68,7 @@ export default function Members() {
     searchTerm,
     sortField,
     sortDirection,
-    currentUser?.collectorId, // Pass the collector ID if user is a collector
+    currentUser?.collectorId || null,
     page,
     ITEMS_PER_PAGE
   );
