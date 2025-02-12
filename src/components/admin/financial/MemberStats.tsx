@@ -126,21 +126,15 @@ export function MemberStats() {
         const enrichedCollectors: CollectorWithPayments[] = await Promise.all(
           collectorsData.map(async (collector) => {
             try {
-              // Get all member numbers for this collector
               const memberNumbers = collector.members.map(m => m.member_number);
               
-              // Fetch payments for all members of this collector in one query
               const { data: allPayments, error: paymentsError } = await supabase
                 .from('payment_requests')
                 .select('*')
                 .in('member_number', memberNumbers);
 
-              if (paymentsError) {
-                console.error('Error fetching payments:', paymentsError);
-                throw paymentsError;
-              }
+              if (paymentsError) throw paymentsError;
 
-              // Map payments back to members
               const memberPayments = collector.members.map(member => ({
                 ...member,
                 payment_requests: allPayments?.filter(p => p.member_number === member.member_number) || []
@@ -152,7 +146,6 @@ export function MemberStats() {
               };
             } catch (error) {
               console.error(`Error processing payments for collector ${collector.name}:`, error);
-              // Return collector with empty payments if there's an error
               return {
                 ...collector,
                 members: collector.members.map(member => ({
@@ -163,6 +156,13 @@ export function MemberStats() {
             }
           })
         );
+
+        // Get total family members count
+        const { count: familyMembersCount, error: familyError } = await supabase
+          .from('family_members')
+          .select('*', { count: 'exact' });
+
+        if (familyError) throw familyError;
 
         // Transform the data to include aggregated stats
         const collectorStats: CollectorStats[] = enrichedCollectors.map(collector => {
@@ -209,7 +209,7 @@ export function MemberStats() {
           totals: {
             members: totalMembers,
             directMembers: totalMembers,
-            familyMembers: 0,
+            familyMembers: familyMembersCount || 0,
             activeCollectors: collectorStats.length
           }
         };
