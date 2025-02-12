@@ -65,6 +65,7 @@ export default function Members() {
           )
         `);
 
+      // Strictly enforce collector filtering for non-admins
       if (!currentUser?.isAdmin) {
         query = query.eq('collector_id', currentUser?.collectorId);
       } 
