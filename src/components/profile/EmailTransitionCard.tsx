@@ -28,16 +28,15 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
     queryKey: ['emailTransition', memberNumber],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('email_transitions' as any) // Type assertion needed due to Supabase client limitation
+        .from('email_transitions')
         .select('*')
         .eq('member_number', memberNumber)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
-      // Convert to unknown first, then assert the type
-      return (data as unknown) as EmailTransition | null;
+      return data;
     },
     staleTime: 1000 * 60 // 1 minute
   });
@@ -58,15 +57,14 @@ export function EmailTransitionCard({ memberNumber, currentEmail, onComplete }: 
 
       // Call the initiate_email_transition function
       const { data, error } = await supabase
-        .rpc('initiate_email_transition' as any, {
+        .rpc('initiate_email_transition', {
           p_member_number: memberNumber,
           p_new_email: newEmail
         });
 
       if (error) throw error;
 
-      // Convert to unknown first, then assert the type
-      const transitionResult = (data as unknown) as TransitionRpcResponse;
+      const transitionResult = data as TransitionRpcResponse;
 
       if (!transitionResult.success) {
         toast({
