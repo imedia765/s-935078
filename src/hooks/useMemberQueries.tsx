@@ -76,12 +76,17 @@ export function useMemberQueries(
     queryKey: ["userCollector", userQuery.data?.id],
     queryFn: async () => {
       if (!userQuery.data?.id) return null;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("members_collectors")
         .select("id, prefix, name, number")
         .eq("auth_user_id", userQuery.data.id)
         .eq("active", true)
         .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching collector:', error);
+        return null;
+      }
       return data;
     },
     enabled: !!userQuery.data?.id
@@ -93,7 +98,8 @@ export function useMemberQueries(
       const { data, error } = await supabase
         .from("members_collectors")
         .select("*")
-        .eq("active", true);
+        .eq("active", true)
+        .order('name');
       
       if (error) throw error;
       return data;
@@ -109,15 +115,18 @@ export function useMemberQueries(
         searchTerm,
         sortField,
         sortDirection,
-        collectorId,
+        collectorId: userCollectorQuery.data?.id,
         page
       });
+
+      const isAdmin = userRolesQuery.data?.includes("admin");
+      const collectorIdToUse = isAdmin ? selectedCollector : userCollectorQuery.data?.id;
 
       let query = supabase
         .from("members")
         .select(`
           *,
-          members_collectors (
+          members_collectors!members_collectors_member_number_fkey (
             name,
             number,
             active,
@@ -125,13 +134,12 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      // If user is not admin, filter by their collector ID
-      if (!userRolesQuery.data?.includes("admin")) {
-        if (!userCollectorQuery.data?.id) {
+      if (!isAdmin) {
+        if (!collectorIdToUse) {
           throw new Error("Collector ID not found");
         }
-        console.log('Filtering by collector ID:', userCollectorQuery.data.id);
-        query = query.eq('collector_id', userCollectorQuery.data.id);
+        console.log('Filtering by collector ID:', collectorIdToUse);
+        query = query.eq('collector_id', collectorIdToUse);
       } else if (selectedCollector !== 'all') {
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
@@ -148,7 +156,7 @@ export function useMemberQueries(
       const from = (page - 1) * ITEMS_PER_PAGE;
       query = query.range(from, from + ITEMS_PER_PAGE - 1);
 
-      console.log('Final query params:', query);
+      console.log('Final query:', query);
       const { data, error, count } = await query;
       
       if (error) {
@@ -156,7 +164,7 @@ export function useMemberQueries(
         throw error;
       }
 
-      console.log('Query results:', { count, results: data?.length });
+      console.log('Query results:', { count, results: data?.length, firstResult: data?.[0] });
       return {
         members: data || [],
         totalCount: count || 0
