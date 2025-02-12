@@ -131,17 +131,6 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      // Simple filtering: collectors see only their members, admins can see all or filter by collector
-      if (!userRolesQuery.data?.includes("admin")) {
-        query = query.eq('collector_id', userCollectorQuery.data?.id);
-      } else if (selectedCollector !== 'all') {
-        query = query.eq('collector_id', selectedCollector);
-      }
-
-      if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
-      }
-
       if (sortField) {
         query = query.order(sortField, { ascending: sortDirection === 'asc' });
       }
