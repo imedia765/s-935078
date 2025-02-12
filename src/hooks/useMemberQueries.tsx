@@ -16,6 +16,13 @@ type Collector = CollectorBase & {
   active: boolean;
 };
 
+type MemberCollector = {
+  name: string;
+  number: string;
+  active: boolean;
+  prefix: string;
+};
+
 type Member = {
   id: string;
   full_name: string;
@@ -23,17 +30,22 @@ type Member = {
   phone: string | null;
   member_number: string;
   collector_id: string;
-  members_collectors: {
-    name: string;
-    number: string;
-    active: boolean;
-    prefix: string;
-  } | null;
+  members_collectors: MemberCollector | null;
 };
 
 type QueryResult = {
   members: Member[];
   totalCount: number;
+};
+
+type UserRolesResponse = {
+  role: string;
+}[];
+
+type UserInfo = {
+  roles: string[];
+  collectorId: string | null;
+  collectorPrefix: string | null;
 };
 
 export function useMemberQueries(
@@ -56,7 +68,7 @@ export function useMemberQueries(
     }
   });
 
-  const userRolesQuery = useQuery({
+  const userRolesQuery = useQuery<string[]>({
     queryKey: ["userRoles", userQuery.data?.id],
     queryFn: async () => {
       if (!userQuery.data?.id) return [];
@@ -69,7 +81,7 @@ export function useMemberQueries(
     enabled: !!userQuery.data?.id
   });
 
-  const userCollectorQuery = useQuery({
+  const userCollectorQuery = useQuery<CollectorBase | null>({
     queryKey: ["userCollector", userQuery.data?.id],
     queryFn: async () => {
       if (!userQuery.data?.id) return null;
@@ -83,7 +95,7 @@ export function useMemberQueries(
     enabled: !!userQuery.data?.id
   });
 
-  const collectorsQuery = useQuery({
+  const collectorsQuery = useQuery<Collector[]>({
     queryKey: ["collectors"],
     queryFn: async () => {
       const { data, error } = await supabase
