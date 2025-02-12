@@ -3,37 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Simplified, flattened types
-type UserRole = {
-  role: string;
-};
-
-type CollectorBasic = {
-  id: string;
-  prefix: string | null;
-};
-
-type CollectorFull = {
-  id: string;
-  name: string | null;
-  number: string | null;
-  prefix: string | null;
-  active: boolean;
-};
-
-type Member = {
-  id: string;
-  full_name: string;
-  email: string;
-  member_number: string;
-  phone: string;
-  collector_id: string;
-  members_collectors: {
-    name: string;
-    number: string;
-    active: boolean;
-    prefix: string;
-  } | null;
+// Basic types without nesting
+type QueryResult<T> = {
+  data: T | null;
+  error: Error | null;
 };
 
 export function useMemberQueries(
@@ -47,30 +20,40 @@ export function useMemberQueries(
 ) {
   const { toast } = useToast();
 
-  const userInfoQuery = useQuery({
-    queryKey: ["userInfo"],
+  // Split into separate queries to avoid deep nesting
+  const userQuery = useQuery({
+    queryKey: ["user"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
+      return user;
+    }
+  });
 
-      const { data: userRoles } = await supabase
+  const userRolesQuery = useQuery({
+    queryKey: ["userRoles", userQuery.data?.id],
+    queryFn: async () => {
+      if (!userQuery.data?.id) return [];
+      const { data } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id);
+        .eq("user_id", userQuery.data.id);
+      return data?.map(r => r.role) || [];
+    },
+    enabled: !!userQuery.data?.id
+  });
 
-      const { data: collectors } = await supabase
+  const userCollectorQuery = useQuery({
+    queryKey: ["userCollector", userQuery.data?.id],
+    queryFn: async () => {
+      if (!userQuery.data?.id) return null;
+      const { data } = await supabase
         .from("members_collectors")
         .select("id, prefix")
-        .eq("user_id", user.id);
-
-      const collector = collectors?.[0] || null;
-
-      return {
-        roles: userRoles?.map(r => r.role) || [],
-        collectorId: collector?.id || null,
-        collectorPrefix: collector?.prefix || null
-      };
-    }
+        .eq("user_id", userQuery.data.id);
+      return data?.[0] || null;
+    },
+    enabled: !!userQuery.data?.id
   });
 
   const collectorsQuery = useQuery({
@@ -84,7 +67,7 @@ export function useMemberQueries(
       if (error) throw error;
       return data || [];
     },
-    enabled: userInfoQuery.data?.roles.includes("admin") || false
+    enabled: userRolesQuery.data?.includes("admin") || false
   });
 
   const membersQuery = useQuery({
@@ -102,7 +85,7 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      if (!userInfoQuery.data?.roles.includes("admin")) {
+      if (!userRolesQuery.data?.includes("admin")) {
         if (!collectorId) {
           throw new Error("Collector ID not found");
         }
@@ -129,13 +112,25 @@ export function useMemberQueries(
         members: data || [],
         totalCount: count || 0
       };
-    }
+    },
+    enabled: !!userQuery.data
   });
 
+  // Combine the data for the return value
+  const userInfo = {
+    roles: userRolesQuery.data || [],
+    collectorId: userCollectorQuery.data?.id || null,
+    collectorPrefix: userCollectorQuery.data?.prefix || null
+  };
+
   return {
-    userInfo: userInfoQuery.data,
+    userInfo,
     collectors: collectorsQuery.data,
     membersData: membersQuery.data,
-    isLoading: membersQuery.isLoading || collectorsQuery.isLoading
+    isLoading: userQuery.isLoading || 
+               userRolesQuery.isLoading || 
+               userCollectorQuery.isLoading || 
+               collectorsQuery.isLoading || 
+               membersQuery.isLoading
   };
 }
