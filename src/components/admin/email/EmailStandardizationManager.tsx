@@ -33,6 +33,8 @@ const whitelistSchema = z.object({
   reason: z.string().min(10, "Please provide a detailed reason"),
 });
 
+type WhitelistFormData = z.infer<typeof whitelistSchema>;
+
 export function EmailStandardizationManager() {
   const [isWhitelistDialogOpen, setIsWhitelistDialogOpen] = useState(false);
   const {
@@ -48,12 +50,16 @@ export function EmailStandardizationManager() {
     isRemoving
   } = useEmailStandardization();
 
-  const form = useForm<z.infer<typeof whitelistSchema>>({
+  const form = useForm<WhitelistFormData>({
     resolver: zodResolver(whitelistSchema),
   });
 
-  const onWhitelistSubmit = (values: z.infer<typeof whitelistSchema>) => {
-    whitelistEmail(values, {
+  const onWhitelistSubmit = (values: WhitelistFormData) => {
+    whitelistEmail({
+      email: values.email,
+      memberNumber: values.memberNumber,
+      reason: values.reason
+    }, {
       onSuccess: () => {
         setIsWhitelistDialogOpen(false);
         form.reset();
