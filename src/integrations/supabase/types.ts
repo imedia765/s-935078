@@ -888,6 +888,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_whitelist: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          email: string
+          id: string
+          member_number: string
+          reason: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          member_number: string
+          reason?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          member_number?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       enhanced_roles: {
         Row: {
           created_at: string | null
@@ -1189,6 +1219,45 @@ export type Database = {
           member_number?: string
           status?: string
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      login_patterns: {
+        Row: {
+          created_at: string | null
+          failure_count: number | null
+          id: string
+          last_failure_at: string | null
+          last_success_at: string | null
+          member_number: string | null
+          pattern_data: Json | null
+          success_count: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          failure_count?: number | null
+          id?: string
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          member_number?: string | null
+          pattern_data?: Json | null
+          success_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          failure_count?: number | null
+          id?: string
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          member_number?: string | null
+          pattern_data?: Json | null
+          success_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2075,6 +2144,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_tracking: {
+        Row: {
+          attempt_count: number | null
+          first_attempt_at: string | null
+          id: string
+          ip_address: string
+          last_attempt_at: string | null
+          locked_until: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          first_attempt_at?: string | null
+          id?: string
+          ip_address: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          attempt_count?: number | null
+          first_attempt_at?: string | null
+          id?: string
+          ip_address?: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       receipt_email_tracking: {
         Row: {
           delivery_attempts: number | null
@@ -2328,6 +2427,42 @@ export type Database = {
           id?: string
           is_current?: boolean | null
           version_number?: string
+        }
+        Relationships: []
+      }
+      security_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          member_number: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          member_number?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          member_number?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
         }
         Relationships: []
       }
@@ -2832,6 +2967,13 @@ export type Database = {
           details: Json
         }[]
       }
+      check_rate_limit: {
+        Args: {
+          p_ip_address: string
+          p_member_number?: string
+        }
+        Returns: Json
+      }
       check_rbac: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3247,6 +3389,15 @@ export type Database = {
             }
             Returns: Json
           }
+      track_login_pattern: {
+        Args: {
+          p_user_id: string
+          p_member_number: string
+          p_success: boolean
+          p_metadata?: Json
+        }
+        Returns: undefined
+      }
       update_collector_profiles: {
         Args: Record<PropertyKey, never>
         Returns: undefined
