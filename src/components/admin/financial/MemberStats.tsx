@@ -122,27 +122,45 @@ export function MemberStats() {
           };
         }));
 
-        // Get payment requests for each member
+        // Get payment requests for all members at once
         const enrichedCollectors: CollectorWithPayments[] = await Promise.all(
           collectorsData.map(async (collector) => {
-            const memberPayments = await Promise.all(
-              collector.members.map(async (member) => {
-                const { data: payments } = await supabase
-                  .from('payment_requests')
-                  .select('*')
-                  .eq('member_number', member.member_number);
-                
-                return {
-                  ...member,
-                  payment_requests: payments || []
-                };
-              })
-            );
+            try {
+              // Get all member numbers for this collector
+              const memberNumbers = collector.members.map(m => m.member_number);
+              
+              // Fetch payments for all members of this collector in one query
+              const { data: allPayments, error: paymentsError } = await supabase
+                .from('payment_requests')
+                .select('*')
+                .in('member_number', memberNumbers);
 
-            return {
-              ...collector,
-              members: memberPayments
-            };
+              if (paymentsError) {
+                console.error('Error fetching payments:', paymentsError);
+                throw paymentsError;
+              }
+
+              // Map payments back to members
+              const memberPayments = collector.members.map(member => ({
+                ...member,
+                payment_requests: allPayments?.filter(p => p.member_number === member.member_number) || []
+              }));
+
+              return {
+                ...collector,
+                members: memberPayments
+              };
+            } catch (error) {
+              console.error(`Error processing payments for collector ${collector.name}:`, error);
+              // Return collector with empty payments if there's an error
+              return {
+                ...collector,
+                members: collector.members.map(member => ({
+                  ...member,
+                  payment_requests: []
+                }))
+              };
+            }
           })
         );
 
@@ -190,8 +208,8 @@ export function MemberStats() {
           collectors: collectorStats,
           totals: {
             members: totalMembers,
-            directMembers: totalMembers, // All members are direct for now
-            familyMembers: 0, // Family members feature not implemented yet
+            directMembers: totalMembers,
+            familyMembers: 0,
             activeCollectors: collectorStats.length
           }
         };
