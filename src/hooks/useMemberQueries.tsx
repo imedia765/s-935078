@@ -119,9 +119,6 @@ export function useMemberQueries(
         page
       });
 
-      const isAdmin = userRolesQuery.data?.includes("admin");
-      const collectorIdToUse = isAdmin ? selectedCollector : userCollectorQuery.data?.id;
-
       let query = supabase
         .from("members")
         .select(`
@@ -134,13 +131,9 @@ export function useMemberQueries(
           )
         `, { count: 'exact' });
 
-      if (!isAdmin) {
-        if (!collectorIdToUse) {
-          throw new Error("Collector ID not found");
-        }
-        console.log('Filtering by collector ID:', collectorIdToUse);
-        query = query.eq('collector_id', collectorIdToUse);
-      } else if (selectedCollector !== 'all') {
+      // The RLS policy will automatically filter based on user role and collector_id
+      // We only need to add additional filters for admin selection
+      if (userRolesQuery.data?.includes("admin") && selectedCollector !== 'all') {
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
       }
