@@ -5,11 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@/types/auth";
 
 // Simplified type definitions
-type Collector = {
+type CollectorBase = {
   id: string;
   prefix: string | null;
   name: string;
   number: string;
+};
+
+type Collector = CollectorBase & {
   active: boolean;
 };
 
@@ -61,7 +64,7 @@ export function useMemberQueries(
     enabled: !!userQuery.data?.id
   });
 
-  const userCollectorQuery = useQuery<Collector | null>({
+  const userCollectorQuery = useQuery<CollectorBase | null>({
     queryKey: ["userCollector", userQuery.data?.id],
     queryFn: async () => {
       if (!userQuery.data?.id) return null;
@@ -135,14 +138,12 @@ export function useMemberQueries(
     enabled: !!userQuery.data
   });
 
-  const userInfo = {
-    roles: userRolesQuery.data || [],
-    collectorId: userCollectorQuery.data?.id || null,
-    collectorPrefix: userCollectorQuery.data?.prefix || null
-  };
-
   return {
-    userInfo,
+    userInfo: {
+      roles: userRolesQuery.data || [],
+      collectorId: userCollectorQuery.data?.id || null,
+      collectorPrefix: userCollectorQuery.data?.prefix || null
+    },
     collectors: collectorsQuery.data,
     membersData: membersQuery.data,
     isLoading: userQuery.isLoading || 
