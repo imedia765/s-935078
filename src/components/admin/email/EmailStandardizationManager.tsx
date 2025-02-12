@@ -7,6 +7,7 @@ import { Loader2, AlertCircle, CheckCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PostgrestError } from "@supabase/supabase-js";
+import { Json } from "@/integrations/supabase/types";
 
 interface EmailStandardization {
   member_number: string;
@@ -50,7 +51,9 @@ export function EmailStandardizationManager() {
         return;
       }
 
-      const result = data as EmailMigrationResult;
+      // First cast to Json type, then to our interface
+      const jsonResult = data as Json;
+      const result = jsonResult as unknown as EmailMigrationResult;
       
       if (result.status === 'error') {
         toast({
