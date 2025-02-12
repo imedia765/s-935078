@@ -1,4 +1,3 @@
-
 export interface Database {
   public: {
     Tables: {
@@ -173,6 +172,41 @@ export interface Database {
           due_date?: string
           has_supporting_docs?: boolean
           receipt_metadata?: Record<string, any>
+        }
+      }
+      dns_check_results: {
+        Row: {
+          id: string
+          record_type: 'MX' | 'SPF' | 'DKIM' | 'DMARC'
+          domain: string
+          status: 'success' | 'warning' | 'error'
+          value: string | null
+          error_message: string | null
+          check_timestamp: string
+          last_success_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          record_type: 'MX' | 'SPF' | 'DKIM' | 'DMARC'
+          domain: string
+          status: 'success' | 'warning' | 'error'
+          value?: string | null
+          error_message?: string | null
+          check_timestamp?: string
+          last_success_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          record_type?: 'MX' | 'SPF' | 'DKIM' | 'DMARC'
+          domain?: string
+          status?: 'success' | 'warning' | 'error'
+          value?: string | null
+          error_message?: string | null
+          check_timestamp?: string
+          last_success_at?: string | null
+          created_at?: string
         }
       }
     }
