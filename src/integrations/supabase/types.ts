@@ -783,6 +783,33 @@ export type Database = {
         }
         Relationships: []
       }
+      email_provider_audit: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          provider: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          provider: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          provider?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_queue_config: {
         Row: {
           auto_process_interval: number
@@ -1417,6 +1444,33 @@ export type Database = {
           success_count?: number | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      loops_integration: {
+        Row: {
+          api_key: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          template_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3529,6 +3583,12 @@ export type Database = {
             }
             Returns: Json
           }
+      toggle_loops_integration: {
+        Args: {
+          p_is_active: boolean
+        }
+        Returns: Json
+      }
       track_login_pattern: {
         Args: {
           p_user_id: string
