@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp2@v0.2.0/mod.ts";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,24 +26,18 @@ class EmailError extends Error {
 }
 
 async function createSmtpClient(): Promise<SmtpClient> {
-  const client = new SmtpClient({
-    connection: {
-      hostname: "smtp.gmail.com",
-      port: 465, // Using SSL port instead of TLS
-      tls: true,
-      auth: {
-        username: "burtonpwa@gmail.com",
-        password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
-      }
-    },
-    debug: {
-      logger: console.log,
-      network: true, // Enable network level logging
-    },
-  });
+  const client = new SmtpClient();
 
   console.log(`[${new Date().toISOString()}] Establishing SMTP connection...`);
-  await client.connect();
+  
+  const connectConfig = {
+    hostname: "smtp.gmail.com",
+    port: 465,
+    username: "burtonpwa@gmail.com",
+    password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
+  };
+
+  await client.connectTLS(connectConfig);
   console.log(`[${new Date().toISOString()}] SMTP connection established`);
   
   return client;
@@ -57,7 +51,7 @@ async function sendEmailWithRetry(options: any, maxRetries = 3): Promise<void> {
     try {
       console.log(`[${new Date().toISOString()}] Email attempt ${attempt} of ${maxRetries}`);
       
-      if (!client || !client.isConnected) {
+      if (!client) {
         client = await createSmtpClient();
       }
       
@@ -65,6 +59,11 @@ async function sendEmailWithRetry(options: any, maxRetries = 3): Promise<void> {
       await client.send(options);
       
       console.log(`[${new Date().toISOString()}] Email sent successfully on attempt ${attempt}`);
+      
+      if (client) {
+        await client.close();
+      }
+      
       return;
     } catch (error) {
       lastError = error as SmtpError;
@@ -147,8 +146,7 @@ serve(async (req) => {
       to: email,
       subject: "Reset Your Password - PWA Burton",
       content: "Please enable HTML to view this email",
-      html: emailContent,
-      priority: "high"
+      html: emailContent
     });
     
     return new Response(
