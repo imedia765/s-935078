@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,11 @@ export function LoopsConfiguration() {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [apiKey, setApiKey] = useState("");
-  const [templateId, setTemplateId] = useState("");
+  const [templateIds, setTemplateIds] = useState({
+    payment_confirmation: "",
+    payment_reminder: "",
+    late_payment: "",
+  });
 
   const { data: loopsConfig, isLoading } = useQuery({
     queryKey: ['loopsConfig'],
@@ -29,7 +34,7 @@ export function LoopsConfiguration() {
         const { data: newConfig, error: insertError } = await supabase
           .from('loops_integration')
           .insert([
-            { api_key: '', template_id: '', is_active: false }
+            { api_key: '', payment_confirmation_template_id: '', payment_reminder_template_id: '', late_payment_template_id: '', is_active: false }
           ])
           .select()
           .single();
@@ -67,12 +72,14 @@ export function LoopsConfiguration() {
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: async ({ apiKey, templateId }: { apiKey: string; templateId: string }) => {
+    mutationFn: async ({ apiKey, templateIds }: { apiKey: string; templateIds: typeof templateIds }) => {
       const { error } = await supabase
         .from('loops_integration')
         .update({
           api_key: apiKey,
-          template_id: templateId,
+          payment_confirmation_template_id: templateIds.payment_confirmation,
+          payment_reminder_template_id: templateIds.payment_reminder,
+          late_payment_template_id: templateIds.late_payment,
           updated_at: new Date().toISOString()
         })
         .eq('id', loopsConfig?.id);
@@ -105,7 +112,7 @@ export function LoopsConfiguration() {
   };
 
   const handleSave = () => {
-    updateConfigMutation.mutate({ apiKey, templateId });
+    updateConfigMutation.mutate({ apiKey, templateIds });
   };
 
   return (
@@ -139,12 +146,30 @@ export function LoopsConfiguration() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="template-id">Template ID</Label>
+              <Label htmlFor="payment-confirmation-template">Payment Confirmation Template ID</Label>
               <Input
-                id="template-id"
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-                placeholder="Enter template ID"
+                id="payment-confirmation-template"
+                value={templateIds.payment_confirmation}
+                onChange={(e) => setTemplateIds(prev => ({ ...prev, payment_confirmation: e.target.value }))}
+                placeholder="Enter Payment Confirmation template ID"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment-reminder-template">Payment Reminder Template ID</Label>
+              <Input
+                id="payment-reminder-template"
+                value={templateIds.payment_reminder}
+                onChange={(e) => setTemplateIds(prev => ({ ...prev, payment_reminder: e.target.value }))}
+                placeholder="Enter Payment Reminder template ID"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="late-payment-template">Late Payment Template ID</Label>
+              <Input
+                id="late-payment-template"
+                value={templateIds.late_payment}
+                onChange={(e) => setTemplateIds(prev => ({ ...prev, late_payment: e.target.value }))}
+                placeholder="Enter Late Payment template ID"
               />
             </div>
             <div className="flex space-x-2">
@@ -159,12 +184,24 @@ export function LoopsConfiguration() {
               <div className="mt-1">•••••••••••••••••</div>
             </div>
             <div>
-              <Label>Template ID</Label>
-              <div className="mt-1">{loopsConfig?.template_id || "Not set"}</div>
+              <Label>Payment Confirmation Template ID</Label>
+              <div className="mt-1">{loopsConfig?.payment_confirmation_template_id || "Not set"}</div>
+            </div>
+            <div>
+              <Label>Payment Reminder Template ID</Label>
+              <div className="mt-1">{loopsConfig?.payment_reminder_template_id || "Not set"}</div>
+            </div>
+            <div>
+              <Label>Late Payment Template ID</Label>
+              <div className="mt-1">{loopsConfig?.late_payment_template_id || "Not set"}</div>
             </div>
             <Button onClick={() => {
               setApiKey(loopsConfig?.api_key || "");
-              setTemplateId(loopsConfig?.template_id || "");
+              setTemplateIds({
+                payment_confirmation: loopsConfig?.payment_confirmation_template_id || "",
+                payment_reminder: loopsConfig?.payment_reminder_template_id || "",
+                late_payment: loopsConfig?.late_payment_template_id || ""
+              });
               setIsEditing(true);
             }}>
               Edit Configuration

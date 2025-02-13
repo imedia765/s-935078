@@ -1417,6 +1417,9 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean | null
+          late_payment_template_id: string | null
+          payment_confirmation_template_id: string | null
+          payment_reminder_template_id: string | null
           template_id: string | null
           updated_at: string
         }
@@ -1425,6 +1428,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          late_payment_template_id?: string | null
+          payment_confirmation_template_id?: string | null
+          payment_reminder_template_id?: string | null
           template_id?: string | null
           updated_at?: string
         }
@@ -1433,6 +1439,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean | null
+          late_payment_template_id?: string | null
+          payment_confirmation_template_id?: string | null
+          payment_reminder_template_id?: string | null
           template_id?: string | null
           updated_at?: string
         }
