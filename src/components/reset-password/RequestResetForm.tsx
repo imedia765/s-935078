@@ -29,15 +29,6 @@ export const RequestResetForm = () => {
           variant: "destructive",
           title: "Member Not Found",
           description: "No member found with this member number",
-          action: (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigator.clipboard.writeText("Member number not found")}
-            >
-              Copy
-            </Button>
-          ),
         });
         return;
       }
@@ -47,51 +38,34 @@ export const RequestResetForm = () => {
           variant: "destructive",
           title: "Email Mismatch",
           description: "The email address does not match our records",
-          action: (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigator.clipboard.writeText("Email address does not match our records")}
-            >
-              Copy
-            </Button>
-          ),
         });
         return;
       }
 
-      if (!member.auth_user_id) {
-        toast({
-          variant: "destructive",
-          title: "Account Error",
-          description: "No authentication record found for this member",
-          action: (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigator.clipboard.writeText("No authentication record found")}
-            >
-              Copy
-            </Button>
-          ),
-        });
-        return;
-      }
+      // Get Loops configuration
+      const { data: loopsConfig } = await supabase
+        .from('loops_integration')
+        .select('*')
+        .limit(1)
+        .single();
 
-      const { data, error: fnError } = await supabase.rpc(
-        "generate_magic_link",
+      // Generate magic link token
+      const { data: tokenData, error: tokenError } = await supabase.rpc(
+        'generate_magic_link',
         { p_user_id: member.auth_user_id }
       );
 
-      if (fnError) throw fnError;
+      if (tokenError) throw tokenError;
 
+      // Send reset email
       const { error: emailError } = await supabase.functions.invoke(
-        "send-password-reset",
+        'send-password-reset',
         {
           body: {
             email: member.email,
             memberNumber: memberNumber,
-            token: data,
+            token: tokenData,
+            useLoops: loopsConfig?.is_active || false
           },
         }
       );
@@ -101,18 +75,8 @@ export const RequestResetForm = () => {
       toast({
         title: "Reset Instructions Sent",
         description: "Please check your email for password reset instructions. The link will expire in 1 hour.",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigator.clipboard.writeText("Password reset instructions sent to your email")}
-          >
-            Copy
-          </Button>
-        ),
       });
       
-      // Clear form after successful submission
       setMemberNumber("");
       setEmail("");
     } catch (error: any) {
@@ -121,15 +85,6 @@ export const RequestResetForm = () => {
         variant: "destructive",
         title: "Request Failed",
         description: error.message || "Failed to send reset instructions. Please try again.",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigator.clipboard.writeText(error.message || "Failed to send reset instructions")}
-          >
-            Copy
-          </Button>
-        ),
       });
     } finally {
       setIsLoading(false);
@@ -179,4 +134,4 @@ export const RequestResetForm = () => {
       </div>
     </form>
   );
-};
+}
