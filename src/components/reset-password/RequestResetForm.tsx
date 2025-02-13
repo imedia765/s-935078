@@ -57,7 +57,7 @@ export const RequestResetForm = () => {
       }
 
       // Generate magic link token with proper typing
-      const { data: tokenData, error: tokenError } = await supabase.rpc<MagicLinkResponse, MagicLinkParams>(
+      const { data: tokenData, error: tokenError } = await supabase.rpc(
         'generate_magic_link',
         { p_user_id: member.auth_user_id }
       );
