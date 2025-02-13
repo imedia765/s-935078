@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import { SmtpClient } from "https://deno.land/x/smtp2@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,19 +26,31 @@ class EmailError extends Error {
 }
 
 async function createSmtpClient(): Promise<SmtpClient> {
-  const client = new SmtpClient();
+  const client = new SmtpClient({
+    connection: {
+      hostname: "smtp.gmail.com",
+      port: 465, // Using SSL port
+      tls: true,
+      auth: {
+        username: "burtonpwa@gmail.com",
+        password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
+      }
+    },
+    debug: {
+      logger: console.log,
+      network: true, // Enable network level logging
+    },
+    pool: {
+      maxConnections: 5,
+      maxIdleTime: 10000, // 10 seconds
+      retain: false,
+    },
+    timeout: 30000, // 30 seconds timeout
+  });
 
-  console.log(`[${new Date().toISOString()}] Establishing SMTP connection...`);
-  
-  const connectConfig = {
-    hostname: "smtp.gmail.com",
-    port: 465,
-    username: "burtonpwa@gmail.com",
-    password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
-  };
-
-  await client.connectTLS(connectConfig);
-  console.log(`[${new Date().toISOString()}] SMTP connection established`);
+  console.log(`[${new Date().toISOString()}] Creating new SMTP client...`);
+  await client.connect();
+  console.log(`[${new Date().toISOString()}] SMTP connection established successfully`);
   
   return client;
 }
@@ -51,20 +63,25 @@ async function sendEmailWithRetry(options: any, maxRetries = 3): Promise<void> {
     try {
       console.log(`[${new Date().toISOString()}] Email attempt ${attempt} of ${maxRetries}`);
       
-      if (!client) {
+      if (!client || !client.isConnected) {
         client = await createSmtpClient();
       }
       
-      console.log(`[${new Date().toISOString()}] Sending email...`);
-      await client.send(options);
+      console.log(`[${new Date().toISOString()}] Preparing to send email...`);
+      console.log(`[${new Date().toISOString()}] Connection status:`, client.isConnected ? 'Connected' : 'Not connected');
+      
+      await client.send({
+        from: options.from,
+        to: options.to,
+        subject: options.subject,
+        content: options.content,
+        html: options.html,
+        priority: "high",
+      });
       
       console.log(`[${new Date().toISOString()}] Email sent successfully on attempt ${attempt}`);
-      
-      if (client) {
-        await client.close();
-      }
-      
       return;
+      
     } catch (error) {
       lastError = error as SmtpError;
       console.error(`[${new Date().toISOString()}] Error on attempt ${attempt}:`, {
@@ -72,10 +89,13 @@ async function sendEmailWithRetry(options: any, maxRetries = 3): Promise<void> {
         message: error.message,
         code: (error as SmtpError).code,
         command: (error as SmtpError).command,
+        stack: error.stack,
       });
       
+      // Always ensure connection is closed on error
       if (client) {
         try {
+          console.log(`[${new Date().toISOString()}] Closing SMTP connection after error...`);
           await client.close();
         } catch (closeError) {
           console.error(`[${new Date().toISOString()}] Error closing SMTP client:`, closeError);
@@ -93,6 +113,17 @@ async function sendEmailWithRetry(options: any, maxRetries = 3): Promise<void> {
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
         break;
+      }
+    } finally {
+      // Ensure connection is always closed after successful send
+      if (client) {
+        try {
+          console.log(`[${new Date().toISOString()}] Closing SMTP connection...`);
+          await client.close();
+        } catch (closeError) {
+          console.error(`[${new Date().toISOString()}] Error in final connection closure:`, closeError);
+        }
+        client = null;
       }
     }
   }
@@ -146,7 +177,8 @@ serve(async (req) => {
       to: email,
       subject: "Reset Your Password - PWA Burton",
       content: "Please enable HTML to view this email",
-      html: emailContent
+      html: emailContent,
+      priority: "high"
     });
     
     return new Response(
