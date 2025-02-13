@@ -20,33 +20,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailParams) {
     if (configError) throw configError;
 
     if (!loopsConfig?.is_active || !loopsConfig?.api_key) {
-      console.log('Loops not configured, falling back to default email method');
-      // Fallback to old email method
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
-            to,
-            subject,
-            html,
-            text,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to send email');
-      }
-
-      return await response.json();
+      throw new Error('Loops integration is not properly configured');
     }
 
     // Use Loops API

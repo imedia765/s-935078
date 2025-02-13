@@ -21,44 +21,6 @@ export interface MonitoringRule {
   cooldown_minutes: number;
 }
 
-export interface SmtpHealth {
-  status: 'healthy' | 'degraded' | 'failing';
-  last_check: string;
-  details: {
-    success_rate: number;
-    response_time: number;
-    quota_remaining: number;
-  };
-}
-
-export interface SmtpHealthCheck {
-  id: string;
-  configuration_id: string;
-  status: 'healthy' | 'degraded' | 'failing';
-  check_timestamp: string;
-  response_time: number;
-  success_rate: number;
-  quota_remaining: number;
-  bounce_rate: number;
-  error_details: Record<string, any>;
-  created_at: string;
-  smtp_configurations?: {
-    name: string;
-    host: string;
-  };
-}
-
-export interface DnsCheckResult {
-  id: string;
-  record_type: 'MX' | 'SPF' | 'DKIM' | 'DMARC';
-  domain: string;
-  status: 'success' | 'warning' | 'error';
-  value: string | null;
-  error_message: string | null;
-  check_timestamp: string;
-  last_success_at: string | null;
-}
-
 export interface EmailDeliveryMetric {
   id: string;
   metric_type: string;
