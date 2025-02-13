@@ -9,6 +9,11 @@ CREATE TABLE IF NOT EXISTS loops_integration (
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Insert initial row if table is empty
+INSERT INTO loops_integration (api_key, template_id, is_active)
+SELECT '', '', false
+WHERE NOT EXISTS (SELECT 1 FROM loops_integration);
+
 -- Add RLS policies
 ALTER TABLE loops_integration ENABLE ROW LEVEL SECURITY;
 

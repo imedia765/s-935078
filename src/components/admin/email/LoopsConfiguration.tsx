@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,11 +21,24 @@ export function LoopsConfiguration() {
       const { data, error } = await supabase
         .from('loops_integration')
         .select('*')
-        .limit(1)
-        .single();
+        .limit(1);
 
       if (error) throw error;
-      return data;
+
+      if (!data || data.length === 0) {
+        const { data: newConfig, error: insertError } = await supabase
+          .from('loops_integration')
+          .insert([
+            { api_key: '', template_id: '', is_active: false }
+          ])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        return newConfig;
+      }
+
+      return data[0];
     }
   });
 

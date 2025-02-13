@@ -124,7 +124,7 @@ export const useUserRoles = () => {
             note_text,
             note_type
           ),
-          payment_requests!payment_requests_member_id_fkey (
+          payment_requests!inner (
             status,
             amount,
             payment_type
