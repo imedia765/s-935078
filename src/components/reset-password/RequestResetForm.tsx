@@ -14,6 +14,11 @@ interface MagicLinkResponse {
   error?: string;
 }
 
+// Define the parameters type for the RPC function
+interface MagicLinkParams {
+  p_user_id: string;
+}
+
 export const RequestResetForm = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -52,7 +57,7 @@ export const RequestResetForm = () => {
       }
 
       // Generate magic link token with proper typing
-      const { data: tokenResponse, error: tokenError } = await supabase.rpc<MagicLinkResponse>(
+      const { data: tokenData, error: tokenError } = await supabase.rpc<MagicLinkResponse, MagicLinkParams>(
         'generate_magic_link',
         { p_user_id: member.auth_user_id }
       );
@@ -62,6 +67,7 @@ export const RequestResetForm = () => {
         throw new Error(tokenError.message || 'Failed to generate reset token');
       }
 
+      const tokenResponse = tokenData as MagicLinkResponse;
       if (!tokenResponse?.success) {
         console.error('Token generation failed:', tokenResponse);
         throw new Error(tokenResponse?.error || 'Failed to generate reset token');
@@ -83,7 +89,7 @@ export const RequestResetForm = () => {
           body: {
             email: member.email,
             memberNumber: memberNumber,
-            token: token // Send just the token string
+            token: token
           },
         }
       );
