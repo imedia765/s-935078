@@ -13,6 +13,7 @@ interface TemplateIds {
   payment_confirmation: string;
   payment_reminder: string;
   late_payment: string;
+  password_reset: string;
 }
 
 interface UpdateConfigParams {
@@ -29,6 +30,7 @@ export function LoopsConfiguration() {
     payment_confirmation: "",
     payment_reminder: "",
     late_payment: "",
+    password_reset: "",
   });
 
   const { data: loopsConfig, isLoading } = useQuery({
@@ -45,7 +47,14 @@ export function LoopsConfiguration() {
         const { data: newConfig, error: insertError } = await supabase
           .from('loops_integration')
           .insert([
-            { api_key: '', payment_confirmation_template_id: '', payment_reminder_template_id: '', late_payment_template_id: '', is_active: false }
+            { 
+              api_key: '', 
+              payment_confirmation_template_id: '', 
+              payment_reminder_template_id: '', 
+              late_payment_template_id: '', 
+              password_reset_template_id: 'cm73c7rki01n6i16s6vle80mc',
+              is_active: false 
+            }
           ])
           .select()
           .single();
@@ -91,6 +100,7 @@ export function LoopsConfiguration() {
           payment_confirmation_template_id: templateIds.payment_confirmation,
           payment_reminder_template_id: templateIds.payment_reminder,
           late_payment_template_id: templateIds.late_payment,
+          password_reset_template_id: templateIds.password_reset,
           updated_at: new Date().toISOString()
         })
         .eq('id', loopsConfig?.id);
@@ -157,6 +167,15 @@ export function LoopsConfiguration() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="password-reset-template">Password Reset Template ID</Label>
+              <Input
+                id="password-reset-template"
+                value={templateIds.password_reset}
+                onChange={(e) => setTemplateIds(prev => ({ ...prev, password_reset: e.target.value }))}
+                placeholder="Enter Password Reset template ID"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="payment-confirmation-template">Payment Confirmation Template ID</Label>
               <Input
                 id="payment-confirmation-template"
@@ -195,6 +214,10 @@ export function LoopsConfiguration() {
               <div className="mt-1">•••••••••••••••••</div>
             </div>
             <div>
+              <Label>Password Reset Template ID</Label>
+              <div className="mt-1">{loopsConfig?.password_reset_template_id || "Not set"}</div>
+            </div>
+            <div>
               <Label>Payment Confirmation Template ID</Label>
               <div className="mt-1">{loopsConfig?.payment_confirmation_template_id || "Not set"}</div>
             </div>
@@ -211,7 +234,8 @@ export function LoopsConfiguration() {
               setTemplateIds({
                 payment_confirmation: loopsConfig?.payment_confirmation_template_id || "",
                 payment_reminder: loopsConfig?.payment_reminder_template_id || "",
-                late_payment: loopsConfig?.late_payment_template_id || ""
+                late_payment: loopsConfig?.late_payment_template_id || "",
+                password_reset: loopsConfig?.password_reset_template_id || "",
               });
               setIsEditing(true);
             }}>
