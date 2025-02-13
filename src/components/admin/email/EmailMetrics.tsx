@@ -7,8 +7,18 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export function EmailMetrics() {
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ['email-metrics'],
+    queryKey: ['loops-metrics'],
     queryFn: async () => {
+      const { data: loopsConfig } = await supabase
+        .from('loops_integration')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (!loopsConfig?.is_active) {
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('email_metrics')
         .select('*')
