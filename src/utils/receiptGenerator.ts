@@ -2,7 +2,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
-import { Payment } from '@/components/admin/financial/types';
+import { Payment, ReceiptMetadata } from '@/components/admin/financial/types';
 import { format } from 'date-fns';
 
 async function generateReceiptNumber(): Promise<string> {
@@ -80,19 +80,19 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
     .getPublicUrl(fileName);
 
   // Update payment record with receipt metadata
+  const metadata: ReceiptMetadata = {
+    receipt_number: receiptNumber,
+    receipt_url: publicUrl,
+    generated_at: new Date().toISOString(),
+    generated_by: user.id,
+    payment_number: payment.payment_number,
+    member_name: payment.members?.full_name,
+    amount: payment.amount
+  };
+
   const { error: updateError } = await supabase
     .from('payment_requests')
-    .update({
-      receipt_metadata: {
-        receipt_number: receiptNumber,
-        receipt_url: publicUrl,
-        generated_at: new Date().toISOString(),
-        generated_by: user.id,
-        payment_number: payment.payment_number,
-        member_name: payment.members?.full_name,
-        amount: payment.amount
-      }
-    })
+    .update({ receipt_metadata: metadata })
     .eq('id', payment.id);
 
   if (updateError) throw updateError;
@@ -108,5 +108,8 @@ export async function getPaymentReceipt(paymentId: string): Promise<string | nul
     .maybeSingle();
 
   if (error) throw error;
-  return data?.receipt_metadata?.receipt_url || null;
+  if (!data?.receipt_metadata) return null;
+  
+  const metadata = data.receipt_metadata as ReceiptMetadata;
+  return metadata.receipt_url;
 }

@@ -1,3 +1,4 @@
+
 export interface PaymentStats {
   totalPayments: number;
   totalAmount: number;
@@ -29,6 +30,16 @@ export interface Receipt {
   updated_at?: string;
 }
 
+export interface ReceiptMetadata {
+  receipt_number: string;
+  receipt_url: string;
+  generated_at: string;
+  generated_by: string;
+  payment_number: string;
+  member_name?: string;
+  amount: number;
+}
+
 export interface Payment {
   id: string;
   amount: number;
@@ -46,7 +57,7 @@ export interface Payment {
   approved_by?: string;
   due_date?: string;
   has_supporting_docs?: boolean;
-  receipt_metadata?: Record<string, any>;
+  receipt_metadata?: ReceiptMetadata;
   receipts?: Receipt[];
   members?: {
     full_name: string;
