@@ -41,18 +41,23 @@ export async function generateReceipt(payment: Payment): Promise<Blob> {
   doc.text(`Receipt #: ${receiptNumber}`, 20, startY);
   doc.text(`Date: ${format(new Date(payment.created_at), 'dd/MM/yyyy')}`, pageWidth - 20, startY, { align: 'right' });
   
+  // Format payment method safely
+  const formattedPaymentMethod = payment.payment_method 
+    ? payment.payment_method.toString().replace(/_/g, ' ').toUpperCase()
+    : 'N/A';
+
   // Add payment details table
   autoTable(doc, {
     startY: startY + 10,
     margin: { left: 20, right: 20 },
     head: [['Details', 'Value']],
     body: [
-      ['Payment Number', payment.payment_number],
+      ['Payment Number', payment.payment_number || 'N/A'],
       ['Member Name', payment.members?.full_name || 'N/A'],
-      ['Amount', `£${payment.amount.toFixed(2)}`],
-      ['Payment Method', payment.payment_method.replace('_', ' ').toUpperCase()],
-      ['Payment Type', payment.payment_type],
-      ['Status', payment.status.toUpperCase()],
+      ['Amount', payment.amount ? `£${payment.amount.toFixed(2)}` : 'N/A'],
+      ['Payment Method', formattedPaymentMethod],
+      ['Payment Type', payment.payment_type || 'N/A'],
+      ['Status', payment.status ? payment.status.toUpperCase() : 'N/A'],
       ['Collector', payment.members_collectors?.name || 'N/A']
     ],
     theme: 'grid',
