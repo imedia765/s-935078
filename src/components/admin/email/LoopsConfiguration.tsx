@@ -9,12 +9,23 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
+interface TemplateIds {
+  payment_confirmation: string;
+  payment_reminder: string;
+  late_payment: string;
+}
+
+interface UpdateConfigParams {
+  apiKey: string;
+  templateIds: TemplateIds;
+}
+
 export function LoopsConfiguration() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [apiKey, setApiKey] = useState("");
-  const [templateIds, setTemplateIds] = useState({
+  const [templateIds, setTemplateIds] = useState<TemplateIds>({
     payment_confirmation: "",
     payment_reminder: "",
     late_payment: "",
@@ -72,7 +83,7 @@ export function LoopsConfiguration() {
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: async ({ apiKey, templateIds }: { apiKey: string; templateIds: typeof templateIds }) => {
+    mutationFn: async ({ apiKey, templateIds }: UpdateConfigParams) => {
       const { error } = await supabase
         .from('loops_integration')
         .update({
