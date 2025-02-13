@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.8.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,44 +13,48 @@ interface RequestBody {
   token: string;
 }
 
-async function sendEmailWithRetry(client: SmtpClient, options: any, maxRetries = 3): Promise<void> {
+async function createSmtpClient(): Promise<SmtpClient> {
+  const client = new SmtpClient();
+  
+  await client.connectTLS({
+    hostname: "smtp.gmail.com",
+    port: 587,
+    username: "burtonpwa@gmail.com",
+    password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
+    debug: true, // Enable debug mode for better error logging
+  });
+  
+  return client;
+}
+
+async function sendEmailWithRetry(options: any, maxRetries = 3): Promise<void> {
   let lastError: Error | null = null;
-  let isConnected = false;
+  let client: SmtpClient | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Ensure connection is established before each attempt
-      if (!isConnected) {
-        console.log(`[${new Date().toISOString()}] Establishing SMTP connection...`);
-        await client.connectTLS({
-          hostname: "smtp.gmail.com",
-          port: 587,
-          username: "burtonpwa@gmail.com",
-          password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
-          timeout: 15000 // Increased timeout to 15 seconds
-        });
-        isConnected = true;
-        console.log(`[${new Date().toISOString()}] SMTP connection established`);
-      }
-
-      console.log(`[${new Date().toISOString()}] Email send attempt ${attempt}/${maxRetries}`);
+      console.log(`[${new Date().toISOString()}] Creating new SMTP client for attempt ${attempt}`);
+      client = await createSmtpClient();
+      
+      console.log(`[${new Date().toISOString()}] Attempting to send email (attempt ${attempt})`);
       await client.send(options);
+      
       console.log(`[${new Date().toISOString()}] Email sent successfully on attempt ${attempt}`);
       return;
     } catch (error) {
       lastError = error;
-      console.error(`[${new Date().toISOString()}] Attempt ${attempt} failed:`, error);
+      console.error(`[${new Date().toISOString()}] Error on attempt ${attempt}:`, error);
       
-      // Reset connection state on error
-      isConnected = false;
-      try {
-        await client.close();
-      } catch (closeError) {
-        console.error(`[${new Date().toISOString()}] Error closing connection:`, closeError);
+      if (client) {
+        try {
+          await client.close();
+        } catch (closeError) {
+          console.error(`[${new Date().toISOString()}] Error closing SMTP client:`, closeError);
+        }
       }
       
       if (attempt < maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000); // Increased max backoff to 8s
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
         console.log(`[${new Date().toISOString()}] Waiting ${delay}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
@@ -65,8 +69,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const client = new SmtpClient();
-  
   try {
     const requestData = await req.json() as RequestBody;
     const { email, memberNumber, token } = requestData;
@@ -100,7 +102,7 @@ serve(async (req) => {
       </div>
     `;
 
-    await sendEmailWithRetry(client, {
+    await sendEmailWithRetry({
       from: "PWA Burton <burtonpwa@gmail.com>",
       to: email,
       subject: "Reset Your Password - PWA Burton",
@@ -142,12 +144,5 @@ serve(async (req) => {
         status: 500
       }
     );
-  } finally {
-    try {
-      await client.close();
-      console.log(`[${new Date().toISOString()}] SMTP connection closed`);
-    } catch (error) {
-      console.error(`[${new Date().toISOString()}] Error closing SMTP connection:`, error);
-    }
   }
 });
