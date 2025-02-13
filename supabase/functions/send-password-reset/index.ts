@@ -19,6 +19,7 @@ const supabaseAdmin = createClient(
 );
 
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,56 +28,60 @@ serve(async (req) => {
     const requestData = await req.json() as RequestBody;
     const { email, memberNumber, token } = requestData;
 
+    // Validate inputs
+    if (!email || !memberNumber || !token) {
+      throw new Error('Missing required fields');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error('Invalid email format');
+    }
+
     console.log(`[${new Date().toISOString()}] Processing reset request for ${memberNumber}`);
     console.log(`[${new Date().toISOString()}] Target email: ${email}`);
 
     const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
 
-    const { error } = await supabaseAdmin.auth.admin.sendRawEmail({
-      to: email,
-      subject: "Reset Your Password - PWA Burton",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
-          <h2 style="color: #333; text-align: center;">Password Reset Request</h2>
-          <div style="background-color: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <p>Hello Member ${memberNumber},</p>
-            <p>A password reset has been requested for your account. Click the link below to reset your password:</p>
-            <p style="text-align: center;">
-              <a href="${resetLink}" 
-                 style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
-                Reset Password
-              </a>
-            </p>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="background-color: #f5f5f5; padding: 10px; border-radius: 3px; word-break: break-all;">
-              ${resetLink}
-            </p>
-            <p><strong>Important:</strong> This link will expire in 1 hour.</p>
-            <p>If you didn't request this password reset, please ignore this email.</p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-            <p style="color: #666; font-size: 14px;">Best regards,<br>PWA Burton Team</p>
-          </div>
-        </div>
-      `,
-      text: `
-        Hello Member ${memberNumber},
-        
-        A password reset has been requested for your account. Click the link below to reset your password:
-        
-        ${resetLink}
-        
-        This link will expire in 1 hour.
-        
-        If you didn't request this password reset, please ignore this email.
-        
-        Best regards,
-        PWA Burton Team
-      `
+    // First, check if the template exists
+    const { data: template, error: templateError } = await supabaseAdmin
+      .from('email_templates')
+      .select('*')
+      .eq('name', 'Password Reset')
+      .single();
+
+    if (templateError) {
+      console.error(`[${new Date().toISOString()}] Template fetch error:`, templateError);
+      throw new Error('Failed to fetch email template');
+    }
+
+    // Send email using template if available, otherwise use fallback
+    const { error } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      email_confirm: true,
+      user_metadata: {
+        member_number: memberNumber
+      },
+      password: token // Temporary password that will be changed
     });
 
     if (error) {
-      console.error(`[${new Date().toISOString()}] Supabase email error:`, error);
-      throw error;
+      console.error(`[${new Date().toISOString()}] User creation error:`, error);
+      
+      // If user exists, send password reset
+      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: email,
+        options: {
+          redirectTo: resetLink
+        }
+      });
+
+      if (resetError) {
+        console.error(`[${new Date().toISOString()}] Password reset error:`, resetError);
+        throw resetError;
+      }
     }
     
     return new Response(
