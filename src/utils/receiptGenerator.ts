@@ -79,8 +79,8 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
     .from('receipts')
     .getPublicUrl(fileName);
 
-  // Update payment record with receipt metadata
-  const metadata: ReceiptMetadata = {
+  // Create metadata object as a plain JSON object
+  const metadata = {
     receipt_number: receiptNumber,
     receipt_url: publicUrl,
     generated_at: new Date().toISOString(),
@@ -88,7 +88,7 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
     payment_number: payment.payment_number,
     member_name: payment.members?.full_name,
     amount: payment.amount
-  };
+  } as const;
 
   const { error: updateError } = await supabase
     .from('payment_requests')
@@ -110,6 +110,7 @@ export async function getPaymentReceipt(paymentId: string): Promise<string | nul
   if (error) throw error;
   if (!data?.receipt_metadata) return null;
   
-  const metadata = data.receipt_metadata as ReceiptMetadata;
+  // First cast to unknown, then to ReceiptMetadata to safely handle the type conversion
+  const metadata = data.receipt_metadata as unknown as ReceiptMetadata;
   return metadata.receipt_url;
 }
