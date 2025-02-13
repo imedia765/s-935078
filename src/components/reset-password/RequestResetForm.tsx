@@ -67,7 +67,8 @@ export const RequestResetForm = () => {
         throw new Error(tokenError.message || 'Failed to generate reset token');
       }
 
-      const tokenResponse = tokenData as MagicLinkResponse;
+      // First cast to unknown, then to our interface type
+      const tokenResponse = (tokenData as unknown) as MagicLinkResponse;
       if (!tokenResponse?.success) {
         console.error('Token generation failed:', tokenResponse);
         throw new Error(tokenResponse?.error || 'Failed to generate reset token');
