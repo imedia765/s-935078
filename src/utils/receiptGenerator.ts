@@ -85,7 +85,7 @@ export async function generateReceipt(payment: Payment): Promise<Blob> {
   
   // Save the receipt and get the URL
   const receiptBlob = doc.output('blob');
-  const receiptUrl = await saveReceiptToStorage(payment, receiptBlob);
+  await saveReceiptToStorage(payment, receiptBlob);
   
   return receiptBlob;
 }
@@ -98,41 +98,53 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
   // Generate unique receipt number
   const receiptNumber = await generateReceiptNumber();
   
-  // Save to storage
-  const fileName = `${payment.payment_number}/${receiptNumber}.pdf`;
-  const { data: storageData, error: storageError } = await supabase.storage
-    .from('receipts')
-    .upload(fileName, receiptBlob, {
-      contentType: 'application/pdf',
-      upsert: true
-    });
-    
-  if (storageError) throw storageError;
+  try {
+    // Save to storage
+    const fileName = `${payment.payment_number}/${receiptNumber}.pdf`;
+    const { data: storageData, error: storageError } = await supabase.storage
+      .from('receipts')
+      .upload(fileName, receiptBlob, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+      
+    if (storageError) {
+      console.error('Storage error:', storageError);
+      throw storageError;
+    }
 
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('receipts')
-    .getPublicUrl(fileName);
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(fileName);
 
-  // Create metadata object as a plain JSON object
-  const metadata = {
-    receipt_number: receiptNumber,
-    receipt_url: publicUrl,
-    generated_at: new Date().toISOString(),
-    generated_by: user.id,
-    payment_number: payment.payment_number,
-    member_name: payment.members?.full_name,
-    amount: payment.amount
-  } as const;
+    // Create metadata object
+    const metadata: ReceiptMetadata = {
+      receipt_number: receiptNumber,
+      receipt_url: publicUrl,
+      generated_at: new Date().toISOString(),
+      generated_by: user.id,
+      payment_number: payment.payment_number,
+      member_name: payment.members?.full_name,
+      amount: payment.amount
+    };
 
-  const { error: updateError } = await supabase
-    .from('payment_requests')
-    .update({ receipt_metadata: metadata })
-    .eq('id', payment.id);
+    // Update payment record with metadata
+    const { error: updateError } = await supabase
+      .from('payment_requests')
+      .update({ receipt_metadata: metadata })
+      .eq('id', payment.id);
 
-  if (updateError) throw updateError;
-    
-  return publicUrl;
+    if (updateError) {
+      console.error('Metadata update error:', updateError);
+      throw updateError;
+    }
+      
+    return publicUrl;
+  } catch (error) {
+    console.error('Receipt storage error:', error);
+    throw error;
+  }
 }
 
 export async function getPaymentReceipt(paymentId: string): Promise<string | null> {
@@ -145,7 +157,6 @@ export async function getPaymentReceipt(paymentId: string): Promise<string | nul
   if (error) throw error;
   if (!data?.receipt_metadata) return null;
   
-  // First cast to unknown, then to ReceiptMetadata to safely handle the type conversion
   const metadata = data.receipt_metadata as unknown as ReceiptMetadata;
   return metadata.receipt_url;
 }
