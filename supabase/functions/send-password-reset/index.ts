@@ -44,18 +44,6 @@ serve(async (req) => {
 
     const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
 
-    // First, check if the template exists
-    const { data: template, error: templateError } = await supabaseAdmin
-      .from('email_templates')
-      .select('*')
-      .eq('name', 'Password Reset')
-      .single();
-
-    if (templateError) {
-      console.error(`[${new Date().toISOString()}] Template fetch error:`, templateError);
-      throw new Error('Failed to fetch email template');
-    }
-
     // Send email using template if available, otherwise use fallback
     const { error } = await supabaseAdmin.auth.admin.createUser({
       email: email,
