@@ -55,31 +55,36 @@ serve(async (req) => {
       throw new Error('Loops configuration is incomplete');
     }
 
-    // Use Loops API to send email
-    const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${loopsConfig.api_key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        transactionalId: loopsConfig.template_id,
-        email: email,
-        dataVariables: {
-          magic_link_url: resetLink,
-          member_number: memberNumber
-        }
-      })
-    });
+    try {
+      // Use Loops API to send email
+      const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${loopsConfig.api_key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          transactionalId: loopsConfig.template_id,
+          email: email,
+          dataVariables: {
+            magic_link_url: resetLink,
+            member_number: memberNumber
+          }
+        })
+      });
 
-    if (!loopsResponse.ok) {
-      const errorData = await loopsResponse.json();
-      console.error('Loops API error:', errorData);
-      throw new Error('Failed to send email through Loops');
+      if (!loopsResponse.ok) {
+        const errorData = await loopsResponse.text();
+        console.error('Loops API error response:', errorData);
+        throw new Error(`Loops API error: ${errorData}`);
+      }
+
+      const loopsResult = await loopsResponse.json();
+      console.log('Loops email sent successfully:', loopsResult);
+    } catch (loopsError: any) {
+      console.error('Error calling Loops API:', loopsError);
+      throw new Error(loopsError.message || 'Failed to send email through Loops');
     }
-
-    const loopsResult = await loopsResponse.json();
-    console.log('Loops email sent successfully:', loopsResult);
     
     return new Response(
       JSON.stringify({ 
