@@ -51,7 +51,7 @@ serve(async (req) => {
       throw new Error('Failed to get Loops configuration');
     }
 
-    if (!loopsConfig.api_key || !loopsConfig.password_reset_template_id) {
+    if (!loopsConfig?.api_key || !loopsConfig?.password_reset_template_id) {
       console.error('Loops configuration missing:', { 
         hasApiKey: !!loopsConfig.api_key, 
         hasTemplateId: !!loopsConfig.password_reset_template_id 
@@ -59,36 +59,43 @@ serve(async (req) => {
       throw new Error('Loops configuration is incomplete');
     }
 
-    try {
-      // Use Loops API to send email
-      const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${loopsConfig.api_key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          transactionalId: loopsConfig.password_reset_template_id,
-          email: email,
-          dataVariables: {
-            magic_link_url: resetLink,
-            member_number: memberNumber
-          }
-        })
+    console.log('Making request to Loops API with configuration:', {
+      templateId: loopsConfig.password_reset_template_id,
+      hasApiKey: !!loopsConfig.api_key,
+      email,
+      memberNumber,
+      resetLink
+    });
+
+    // Use Loops API to send email
+    const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${loopsConfig.api_key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        transactionalId: loopsConfig.password_reset_template_id,
+        email: email,
+        dataVariables: {
+          magic_link_url: resetLink,
+          member_number: memberNumber
+        }
+      })
+    });
+
+    if (!loopsResponse.ok) {
+      const errorText = await loopsResponse.text();
+      console.error('Loops API error response:', {
+        status: loopsResponse.status,
+        statusText: loopsResponse.statusText,
+        errorText
       });
-
-      if (!loopsResponse.ok) {
-        const errorData = await loopsResponse.text();
-        console.error('Loops API error response:', errorData);
-        throw new Error(`Loops API error: ${errorData}`);
-      }
-
-      const loopsResult = await loopsResponse.json();
-      console.log('Loops email sent successfully:', loopsResult);
-    } catch (loopsError: any) {
-      console.error('Error calling Loops API:', loopsError);
-      throw new Error(loopsError.message || 'Failed to send email through Loops');
+      throw new Error(`Loops API error: ${errorText}`);
     }
+
+    const loopsResult = await loopsResponse.json();
+    console.log('Loops email sent successfully:', loopsResult);
     
     return new Response(
       JSON.stringify({ 
