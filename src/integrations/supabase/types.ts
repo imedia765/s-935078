@@ -2966,6 +2966,16 @@ export type Database = {
           source: string
         }[]
       }
+      check_loops_config: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          has_api_key: boolean
+          api_key_length: number
+          template_id: string
+          is_active: boolean
+          last_updated: string
+        }[]
+      }
       check_member_numbers: {
         Args: Record<PropertyKey, never>
         Returns: {
