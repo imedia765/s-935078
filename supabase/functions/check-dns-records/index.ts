@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
-import { resolveMx, resolveTxt } from "https://deno.land/std@0.204.0/node/dns.ts";
+import { resolveMx, resolveTxt } from "https://deno.land/std@0.168.0/node/dns.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
