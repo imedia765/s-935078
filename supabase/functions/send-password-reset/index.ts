@@ -1,6 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,79 +25,55 @@ serve(async (req) => {
     const requestData = await req.json() as RequestBody;
     const { email, memberNumber, token } = requestData;
 
-    console.log(`[${Date.now()}] Starting password reset email process for ${memberNumber}`);
-    console.log(`[${Date.now()}] Target email: ${email}`);
+    console.log(`[${new Date().toISOString()}] Starting password reset email process for ${memberNumber}`);
+    console.log(`[${new Date().toISOString()}] Target email: ${email}`);
 
     // Always use production URL for reset links
     const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
     
-    const client = new SmtpClient();
-    console.log(`[${Date.now()}] SMTP client initialized`);
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Password Reset Request</h2>
+        <p>Hello Member ${memberNumber},</p>
+        <p>Click the link below to reset your password:</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>If you didn't request this, please ignore this email.</p>
+        <p>This link will expire in 1 hour.</p>
+        <p>Best regards,<br>PWA Burton Team</p>
+      </div>
+    `;
 
-    try {
-      console.log(`[${Date.now()}] Connecting to SMTP server...`);
-      await client.connectTLS({
-        hostname: "smtp.gmail.com",
-        port: 587,
-        username: "burtonpwa@gmail.com",
-        password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
-        timeout: 5000 // 5 second timeout
-      });
-      console.log(`[${Date.now()}] SMTP connection established successfully`);
+    const { data, error } = await resend.emails.send({
+      from: "PWA Burton <onboarding@resend.dev>",
+      to: email,
+      subject: "Reset Your Password",
+      html: emailContent,
+    });
 
-      const emailContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Password Reset Request</h2>
-          <p>Hello Member ${memberNumber},</p>
-          <p>Click the link below to reset your password:</p>
-          <p><a href="${resetLink}">${resetLink}</a></p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <p>This link will expire in 1 hour.</p>
-          <p>Best regards,<br>PWA Burton Team</p>
-        </div>
-      `;
-
-      await client.send({
-        from: "PWA Burton <burtonpwa@gmail.com>",
-        to: email,
-        subject: "Reset Your Password",
-        content: "Please enable HTML to view this email",
-        html: emailContent,
-      });
-      
-      console.log(`[${Date.now()}] Email sent successfully`);
-      
-      return new Response(
-        JSON.stringify({ 
-          message: "Password reset email sent",
-          timing: {
-            timestamp: new Date().toISOString()
-          }
-        }),
-        { 
-          headers: { 
-            ...corsHeaders,
-            "Content-Type": "application/json" 
-          } 
-        }
-      );
-
-    } catch (smtpError) {
-      console.error(`[${Date.now()}] SMTP error:`, smtpError);
-      throw new Error(`SMTP error: ${smtpError.message}`);
-    } finally {
-      if (client) {
-        try {
-          console.log(`[${Date.now()}] Closing SMTP connection...`);
-          await client.close();
-          console.log(`[${Date.now()}] SMTP connection closed successfully`);
-        } catch (closeError) {
-          console.error(`[${Date.now()}] Error closing SMTP connection:`, closeError);
-        }
-      }
+    if (error) {
+      console.error(`[${new Date().toISOString()}] Email sending error:`, error);
+      throw error;
     }
-  } catch (error) {
-    console.error(`[${Date.now()}] Error:`, error);
+
+    console.log(`[${new Date().toISOString()}] Email sent successfully:`, data);
+
+    return new Response(
+      JSON.stringify({ 
+        message: "Password reset email sent",
+        timing: {
+          timestamp: new Date().toISOString()
+        }
+      }),
+      { 
+        headers: { 
+          ...corsHeaders,
+          "Content-Type": "application/json" 
+        } 
+      }
+    );
+
+  } catch (error: any) {
+    console.error(`[${new Date().toISOString()}] Error:`, error);
     
     return new Response(
       JSON.stringify({ 
