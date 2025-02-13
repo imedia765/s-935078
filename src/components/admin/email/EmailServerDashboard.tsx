@@ -9,6 +9,7 @@ import { EmailQueueStatus } from "./EmailQueueStatus";
 import { EmailMetrics } from "./EmailMetrics";
 import { DnsMonitoring } from "./DnsMonitoring";
 import { SmtpHealthStatus } from "./SmtpHealthStatus";
+import { LoopsConfiguration } from "./LoopsConfiguration";
 
 export function EmailServerDashboard() {
   const { data: emailStats, isLoading } = useQuery({
@@ -64,6 +65,7 @@ export function EmailServerDashboard() {
           <TabsTrigger value="templates">Email Templates</TabsTrigger>
           <TabsTrigger value="config">SMTP Config</TabsTrigger>
           <TabsTrigger value="queue">Queue Status</TabsTrigger>
+          <TabsTrigger value="loops">Loops Integration</TabsTrigger>
         </TabsList>
 
         <TabsContent value="metrics">
@@ -88,6 +90,10 @@ export function EmailServerDashboard() {
 
         <TabsContent value="queue">
           <EmailQueueStatus />
+        </TabsContent>
+
+        <TabsContent value="loops">
+          <LoopsConfiguration />
         </TabsContent>
       </Tabs>
     </Card>
