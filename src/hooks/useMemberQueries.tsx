@@ -122,6 +122,12 @@ export function useMemberQueries(
             active,
             prefix,
             member_number
+          ),
+          payment_requests!payment_requests_member_number_fkey (
+            id,
+            status,
+            amount,
+            payment_type
           )
         `, { count: 'exact' });
 

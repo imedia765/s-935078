@@ -3061,7 +3061,6 @@ export type Database = {
         Returns: {
           recorded_at: string
           severity: string
-          message: string
           source: string
         }[]
       }
