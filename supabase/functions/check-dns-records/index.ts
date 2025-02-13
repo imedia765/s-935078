@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
-import { lookup } from "https://deno.land/x/dns@v2.0.0/mod.ts";
+import { resolveMx, resolveTxt } from "https://deno.land/std@0.204.0/node/dns.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +19,7 @@ async function checkDnsRecord(domain: string, recordType: string): Promise<DnsCh
   try {
     switch (recordType) {
       case 'MX': {
-        const records = await lookup(domain, 'MX');
+        const records = await resolveMx(domain);
         return {
           recordType: 'MX',
           status: records.length > 0 ? 'success' : 'warning',
@@ -27,8 +27,8 @@ async function checkDnsRecord(domain: string, recordType: string): Promise<DnsCh
         };
       }
       case 'SPF': {
-        const records = await lookup(domain, 'TXT');
-        const spfRecord = records.find((r: string) => r.startsWith('v=spf1'));
+        const records = await resolveTxt(domain);
+        const spfRecord = records.flat().find(r => r.startsWith('v=spf1'));
         return {
           recordType: 'SPF',
           status: spfRecord ? 'success' : 'warning',
@@ -37,21 +37,37 @@ async function checkDnsRecord(domain: string, recordType: string): Promise<DnsCh
       }
       case 'DKIM': {
         // Default selector 'default'
-        const records = await lookup(`default._domainkey.${domain}`, 'TXT');
-        return {
-          recordType: 'DKIM',
-          status: records.length > 0 ? 'success' : 'warning',
-          value: records[0] || 'No DKIM record found'
-        };
+        try {
+          const records = await resolveTxt(`default._domainkey.${domain}`);
+          return {
+            recordType: 'DKIM',
+            status: records.length > 0 ? 'success' : 'warning',
+            value: records.flat()[0] || 'No DKIM record found'
+          };
+        } catch {
+          return {
+            recordType: 'DKIM',
+            status: 'warning',
+            value: 'No DKIM record found'
+          };
+        }
       }
       case 'DMARC': {
-        const records = await lookup(`_dmarc.${domain}`, 'TXT');
-        const dmarcRecord = records.find((r: string) => r.startsWith('v=DMARC1'));
-        return {
-          recordType: 'DMARC',
-          status: dmarcRecord ? 'success' : 'warning',
-          value: dmarcRecord || 'No DMARC record found'
-        };
+        try {
+          const records = await resolveTxt(`_dmarc.${domain}`);
+          const dmarcRecord = records.flat().find(r => r.startsWith('v=DMARC1'));
+          return {
+            recordType: 'DMARC',
+            status: dmarcRecord ? 'success' : 'warning',
+            value: dmarcRecord || 'No DMARC record found'
+          };
+        } catch {
+          return {
+            recordType: 'DMARC',
+            status: 'warning',
+            value: 'No DMARC record found'
+          };
+        }
       }
       default:
         throw new Error(`Unsupported record type: ${recordType}`);
