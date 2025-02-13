@@ -381,42 +381,6 @@ export type Database = {
         }
         Relationships: []
       }
-      dns_check_results: {
-        Row: {
-          check_timestamp: string
-          created_at: string
-          domain: string
-          error_message: string | null
-          id: string
-          last_success_at: string | null
-          record_type: Database["public"]["Enums"]["dns_record_type"]
-          status: Database["public"]["Enums"]["dns_check_status"]
-          value: string | null
-        }
-        Insert: {
-          check_timestamp?: string
-          created_at?: string
-          domain: string
-          error_message?: string | null
-          id?: string
-          last_success_at?: string | null
-          record_type: Database["public"]["Enums"]["dns_record_type"]
-          status: Database["public"]["Enums"]["dns_check_status"]
-          value?: string | null
-        }
-        Update: {
-          check_timestamp?: string
-          created_at?: string
-          domain?: string
-          error_message?: string | null
-          id?: string
-          last_success_at?: string | null
-          record_type?: Database["public"]["Enums"]["dns_record_type"]
-          status?: Database["public"]["Enums"]["dns_check_status"]
-          value?: string | null
-        }
-        Relationships: []
-      }
       documentation: {
         Row: {
           created_at: string
@@ -3545,8 +3509,6 @@ export type Database = {
         | "completed"
         | "failed"
         | "created"
-      dns_check_status: "success" | "warning" | "error"
-      dns_record_type: "MX" | "SPF" | "DKIM" | "DMARC"
       email_priority: "critical" | "high" | "normal" | "low" | "bulk"
       email_status: "pending" | "sent" | "delivered" | "failed" | "bounced"
       email_template_category: "payment" | "notification" | "system" | "custom"
