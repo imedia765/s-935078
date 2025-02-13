@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import { SmtpClient } from "https://deno.land/x/smtp2@v0.1.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,55 +13,95 @@ interface RequestBody {
   token: string;
 }
 
+interface SmtpError extends Error {
+  code?: string;
+  command?: string;
+}
+
+class EmailError extends Error {
+  constructor(message: string, public cause?: Error) {
+    super(message);
+    this.name = 'EmailError';
+  }
+}
+
 async function createSmtpClient(): Promise<SmtpClient> {
-  const client = new SmtpClient();
-  
-  await client.connectTLS({
-    hostname: "smtp.gmail.com",
-    port: 587,
-    username: "burtonpwa@gmail.com",
-    password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
-    debug: true, // Enable debug mode for better error logging
+  const client = new SmtpClient({
+    connection: {
+      hostname: "smtp.gmail.com",
+      port: 465, // Using SSL port instead of TLS
+      tls: true,
+      auth: {
+        username: "burtonpwa@gmail.com",
+        password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
+      }
+    },
+    debug: {
+      logger: console.log,
+      network: true, // Enable network level logging
+    },
   });
+
+  console.log(`[${new Date().toISOString()}] Establishing SMTP connection...`);
+  await client.connect();
+  console.log(`[${new Date().toISOString()}] SMTP connection established`);
   
   return client;
 }
 
 async function sendEmailWithRetry(options: any, maxRetries = 3): Promise<void> {
-  let lastError: Error | null = null;
+  let lastError: SmtpError | null = null;
   let client: SmtpClient | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`[${new Date().toISOString()}] Creating new SMTP client for attempt ${attempt}`);
-      client = await createSmtpClient();
+      console.log(`[${new Date().toISOString()}] Email attempt ${attempt} of ${maxRetries}`);
       
-      console.log(`[${new Date().toISOString()}] Attempting to send email (attempt ${attempt})`);
+      if (!client || !client.isConnected) {
+        client = await createSmtpClient();
+      }
+      
+      console.log(`[${new Date().toISOString()}] Sending email...`);
       await client.send(options);
       
       console.log(`[${new Date().toISOString()}] Email sent successfully on attempt ${attempt}`);
       return;
     } catch (error) {
-      lastError = error;
-      console.error(`[${new Date().toISOString()}] Error on attempt ${attempt}:`, error);
+      lastError = error as SmtpError;
+      console.error(`[${new Date().toISOString()}] Error on attempt ${attempt}:`, {
+        name: error.name,
+        message: error.message,
+        code: (error as SmtpError).code,
+        command: (error as SmtpError).command,
+      });
       
       if (client) {
         try {
           await client.close();
         } catch (closeError) {
           console.error(`[${new Date().toISOString()}] Error closing SMTP client:`, closeError);
+        } finally {
+          client = null;
         }
       }
       
-      if (attempt < maxRetries) {
+      // Determine if we should retry based on error type
+      const shouldRetry = !lastError.code?.includes('5.') && attempt < maxRetries;
+      
+      if (shouldRetry) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
         console.log(`[${new Date().toISOString()}] Waiting ${delay}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        break;
       }
     }
   }
   
-  throw new Error(`Failed to send email after ${maxRetries} attempts. Last error: ${lastError?.message}`);
+  throw new EmailError(
+    `Failed to send email after ${maxRetries} attempts`,
+    lastError || undefined
+  );
 }
 
 serve(async (req) => {
