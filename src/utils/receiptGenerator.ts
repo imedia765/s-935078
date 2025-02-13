@@ -64,11 +64,15 @@ export async function generateReceipt(payment: Payment): Promise<Blob> {
 }
 
 export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob): Promise<string> {
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
   // Generate unique receipt number
   const receiptNumber = await generateReceiptNumber();
   
   // Save to storage
-  const fileName = `receipts/${receiptNumber}.pdf`;
+  const fileName = `${receiptNumber}.pdf`;
   const { data: storageData, error: storageError } = await supabase.storage
     .from('receipts')
     .upload(fileName, receiptBlob, {
@@ -90,7 +94,7 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
       payment_id: payment.id,
       receipt_number: receiptNumber,
       receipt_url: publicUrl,
-      generated_by: (await supabase.auth.getUser()).data.user?.id,
+      generated_by: user.id,
       metadata: {
         payment_number: payment.payment_number,
         member_name: payment.members?.full_name,
