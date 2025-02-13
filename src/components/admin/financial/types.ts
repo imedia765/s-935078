@@ -31,12 +31,13 @@ export interface Receipt {
 }
 
 export interface ReceiptMetadata {
+  [key: string]: string | number | null; // Add index signature for JSON compatibility
   receipt_number: string;
   receipt_url: string;
   generated_at: string;
   generated_by: string;
   payment_number: string;
-  member_name?: string;
+  member_name?: string | null;
   amount: number;
 }
 

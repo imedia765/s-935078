@@ -118,14 +118,14 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
       .from('receipts')
       .getPublicUrl(fileName);
 
-    // Create metadata object
-    const metadata: ReceiptMetadata = {
+    // Create metadata object that matches JSON structure
+    const metadata: Record<string, string | number | null> = {
       receipt_number: receiptNumber,
       receipt_url: publicUrl,
       generated_at: new Date().toISOString(),
       generated_by: user.id,
       payment_number: payment.payment_number,
-      member_name: payment.members?.full_name,
+      member_name: payment.members?.full_name || null,
       amount: payment.amount
     };
 
@@ -157,6 +157,6 @@ export async function getPaymentReceipt(paymentId: string): Promise<string | nul
   if (error) throw error;
   if (!data?.receipt_metadata) return null;
   
-  const metadata = data.receipt_metadata as unknown as ReceiptMetadata;
-  return metadata.receipt_url;
+  const metadata = data.receipt_metadata as Record<string, string | number | null>;
+  return metadata.receipt_url as string;
 }
