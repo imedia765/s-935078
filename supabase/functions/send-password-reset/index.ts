@@ -51,7 +51,11 @@ serve(async (req) => {
       throw new Error('Failed to get Loops configuration');
     }
 
-    if (!loopsConfig.api_key || !loopsConfig.template_id) {
+    if (!loopsConfig.api_key || !loopsConfig.password_reset_template_id) {
+      console.error('Loops configuration missing:', { 
+        hasApiKey: !!loopsConfig.api_key, 
+        hasTemplateId: !!loopsConfig.password_reset_template_id 
+      });
       throw new Error('Loops configuration is incomplete');
     }
 
@@ -64,7 +68,7 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          transactionalId: loopsConfig.template_id,
+          transactionalId: loopsConfig.password_reset_template_id,
           email: email,
           dataVariables: {
             magic_link_url: resetLink,
