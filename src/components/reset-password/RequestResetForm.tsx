@@ -6,6 +6,14 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Define the shape of the magic link response
+interface MagicLinkResponse {
+  success: boolean;
+  email?: string;
+  token?: string;
+  error?: string;
+}
+
 export const RequestResetForm = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -43,20 +51,26 @@ export const RequestResetForm = () => {
         return;
       }
 
-      // Generate magic link token
-      const { data: tokenResponse, error: tokenError } = await supabase.rpc(
+      // Generate magic link token with proper typing
+      const { data: tokenResponse, error: tokenError } = await supabase.rpc<MagicLinkResponse>(
         'generate_magic_link',
         { p_user_id: member.auth_user_id }
       );
 
-      if (tokenError || !tokenResponse?.success) {
-        console.error('Token generation error:', tokenError || tokenResponse);
-        throw new Error(tokenError?.message || 'Failed to generate reset token');
+      if (tokenError) {
+        console.error('Token generation error:', tokenError);
+        throw new Error(tokenError.message || 'Failed to generate reset token');
+      }
+
+      if (!tokenResponse?.success) {
+        console.error('Token generation failed:', tokenResponse);
+        throw new Error(tokenResponse?.error || 'Failed to generate reset token');
       }
 
       // Extract just the token value from the response
       const token = tokenResponse.token;
       if (!token) {
+        console.error('No token in response:', tokenResponse);
         throw new Error('No token received from generation');
       }
 
