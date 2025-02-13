@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
-import { resolve } from "https://deno.land/std@0.168.0/dns/mod.ts";
+import { lookup } from "https://deno.land/x/dns@v2.0.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +19,7 @@ async function checkDnsRecord(domain: string, recordType: string): Promise<DnsCh
   try {
     switch (recordType) {
       case 'MX': {
-        const records = await resolve(domain, 'MX');
+        const records = await lookup(domain, 'MX');
         return {
           recordType: 'MX',
           status: records.length > 0 ? 'success' : 'warning',
@@ -27,8 +27,8 @@ async function checkDnsRecord(domain: string, recordType: string): Promise<DnsCh
         };
       }
       case 'SPF': {
-        const records = await resolve(`${domain}`, 'TXT');
-        const spfRecord = records.find(r => r.startsWith('v=spf1'));
+        const records = await lookup(domain, 'TXT');
+        const spfRecord = records.find((r: string) => r.startsWith('v=spf1'));
         return {
           recordType: 'SPF',
           status: spfRecord ? 'success' : 'warning',
@@ -37,7 +37,7 @@ async function checkDnsRecord(domain: string, recordType: string): Promise<DnsCh
       }
       case 'DKIM': {
         // Default selector 'default'
-        const records = await resolve(`default._domainkey.${domain}`, 'TXT');
+        const records = await lookup(`default._domainkey.${domain}`, 'TXT');
         return {
           recordType: 'DKIM',
           status: records.length > 0 ? 'success' : 'warning',
@@ -45,8 +45,8 @@ async function checkDnsRecord(domain: string, recordType: string): Promise<DnsCh
         };
       }
       case 'DMARC': {
-        const records = await resolve(`_dmarc.${domain}`, 'TXT');
-        const dmarcRecord = records.find(r => r.startsWith('v=DMARC1'));
+        const records = await lookup(`_dmarc.${domain}`, 'TXT');
+        const dmarcRecord = records.find((r: string) => r.startsWith('v=DMARC1'));
         return {
           recordType: 'DMARC',
           status: dmarcRecord ? 'success' : 'warning',
