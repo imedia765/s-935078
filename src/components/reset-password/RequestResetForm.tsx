@@ -18,6 +18,7 @@ export const RequestResetForm = () => {
     setIsLoading(true);
 
     try {
+      // Get member data
       const { data: member } = await supabase
         .from("members")
         .select("email, auth_user_id")
@@ -43,12 +44,23 @@ export const RequestResetForm = () => {
       }
 
       // Generate magic link token
-      const { data: tokenData, error: tokenError } = await supabase.rpc(
+      const { data: tokenResponse, error: tokenError } = await supabase.rpc(
         'generate_magic_link',
         { p_user_id: member.auth_user_id }
       );
 
-      if (tokenError) throw tokenError;
+      if (tokenError || !tokenResponse?.success) {
+        console.error('Token generation error:', tokenError || tokenResponse);
+        throw new Error(tokenError?.message || 'Failed to generate reset token');
+      }
+
+      // Extract just the token value from the response
+      const token = tokenResponse.token;
+      if (!token) {
+        throw new Error('No token received from generation');
+      }
+
+      console.log(`[${new Date().toISOString()}] Sending reset email for member ${memberNumber}`);
 
       // Send reset email using Loops
       const { error: emailError } = await supabase.functions.invoke(
@@ -57,12 +69,15 @@ export const RequestResetForm = () => {
           body: {
             email: member.email,
             memberNumber: memberNumber,
-            token: tokenData
+            token: token // Send just the token string
           },
         }
       );
 
-      if (emailError) throw emailError;
+      if (emailError) {
+        console.error('Reset email error:', emailError);
+        throw emailError;
+      }
 
       toast({
         title: "Reset Instructions Sent",
