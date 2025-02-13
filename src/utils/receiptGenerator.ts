@@ -6,17 +6,9 @@ import { Payment } from '@/components/admin/financial/types';
 import { format } from 'date-fns';
 
 async function generateReceiptNumber(): Promise<string> {
-  const { data: receipt, error } = await supabase
-    .from('receipts')
-    .select('receipt_number')
-    .order('generated_at', { ascending: false })
-    .limit(1);
-
+  const { data, error } = await supabase.rpc('generate_receipt_number');
   if (error) throw error;
-
-  const lastNumber = receipt?.[0]?.receipt_number?.slice(3) || '0';
-  const nextNumber = (parseInt(lastNumber) + 1).toString().padStart(6, '0');
-  return `REC${nextNumber}`;
+  return data;
 }
 
 export async function generateReceipt(payment: Payment): Promise<Blob> {
@@ -87,44 +79,34 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
     .from('receipts')
     .getPublicUrl(fileName);
 
-  // Create receipt record
-  const { error: dbError } = await supabase
-    .from('receipts')
-    .insert({
-      payment_id: payment.id,
-      receipt_number: receiptNumber,
-      receipt_url: publicUrl,
-      generated_by: user.id,
-      metadata: {
-        payment_number: payment.payment_number,
-        member_name: payment.members?.full_name,
-        amount: payment.amount
-      }
-    });
-
-  if (dbError) throw dbError;
-
-  // Update payment record
-  await supabase
+  // Update payment record with receipt metadata
+  const { error: updateError } = await supabase
     .from('payment_requests')
     .update({
       receipt_metadata: {
         receipt_number: receiptNumber,
-        generated_at: new Date().toISOString()
+        receipt_url: publicUrl,
+        generated_at: new Date().toISOString(),
+        generated_by: user.id,
+        payment_number: payment.payment_number,
+        member_name: payment.members?.full_name,
+        amount: payment.amount
       }
     })
     .eq('id', payment.id);
+
+  if (updateError) throw updateError;
     
   return publicUrl;
 }
 
 export async function getPaymentReceipt(paymentId: string): Promise<string | null> {
   const { data, error } = await supabase
-    .from('receipts')
-    .select('receipt_url')
-    .eq('payment_id', paymentId)
+    .from('payment_requests')
+    .select('receipt_metadata')
+    .eq('id', paymentId)
     .maybeSingle();
 
   if (error) throw error;
-  return data?.receipt_url || null;
+  return data?.receipt_metadata?.receipt_url || null;
 }
