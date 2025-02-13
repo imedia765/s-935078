@@ -29,3 +29,14 @@ export interface EmailDeliveryMetric {
   details: Record<string, any>;
   configuration_id: string;
 }
+
+export interface DnsCheckResult {
+  id: string;
+  record_type: 'MX' | 'SPF' | 'DKIM' | 'DMARC';
+  domain: string;
+  status: 'success' | 'warning' | 'error';
+  value: string | null;
+  error_message: string | null;
+  check_timestamp: string;
+  last_success_at: string | null;
+}
