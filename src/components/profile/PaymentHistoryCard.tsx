@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Receipt } from "lucide-react";
+import { Receipt, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,12 +31,22 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
     try {
       setDownloadingReceipt(payment.id);
       
+      // Show loading toast
+      toast({
+        title: "Generating receipt",
+        description: "Please wait while we generate your receipt...",
+      });
+      
       // First check if receipt already exists
       const existingReceipt = await getPaymentReceipt(payment.id);
       
       if (existingReceipt) {
         // If receipt exists, open it in a new tab
         window.open(existingReceipt, '_blank');
+        toast({
+          title: "Receipt opened",
+          description: "Your receipt has been opened in a new tab."
+        });
       } else {
         // Generate new receipt
         const receiptBlob = await generateReceipt(payment);
@@ -50,12 +60,12 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        
+        toast({
+          title: "Receipt downloaded",
+          description: "Your payment receipt has been downloaded successfully."
+        });
       }
-
-      toast({
-        title: "Receipt downloaded",
-        description: "Your payment receipt has been downloaded successfully."
-      });
     } catch (error) {
       console.error('Receipt download error:', error);
       toast({
@@ -143,7 +153,7 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
                         title={payment.status !== 'approved' ? 'Only approved payments have receipts' : 'Download receipt'}
                       >
                         {downloadingReceipt === payment.id ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Receipt className="h-4 w-4" />
                         )}

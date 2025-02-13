@@ -16,37 +16,67 @@ export async function generateReceipt(payment: Payment): Promise<Blob> {
   
   // Add header with logo
   doc.setFontSize(20);
-  doc.text('Payment Receipt', 105, 20, { align: 'center' });
   
-  // Add logo if exists
-  // TODO: Add organization logo
+  // Calculate center positions
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
+  const centerX = pageWidth / 2;
   
-  // Add payment details
-  doc.setFontSize(12);
-  const startY = 40;
+  // Add organization name and logo
+  doc.setTextColor(66, 66, 66);
+  doc.text('Organization Name', centerX, 20, { align: 'center' });
+  doc.setFontSize(16);
+  doc.text('Payment Receipt', centerX, 30, { align: 'center' });
   
+  // Add horizontal line
+  doc.setDrawColor(200, 200, 200);
+  doc.line(20, 35, pageWidth - 20, 35);
+  
+  // Add receipt details
+  const startY = 45;
+  
+  // Add receipt number and date header
+  const receiptNumber = await generateReceiptNumber();
+  doc.setFontSize(10);
+  doc.text(`Receipt #: ${receiptNumber}`, 20, startY);
+  doc.text(`Date: ${format(new Date(payment.created_at), 'dd/MM/yyyy')}`, pageWidth - 20, startY, { align: 'right' });
+  
+  // Add payment details table
   autoTable(doc, {
-    startY: startY,
+    startY: startY + 10,
+    margin: { left: 20, right: 20 },
     head: [['Details', 'Value']],
     body: [
-      ['Receipt Number', payment.payment_number],
-      ['Date', format(new Date(payment.created_at), 'dd/MM/yyyy')],
+      ['Payment Number', payment.payment_number],
       ['Member Name', payment.members?.full_name || 'N/A'],
       ['Amount', `£${payment.amount.toFixed(2)}`],
-      ['Payment Method', payment.payment_method],
+      ['Payment Method', payment.payment_method.replace('_', ' ').toUpperCase()],
       ['Payment Type', payment.payment_type],
-      ['Status', payment.status],
+      ['Status', payment.status.toUpperCase()],
       ['Collector', payment.members_collectors?.name || 'N/A']
     ],
     theme: 'grid',
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [66, 66, 66] }
+    styles: { 
+      fontSize: 10,
+      cellPadding: 5,
+      textColor: [60, 60, 60]
+    },
+    headStyles: { 
+      fillColor: [66, 66, 66],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    }
   });
   
   // Add footer
-  const pageHeight = doc.internal.pageSize.height;
-  doc.setFontSize(10);
-  doc.text('This is an electronically generated receipt.', 105, pageHeight - 20, { align: 'center' });
+  doc.setFontSize(8);
+  doc.setTextColor(130, 130, 130);
+  doc.text('This is an electronically generated receipt.', centerX, pageHeight - 20, { align: 'center' });
+  const timestamp = `Generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm:ss')}`;
+  doc.text(timestamp, centerX, pageHeight - 15, { align: 'center' });
   
   // Save the receipt and get the URL
   const receiptBlob = doc.output('blob');
@@ -64,7 +94,7 @@ export async function saveReceiptToStorage(payment: Payment, receiptBlob: Blob):
   const receiptNumber = await generateReceiptNumber();
   
   // Save to storage
-  const fileName = `${receiptNumber}.pdf`;
+  const fileName = `${payment.payment_number}/${receiptNumber}.pdf`;
   const { data: storageData, error: storageError } = await supabase.storage
     .from('receipts')
     .upload(fileName, receiptBlob, {
