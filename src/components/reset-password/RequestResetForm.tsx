@@ -42,13 +42,6 @@ export const RequestResetForm = () => {
         return;
       }
 
-      // Get Loops configuration
-      const { data: loopsConfig } = await supabase
-        .from('loops_integration')
-        .select('*')
-        .limit(1)
-        .single();
-
       // Generate magic link token
       const { data: tokenData, error: tokenError } = await supabase.rpc(
         'generate_magic_link',
@@ -57,15 +50,14 @@ export const RequestResetForm = () => {
 
       if (tokenError) throw tokenError;
 
-      // Send reset email
+      // Send reset email using Loops
       const { error: emailError } = await supabase.functions.invoke(
         'send-password-reset',
         {
           body: {
             email: member.email,
             memberNumber: memberNumber,
-            token: tokenData,
-            useLoops: loopsConfig?.is_active || false
+            token: tokenData
           },
         }
       );

@@ -11,7 +11,6 @@ interface RequestBody {
   email: string;
   memberNumber: string;
   token: string;
-  useLoops?: boolean;
 }
 
 const supabaseAdmin = createClient(
@@ -26,7 +25,7 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json() as RequestBody;
-    const { email, memberNumber, token, useLoops } = requestData;
+    const { email, memberNumber, token } = requestData;
 
     if (!email || !memberNumber || !token) {
       throw new Error('Missing required fields');
@@ -38,74 +37,49 @@ serve(async (req) => {
     }
 
     console.log(`[${new Date().toISOString()}] Processing reset request for ${memberNumber}`);
-    console.log(`[${new Date().toISOString()}] Target email: ${email}`);
 
     const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
 
-    if (useLoops) {
-      // Get Loops configuration
-      const { data: loopsConfig, error: configError } = await supabaseAdmin
-        .from('loops_integration')
-        .select('*')
-        .limit(1)
-        .single();
+    // Get Loops configuration
+    const { data: loopsConfig, error: configError } = await supabaseAdmin
+      .from('loops_integration')
+      .select('*')
+      .single();
 
-      if (configError) {
-        throw new Error('Failed to get Loops configuration');
-      }
-
-      if (loopsConfig.is_active && loopsConfig.api_key) {
-        // Use Loops API
-        const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${loopsConfig.api_key}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            transactionalId: loopsConfig.template_id,
-            email: email,
-            dataVariables: {
-              magic_link_url: resetLink,
-              member_number: memberNumber
-            }
-          })
-        });
-
-        if (!loopsResponse.ok) {
-          const errorData = await loopsResponse.json();
-          console.error(`[${new Date().toISOString()}] Loops API error:`, errorData);
-          throw new Error('Failed to send email through Loops');
-        }
-      }
-    } else {
-      // Fallback to default email method
-      const { error } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        email_confirm: true,
-        user_metadata: {
-          member_number: memberNumber
-        },
-        password: token
-      });
-
-      if (error) {
-        console.error(`[${new Date().toISOString()}] User creation error:`, error);
-        
-        const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'recovery',
-          email: email,
-          options: {
-            redirectTo: resetLink
-          }
-        });
-
-        if (resetError) {
-          console.error(`[${new Date().toISOString()}] Password reset error:`, resetError);
-          throw resetError;
-        }
-      }
+    if (configError) {
+      console.error('Loops config error:', configError);
+      throw new Error('Failed to get Loops configuration');
     }
+
+    if (!loopsConfig.api_key || !loopsConfig.template_id) {
+      throw new Error('Loops configuration is incomplete');
+    }
+
+    // Use Loops API to send email
+    const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${loopsConfig.api_key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        transactionalId: loopsConfig.template_id,
+        email: email,
+        dataVariables: {
+          magic_link_url: resetLink,
+          member_number: memberNumber
+        }
+      })
+    });
+
+    if (!loopsResponse.ok) {
+      const errorData = await loopsResponse.json();
+      console.error('Loops API error:', errorData);
+      throw new Error('Failed to send email through Loops');
+    }
+
+    const loopsResult = await loopsResponse.json();
+    console.log('Loops email sent successfully:', loopsResult);
     
     return new Response(
       JSON.stringify({ 

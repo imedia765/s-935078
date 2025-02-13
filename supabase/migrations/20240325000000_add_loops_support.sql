@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS loops_integration (
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Insert initial row if table is empty
+-- Always ensure there's exactly one row
 INSERT INTO loops_integration (api_key, template_id, is_active)
 SELECT '', '', false
 WHERE NOT EXISTS (SELECT 1 FROM loops_integration);
@@ -27,80 +27,24 @@ CREATE POLICY "Allow admins to manage Loops integration" ON loops_integration
         )
     );
 
--- Add an audit log specifically for email provider changes
-CREATE TABLE IF NOT EXISTS email_provider_audit (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    provider text NOT NULL,
-    event_type text NOT NULL,
-    details jsonb DEFAULT '{}'::jsonb,
-    user_id uuid REFERENCES auth.users(id),
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- Add RLS policies for audit logs
-ALTER TABLE email_provider_audit ENABLE ROW LEVEL SECURITY;
-
--- Only allow admins to view email provider audit logs
-CREATE POLICY "Allow admins to view email provider audit" ON email_provider_audit
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM user_roles
-            WHERE user_roles.user_id = auth.uid()
-            AND user_roles.role = 'admin'
-        )
-    );
-
--- Function to toggle Loops integration
-CREATE OR REPLACE FUNCTION toggle_loops_integration(p_is_active boolean)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_previous_state boolean;
+-- Add function to ensure single row
+CREATE OR REPLACE FUNCTION ensure_single_loops_config()
+RETURNS TRIGGER AS $$
 BEGIN
-    -- Get current state
-    SELECT is_active INTO v_previous_state
-    FROM loops_integration
-    LIMIT 1;
-
-    -- Update state
-    UPDATE loops_integration
-    SET 
-        is_active = p_is_active,
-        updated_at = now()
-    WHERE id = (SELECT id FROM loops_integration LIMIT 1);
-
-    -- Log the change
-    INSERT INTO email_provider_audit (
-        provider,
-        event_type,
-        details,
-        user_id
-    ) VALUES (
-        'Loops',
-        CASE 
-            WHEN p_is_active THEN 'enabled'
-            ELSE 'disabled'
-        END,
-        jsonb_build_object(
-            'previous_state', v_previous_state,
-            'new_state', p_is_active
-        ),
-        auth.uid()
-    );
-
-    RETURN jsonb_build_object(
-        'success', true,
-        'message', 'Loops integration ' || 
-                   CASE WHEN p_is_active THEN 'enabled' ELSE 'disabled' END,
-        'is_active', p_is_active
-    );
+    IF (SELECT COUNT(*) FROM loops_integration) > 1 THEN
+        DELETE FROM loops_integration
+        WHERE id != NEW.id;
+    END IF;
+    RETURN NEW;
 END;
-$$;
+$$ LANGUAGE plpgsql;
+
+-- Add trigger to maintain single row
+CREATE TRIGGER ensure_single_loops_config_trigger
+AFTER INSERT OR UPDATE ON loops_integration
+FOR EACH ROW
+EXECUTE FUNCTION ensure_single_loops_config();
 
 -- Grant necessary permissions
-GRANT USAGE ON SCHEMA public TO authenticated;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
-GRANT EXECUTE ON FUNCTION toggle_loops_integration TO authenticated;
+GRANT ALL ON TABLE loops_integration TO authenticated;
+GRANT EXECUTE ON FUNCTION ensure_single_loops_config TO authenticated;
