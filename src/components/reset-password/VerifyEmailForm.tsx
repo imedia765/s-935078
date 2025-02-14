@@ -19,11 +19,8 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const { data, error } = await supabase.rpc<
-          EmailVerificationResponse,
-          { p_verification_token: string }
-        >(
-          'verify_email_transition' as any,
+        const { data, error } = await supabase.rpc(
+          'verify_email_transition',
           { p_verification_token: verificationToken }
         );
 
