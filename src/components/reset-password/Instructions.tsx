@@ -1,21 +1,30 @@
+
 interface InstructionsProps {
   isReset: boolean;
+  isVerification?: boolean;
 }
 
-export const Instructions = ({ isReset }: InstructionsProps) => (
-  <div className="mb-6 text-sm text-gray-400">
-    {isReset ? (
-      <p>Please enter your new password below. Make sure it's secure and unique.</p>
-    ) : (
-      <div className="space-y-2">
-        <p>To reset your password, please provide:</p>
-        <ul className="list-disc list-inside">
-          <li>Your member number</li>
-          <li>Your registered email address</li>
-          <li>Your contact number for verification</li>
-        </ul>
-        <p>We'll send you instructions to reset your password.</p>
-      </div>
-    )}
-  </div>
-);
+export const Instructions = ({ isReset, isVerification }: InstructionsProps) => {
+  if (isVerification) {
+    return (
+      <p className="text-sm text-muted-foreground mb-6 text-center">
+        Please wait while we verify your email address. This will only take a moment.
+      </p>
+    );
+  }
+
+  if (isReset) {
+    return (
+      <p className="text-sm text-muted-foreground mb-6 text-center">
+        Please enter your new password below. Your password should be at least 8 characters long.
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-sm text-muted-foreground mb-6 text-center">
+      Enter your member number and we'll send you instructions to reset your password.
+      {" "}If you have a temporary email address, you'll need to provide your personal email address.
+    </p>
+  );
+};

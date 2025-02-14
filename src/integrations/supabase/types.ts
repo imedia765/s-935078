@@ -3366,6 +3366,13 @@ export type Database = {
         }
         Returns: Json
       }
+      initiate_email_transition_with_reset: {
+        Args: {
+          p_member_number: string
+          p_new_email?: string
+        }
+        Returns: Json
+      }
       is_admin: {
         Args: {
           user_uid: string
@@ -3575,6 +3582,12 @@ export type Database = {
         }
         Returns: Json
       }
+      verify_email_transition: {
+        Args: {
+          p_verification_token: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "collector" | "member"
@@ -3597,6 +3610,7 @@ export type Database = {
       email_priority: "critical" | "high" | "normal" | "low" | "bulk"
       email_status: "pending" | "sent" | "delivered" | "failed" | "bounced"
       email_template_category: "payment" | "notification" | "system" | "custom"
+      email_transition_type: "verification" | "reset" | "temp_to_personal"
       email_type:
         | "password_reset"
         | "welcome"

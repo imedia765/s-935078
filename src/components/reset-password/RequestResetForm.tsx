@@ -15,14 +15,6 @@ interface EmailStatus {
   error?: string;
 }
 
-interface PasswordResetResponse {
-  success: boolean;
-  token?: string;
-  email?: string;
-  error?: string;
-  transition_id?: string;
-}
-
 export const RequestResetForm = () => {
   const [memberNumber, setMemberNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -32,7 +24,6 @@ export const RequestResetForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Function to check member's email status
   const checkEmailStatus = async (memberNum: string) => {
     try {
       const { data, error } = await supabase.rpc(
@@ -79,29 +70,30 @@ export const RequestResetForm = () => {
 
     try {
       const { data: resetResponse, error: resetError } = await supabase.rpc(
-        'handle_password_reset_request',
+        'initiate_email_transition_with_reset',
         {
           p_member_number: memberNumber,
-          p_email: email,
           p_new_email: emailStatus?.is_temp_email ? newEmail : null
         }
       );
 
       if (resetError) throw resetError;
 
-      const typedResetResponse = resetResponse as unknown as PasswordResetResponse;
-      if (!typedResetResponse.success) {
-        throw new Error(typedResetResponse.error || 'Failed to process reset request');
+      if (!resetResponse.success) {
+        throw new Error(resetResponse.error || 'Failed to process reset request');
       }
 
-      // Send reset email using Loops
+      // Send appropriate email based on whether verification is required
       const { error: emailError } = await supabase.functions.invoke(
         'send-password-reset',
         {
           body: {
-            email: typedResetResponse.email,
+            email: resetResponse.email,
             memberNumber: memberNumber,
-            token: typedResetResponse.token
+            token: resetResponse.requires_verification ? 
+              resetResponse.verification_token : 
+              resetResponse.reset_token,
+            isVerification: resetResponse.requires_verification
           },
         }
       );
@@ -109,8 +101,12 @@ export const RequestResetForm = () => {
       if (emailError) throw emailError;
 
       toast({
-        title: "Reset Instructions Sent",
-        description: "Please check your email for password reset instructions. The link will expire in 1 hour.",
+        title: resetResponse.requires_verification ? 
+          "Verification Email Sent" : 
+          "Reset Instructions Sent",
+        description: resetResponse.requires_verification ?
+          "Please check your email to verify your new email address." :
+          "Please check your email for password reset instructions. The link will expire in 1 hour.",
       });
       
       setMemberNumber("");
@@ -129,7 +125,6 @@ export const RequestResetForm = () => {
     }
   };
 
-  // Show member number input only if email status is not checked
   if (!emailStatus) {
     return (
       <form onSubmit={handleMemberNumberSubmit} className="space-y-4">
@@ -161,7 +156,6 @@ export const RequestResetForm = () => {
     );
   }
 
-  // Show email form based on email status
   return (
     <form onSubmit={handleRequestReset} className="space-y-4">
       <div>
@@ -178,7 +172,6 @@ export const RequestResetForm = () => {
       </div>
 
       {emailStatus.is_temp_email ? (
-        // Temp email case - show new email input
         <div>
           <label htmlFor="newEmail" className="block text-sm mb-2">
             New Personal Email Address
@@ -198,7 +191,6 @@ export const RequestResetForm = () => {
           </p>
         </div>
       ) : (
-        // Personal email case - must match existing
         <div>
           <label htmlFor="email" className="block text-sm mb-2">
             Email Address
