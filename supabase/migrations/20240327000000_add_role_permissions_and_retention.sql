@@ -1,37 +1,5 @@
-
--- Create the permissions table if it doesn't exist
-CREATE TABLE IF NOT EXISTS public.permissions (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    name text NOT NULL UNIQUE,
-    description text,
-    category text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now()
-);
-
--- Add some default permissions
-INSERT INTO public.permissions (name, description, category) VALUES
-    ('view_audit_logs', 'Can view audit logs', 'audit'),
-    ('manage_audit_retention', 'Can manage audit log retention policy', 'audit'),
-    ('manage_roles', 'Can manage user roles', 'roles'),
-    ('manage_members', 'Can manage member accounts', 'members'),
-    ('view_analytics', 'Can view analytics dashboards', 'analytics'),
-    ('manage_email_templates', 'Can manage email templates', 'email'),
-    ('manage_smtp', 'Can manage SMTP settings', 'email'),
-    ('manage_maintenance', 'Can manage system maintenance', 'maintenance'),
-    ('manage_backups', 'Can manage database backups', 'database')
-ON CONFLICT (name) DO NOTHING;
-
--- Create role_permissions table if it doesn't exist
-CREATE TABLE IF NOT EXISTS public.role_permissions (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    role text NOT NULL,
-    permission_name text NOT NULL REFERENCES permissions(name),
-    created_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE(role, permission_name)
-);
-
--- Function to update role permissions
-CREATE OR REPLACE FUNCTION public.update_role_permissions(
+-- Create function to update role permissions with a different name that matches the schema
+CREATE OR REPLACE FUNCTION public.manage_role_permissions(
     permissions_array jsonb
 ) RETURNS void AS $$
 BEGIN
@@ -87,6 +55,40 @@ BEGIN
     END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.manage_role_permissions(jsonb) TO authenticated;
+
+-- Create the permissions table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.permissions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL UNIQUE,
+    description text,
+    category text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Add some default permissions
+INSERT INTO public.permissions (name, description, category) VALUES
+    ('view_audit_logs', 'Can view audit logs', 'audit'),
+    ('manage_audit_retention', 'Can manage audit log retention policy', 'audit'),
+    ('manage_roles', 'Can manage user roles', 'roles'),
+    ('manage_members', 'Can manage member accounts', 'members'),
+    ('view_analytics', 'Can view analytics dashboards', 'analytics'),
+    ('manage_email_templates', 'Can manage email templates', 'email'),
+    ('manage_smtp', 'Can manage SMTP settings', 'email'),
+    ('manage_maintenance', 'Can manage system maintenance', 'maintenance'),
+    ('manage_backups', 'Can manage database backups', 'database')
+ON CONFLICT (name) DO NOTHING;
+
+-- Create role_permissions table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.role_permissions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    role text NOT NULL,
+    permission_name text NOT NULL REFERENCES permissions(name),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(role, permission_name)
+);
 
 -- Add RLS policies
 ALTER TABLE public.permissions ENABLE ROW LEVEL SECURITY;
