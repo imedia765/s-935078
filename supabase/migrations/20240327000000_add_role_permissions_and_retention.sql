@@ -1,5 +1,5 @@
 -- Create function to update role permissions with a different name that matches the schema
-CREATE OR REPLACE FUNCTION public.update_role_permissions(
+CREATE OR REPLACE FUNCTION public.approve_role_change(
     role_data jsonb
 ) RETURNS void AS $$
 BEGIN
@@ -57,7 +57,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.update_role_permissions(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.approve_role_change(jsonb) TO authenticated;
 
 -- Create the permissions table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.permissions (
