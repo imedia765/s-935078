@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -187,26 +188,26 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
   };
 
   return (
-    <Card className="p-6 glass-card transition-all duration-200 hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-primary">{member.full_name}</h3>
-            <Badge className={cn("text-xs font-medium", getStatusColor(member.status))}>
+    <Card className="p-4 sm:p-6 glass-card transition-all duration-200 hover:shadow-md">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+        <div className="space-y-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h3 className="text-base sm:text-lg font-semibold text-primary">{member.full_name}</h3>
+            <Badge className={cn("text-xs font-medium w-fit", getStatusColor(member.status))}>
               {member.status}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">{member.email}</p>
+          <p className="text-sm text-muted-foreground break-all">{member.email}</p>
           <p className="text-sm font-mono text-primary/70">{member.member_number}</p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
           <Button
             variant="outline"
             size="sm"
             onClick={handleQuickPay}
             disabled={isProcessing}
-            className="h-8 bg-primary/20 hover:bg-primary/30 flex items-center gap-1"
+            className="h-10 sm:h-8 flex-1 sm:flex-none bg-primary/20 hover:bg-primary/30 flex items-center gap-1"
           >
             {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -220,7 +221,7 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
               variant="ghost"
               size="sm"
               onClick={() => onEdit(member.id)}
-              className="h-8 w-8 p-0 hover:text-primary"
+              className="h-10 sm:h-8 w-10 sm:w-8 p-0 hover:text-primary flex-1 sm:flex-none"
             >
               <Edit2 className="h-4 w-4" />
             </Button>
@@ -230,7 +231,7 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
               variant="ghost"
               size="sm"
               onClick={() => onDelete(member.id)}
-              className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
+              className="h-10 sm:h-8 w-10 sm:w-8 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 flex-1 sm:flex-none"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -239,7 +240,7 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
             variant="ghost"
             size="sm"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="h-8 w-8 p-0 hover:text-primary"
+            className="h-10 sm:h-8 w-10 sm:w-8 p-0 hover:text-primary flex-1 sm:flex-none"
           >
             {isExpanded ? (
               <ChevronUp className="h-4 w-4" />
@@ -260,20 +261,20 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {member.date_of_birth && (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4 text-primary/70" />
-                  <span>DOB: <span className="text-foreground">{format(new Date(member.date_of_birth), 'PPP')}</span></span>
+                  <Calendar className="h-4 w-4 text-primary/70 flex-shrink-0" />
+                  <span className="truncate">DOB: <span className="text-foreground">{format(new Date(member.date_of_birth), 'PPP')}</span></span>
                 </div>
               )}
               {member.marital_status && (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Users className="h-4 w-4 text-primary/70" />
-                  <span>Marital Status: <span className="text-foreground">{member.marital_status}</span></span>
+                  <Users className="h-4 w-4 text-primary/70 flex-shrink-0" />
+                  <span className="truncate">Marital Status: <span className="text-foreground">{member.marital_status}</span></span>
                 </div>
               )}
               {member.membership_type && (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <CreditCard className="h-4 w-4 text-primary/70" />
-                  <span>Membership: <span className="text-foreground">{member.membership_type}</span></span>
+                  <CreditCard className="h-4 w-4 text-primary/70 flex-shrink-0" />
+                  <span className="truncate">Membership: <span className="text-foreground">{member.membership_type}</span></span>
                 </div>
               )}
             </div>
@@ -284,13 +285,13 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
               <DollarSign className="h-4 w-4" />
               Payment Information
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-muted/50 rounded-lg p-4 hover:bg-muted/70 transition-colors">
                 <div className="text-sm font-medium mb-2 text-primary">Yearly Payment</div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {getPaymentStatusIcon(member.yearly_payment_status)}
-                    <span className="text-sm">{member.yearly_payment_status}</span>
+                    <span className="text-sm truncate">{member.yearly_payment_status}</span>
                   </div>
                   {member.yearly_payment_amount && (
                     <span className="text-sm font-medium text-foreground">
@@ -303,12 +304,12 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
                     Due: {format(new Date(member.yearly_payment_due_date), 'PPP')}
                   </div>
                 )}
-                <div className="mt-2 space-y-2">
+                <div className="mt-4 space-y-2">
                   <Select
                     value={paymentMethod}
                     onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full h-10">
                       <SelectValue placeholder="Payment Method" />
                     </SelectTrigger>
                     <SelectContent>
@@ -320,7 +321,7 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
                     variant="outline"
                     size="sm"
                     onClick={handleRecordPayment}
-                    className="w-full bg-primary/20 hover:bg-primary/30"
+                    className="w-full h-10 bg-primary/20 hover:bg-primary/30"
                   >
                     <PlusCircle className="h-4 w-4 mr-2" />
                     Record Payment
@@ -334,7 +335,7 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {getPaymentStatusIcon(member.emergency_collection_status)}
-                      <span className="text-sm">{member.emergency_collection_status}</span>
+                      <span className="text-sm truncate">{member.emergency_collection_status}</span>
                     </div>
                     {member.emergency_collection_amount && (
                       <span className="text-sm font-medium text-foreground">
@@ -364,17 +365,17 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
                     key={index}
                     className="flex flex-col gap-2 bg-muted/50 rounded-lg p-4 hover:bg-muted/70 transition-colors"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-foreground">{familyMember.full_name}</span>
-                      <Badge variant="outline" className="text-primary">{familyMember.relationship}</Badge>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground truncate">{familyMember.full_name}</span>
+                      <Badge variant="outline" className="text-primary shrink-0">{familyMember.relationship}</Badge>
                     </div>
                     {familyMember.date_of_birth && (
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-foreground truncate">
                         DOB: {format(new Date(familyMember.date_of_birth), 'PPP')}
                       </div>
                     )}
                     {familyMember.gender && (
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-muted-foreground truncate">
                         Gender: {familyMember.gender}
                       </div>
                     )}
@@ -392,14 +393,14 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
             <div className="space-y-2">
               {member.payment_date && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4 text-primary/70" />
-                  <span>Last payment: <span className="text-foreground">{format(new Date(member.payment_date), 'PPP')}</span></span>
+                  <Clock className="h-4 w-4 text-primary/70 flex-shrink-0" />
+                  <span className="truncate">Last payment: <span className="text-foreground">{format(new Date(member.payment_date), 'PPP')}</span></span>
                 </div>
               )}
               {member.collector && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="h-4 w-4 text-primary/70" />
-                  <span>Collector: <span className="text-foreground">{member.collector}</span></span>
+                  <User className="h-4 w-4 text-primary/70 flex-shrink-0" />
+                  <span className="truncate">Collector: <span className="text-foreground">{member.collector}</span></span>
                 </div>
               )}
             </div>
