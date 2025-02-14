@@ -2,127 +2,175 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from "recharts";
+import { EmailDeliveryMetric } from "@/types/email";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, AlertCircle } from "lucide-react";
 
 export function EmailMetrics() {
-  const { data: loopsConfig } = useQuery({
-    queryKey: ['loopsConfig'],
+  const { data: metrics, isLoading, error } = useQuery({
+    queryKey: ['emailMetrics'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('loops_integration')
-        .select('*')
-        .limit(1)
-        .single();
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: metrics, isLoading } = useQuery({
-    queryKey: ['loops-metrics'],
-    queryFn: async () => {
-      if (!loopsConfig?.is_active) {
-        return [];
-      }
-
-      const { data: emailLogs, error } = await supabase
-        .from('email_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from('email_events')
+        .select(`
+          id,
+          event_type,
+          occurred_at,
+          metadata
+        `)
+        .order('occurred_at', { ascending: true })
         .limit(100);
 
       if (error) throw error;
-      return emailLogs;
+
+      // Process metrics
+      const processedData = data.reduce((acc: any[], event) => {
+        const date = new Date(event.occurred_at).toLocaleDateString();
+        const existing = acc.find(item => item.date === date);
+
+        if (existing) {
+          existing[event.event_type] = (existing[event.event_type] || 0) + 1;
+          existing.total = (existing.total || 0) + 1;
+        } else {
+          acc.push({
+            date,
+            [event.event_type]: 1,
+            total: 1
+          });
+        }
+
+        return acc;
+      }, []);
+
+      return processedData;
     },
-    enabled: !!loopsConfig?.is_active,
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
-  if (!loopsConfig?.is_active) {
+  if (isLoading) {
     return (
-      <Alert>
+      <Card className="p-6">
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Loops integration is not active. Please enable it in the Settings tab to view analytics.
+          Failed to load email metrics: {error.message}
         </AlertDescription>
       </Alert>
     );
   }
 
-  if (isLoading) {
-    return <div>Loading metrics...</div>;
-  }
-
-  const calculateMetrics = () => {
-    if (!metrics?.length) return null;
-
-    const total = metrics.length;
-    const sent = metrics.filter(m => m.status === 'sent').length;
-    const failed = metrics.filter(m => m.status === 'failed').length;
-    const pending = metrics.filter(m => m.status === 'pending').length;
-
-    return {
-      successRate: (sent / total) * 100,
-      failureRate: (failed / total) * 100,
-      pendingRate: (pending / total) * 100
-    };
-  };
-
-  const stats = calculateMetrics();
-
-  if (!stats) {
-    return <div>No email metrics available</div>;
-  }
-
-  const chartData = metrics
-    ?.map((m: any) => ({
-      time: new Date(m.created_at).toLocaleTimeString(),
-      successRate: stats.successRate,
-      failureRate: stats.failureRate
-    }))
-    .reverse();
-
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <h3 className="text-sm font-medium">Success Rate</h3>
-          <p className={`text-2xl font-bold ${stats.successRate >= 95 ? 'text-green-500' : 'text-yellow-500'}`}>
-            {stats.successRate.toFixed(1)}%
-          </p>
-        </Card>
-        
-        <Card className="p-4">
-          <h3 className="text-sm font-medium">Failure Rate</h3>
-          <p className={`text-2xl font-bold ${stats.failureRate <= 5 ? 'text-green-500' : 'text-red-500'}`}>
-            {stats.failureRate.toFixed(1)}%
-          </p>
-        </Card>
-        
-        <Card className="p-4">
-          <h3 className="text-sm font-medium">Pending Rate</h3>
-          <p className={`text-2xl font-bold ${stats.pendingRate <= 10 ? 'text-green-500' : 'text-yellow-500'}`}>
-            {stats.pendingRate.toFixed(1)}%
-          </p>
-        </Card>
-      </div>
-
-      <Card className="p-4">
-        <h3 className="text-sm font-medium mb-4">Delivery Success Rate Trend</h3>
-        <div className="h-[200px]">
+    <div className="space-y-6">
+      <Card className="p-6">
+        <h3 className="text-lg font-medium mb-4">Email Delivery Metrics</h3>
+        <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart
+              data={metrics}
+              margin={{
+                top: 5,
+                right: 30,
+                left: 20,
+                bottom: 5,
+              }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
+              <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="successRate" stroke="#10b981" name="Success Rate (%)" />
-              <Line type="monotone" dataKey="failureRate" stroke="#ef4444" name="Failure Rate (%)" />
+              <Line 
+                type="monotone" 
+                dataKey="delivered" 
+                stroke="#4ade80" 
+                name="Delivered"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="opened" 
+                stroke="#60a5fa" 
+                name="Opened"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="clicked" 
+                stroke="#f472b6" 
+                name="Clicked"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="failed" 
+                stroke="#ef4444" 
+                name="Failed"
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics && metrics.length > 0 && (
+          <>
+            <MetricCard
+              title="Delivery Rate"
+              value={calculateRate(metrics, 'delivered')}
+              color="text-green-500"
+            />
+            <MetricCard
+              title="Open Rate"
+              value={calculateRate(metrics, 'opened')}
+              color="text-blue-500"
+            />
+            <MetricCard
+              title="Click Rate"
+              value={calculateRate(metrics, 'clicked')}
+              color="text-pink-500"
+            />
+            <MetricCard
+              title="Failure Rate"
+              value={calculateRate(metrics, 'failed')}
+              color="text-red-500"
+            />
+          </>
+        )}
+      </div>
     </div>
   );
+}
+
+function MetricCard({ title, value, color }: { title: string; value: string; color: string }) {
+  return (
+    <Card className="p-4">
+      <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+    </Card>
+  );
+}
+
+function calculateRate(metrics: any[], type: string): string {
+  if (!metrics || metrics.length === 0) return "0%";
+
+  const lastMetric = metrics[metrics.length - 1];
+  const total = lastMetric.total || 0;
+  const typeCount = lastMetric[type] || 0;
+
+  if (total === 0) return "0%";
+  return `${Math.round((typeCount / total) * 100)}%`;
 }
