@@ -45,16 +45,12 @@ export async function logAuditEvent({
         .insert({
           operation: mapOperationToDatabase(operation),
           table_name: tableName,
-          record_id: recordId,
-          old_values: oldValues,
-          new_values: newValues,
-          severity,
-          user_id: user?.id,
           metadata: {
             ...metadata,
             original_operation: operation,
             user_agent: navigator.userAgent,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            record_id: recordId // Move recordId to metadata instead of main column
           }
         });
 
@@ -69,10 +65,11 @@ export async function logAuditEvent({
       .insert({
         operation: mapOperationToDatabase(operation),
         table_name: tableName,
-        record_id: recordId,
-        old_values: oldValues,
-        new_values: newValues,
-        severity,
+        metadata: {
+          record_id: recordId, // Include recordId in metadata
+          severity,
+          timestamp: new Date().toISOString()
+        },
         user_id: user?.id
       });
 
@@ -93,7 +90,7 @@ export async function getAuditLogs(tableName?: string, recordId?: string) {
   }
 
   if (recordId) {
-    query.eq('record_id', recordId);
+    query.contains('metadata', { record_id: recordId });
   }
 
   const { data, error } = await query;
