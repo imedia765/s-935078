@@ -66,7 +66,6 @@ export default function Members() {
           )
         `);
 
-      // Apply the same prefix-based filtering logic
       if (!currentUser?.isAdmin && currentUser?.member_number) {
         const prefix = currentUser.member_number.substring(0, 2);
         const number = currentUser.member_number.substring(2, 4);
@@ -170,15 +169,14 @@ export default function Members() {
           />
 
           <MembersPagination
-            page={page}
-            itemsPerPage={ITEMS_PER_PAGE}
-            totalCount={membersData?.totalCount || 0}
+            currentPage={page}
+            totalPages={Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE)}
             onPageChange={setPage}
           />
         </Card>
 
         <EditMemberDialog
-          isOpen={isEditDialogOpen}
+          open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           onSubmit={(id, data) => updateMemberMutation.mutate({ id, data })}
           member={editingMember}
@@ -186,12 +184,16 @@ export default function Members() {
         />
 
         <MoveMemberDialog
-          isOpen={isMoveDialogOpen}
+          open={isMoveDialogOpen}
           onOpenChange={setIsMoveDialogOpen}
-          onSubmit={(memberId, newCollectorId) => 
-            moveMemberMutation.mutate({ memberId, newCollectorId })}
-          member={movingMember}
+          onConfirm={(collectorId) => 
+            moveMemberMutation.mutate({ 
+              memberId: movingMember?.id, 
+              newCollectorId: collectorId 
+            })}
           collectors={collectors || []}
+          loading={moveMemberMutation.isPending}
+          memberName={movingMember?.full_name}
         />
 
         <DeleteMemberDialog
