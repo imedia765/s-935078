@@ -29,14 +29,14 @@ export async function sendEmail({ to, subject, html, text, templateId, variables
     const { data: emailLog, error: logError } = await supabase
       .from('email_logs')
       .insert({
-        to_email: to,
+        recipient: to,
         subject,
         status: 'pending',
         priority: 'normal',
-        email_category: templateId ? 'template' : 'custom',
+        email_category: templateId ? 'template' : 'transactional',
         template_name: templateId,
         provider: 'loops',
-        email_type: templateId ? 'notification' : 'custom'
+        email_type: templateId ? 'notification' : 'system_announcement'
       })
       .select()
       .single();
