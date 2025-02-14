@@ -126,36 +126,38 @@ export function MembersTable({
   return (
     <div className="space-y-4">
       {selectedMembers.length > 0 && (
-        <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-lg">
           <span className="text-sm text-muted-foreground">
             {selectedMembers.length} members selected
           </span>
-          <Select
-            value={paymentMethod}
-            onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Payment Method" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleBulkPayment}
-            disabled={isRecordingPayments}
-            className="bg-primary/20 hover:bg-primary/30"
-          >
-            {isRecordingPayments ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <PlusCircle className="h-4 w-4 mr-2" />
-            )}
-            {isRecordingPayments ? "Recording..." : "Record Payments"}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Select
+              value={paymentMethod}
+              onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
+            >
+              <SelectTrigger className="w-full sm:w-32">
+                <SelectValue placeholder="Payment Method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBulkPayment}
+              disabled={isRecordingPayments}
+              className="w-full sm:w-auto bg-primary/20 hover:bg-primary/30"
+            >
+              {isRecordingPayments ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <PlusCircle className="h-4 w-4 mr-2" />
+              )}
+              {isRecordingPayments ? "Recording..." : "Record Payments"}
+            </Button>
+          </div>
         </div>
       )}
       <div className="space-y-4">
