@@ -81,7 +81,7 @@ serve(async (req) => {
     });
 
     try {
-      const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
+      const loopsResponse = await fetch('https://app.loops.so/api/v1/transactional', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${loopsIntegration.api_key}`,
@@ -97,12 +97,18 @@ serve(async (req) => {
         })
       });
 
+      // Log the complete response details for debugging
+      const responseDetails = {
+        status: loopsResponse.status,
+        statusText: loopsResponse.statusText,
+        headers: Object.fromEntries(loopsResponse.headers.entries())
+      };
+      console.log('Loops API response details:', responseDetails);
+
       if (!loopsResponse.ok) {
         const errorContent = await loopsResponse.text();
         console.error('Loops API error details:', {
-          status: loopsResponse.status,
-          statusText: loopsResponse.statusText,
-          headers: Object.fromEntries(loopsResponse.headers.entries()),
+          ...responseDetails,
           errorContent
         });
         throw new Error(`Loops API error (${loopsResponse.status}): ${errorContent}`);
