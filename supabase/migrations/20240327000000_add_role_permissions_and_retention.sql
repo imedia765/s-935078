@@ -1,5 +1,5 @@
 -- Create function to update role permissions with a different name that matches the schema
-CREATE OR REPLACE FUNCTION public.sync_permissions(
+CREATE OR REPLACE FUNCTION public.assign_collector_role(
     permissions_array jsonb
 ) RETURNS void AS $$
 BEGIN
@@ -57,7 +57,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.sync_permissions(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.assign_collector_role(jsonb) TO authenticated;
 
 -- Create the permissions table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.permissions (
