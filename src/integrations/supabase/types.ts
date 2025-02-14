@@ -3555,6 +3555,14 @@ export type Database = {
         }
         Returns: Json
       }
+      track_email_event: {
+        Args: {
+          p_email_log_id: string
+          p_event_type: string
+          p_metadata?: Json
+        }
+        Returns: undefined
+      }
       track_login_pattern: {
         Args: {
           p_user_id: string
