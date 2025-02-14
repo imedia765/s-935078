@@ -99,11 +99,18 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Convert permissions array to JSON-compatible format
+      const permissionsJson = permissions.map(p => ({
+        role: p.role,
+        permission_name: p.permission_name,
+        granted: p.granted
+      }));
+
       // First create a role change request with the permissions data
       const { data: requestData, error: requestError } = await supabase
         .from('role_change_requests')
         .insert({
-          permissions_data: permissions,
+          permissions_data: permissionsJson,
           status: 'pending'
         })
         .select('id')
