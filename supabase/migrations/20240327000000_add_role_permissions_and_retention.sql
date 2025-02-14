@@ -1,6 +1,6 @@
 -- Create function to update role permissions with a different name that matches the schema
-CREATE OR REPLACE FUNCTION public.assign_collector_role(
-    permissions_array jsonb
+CREATE OR REPLACE FUNCTION public.update_role_permissions(
+    role_data jsonb
 ) RETURNS void AS $$
 BEGIN
     -- Begin transaction
@@ -11,9 +11,9 @@ BEGIN
         -- Insert new permissions
         INSERT INTO public.role_permissions (role, permission_name)
         SELECT 
-            (jsonb_array_elements(permissions_array)->>'role')::text,
-            (jsonb_array_elements(permissions_array)->>'permission_name')::text
-        WHERE (jsonb_array_elements(permissions_array)->>'granted')::boolean = true
+            (jsonb_array_elements(role_data)->>'role')::text,
+            (jsonb_array_elements(role_data)->>'permission_name')::text
+        WHERE (jsonb_array_elements(role_data)->>'granted')::boolean = true
         ON CONFLICT (role, permission_name) DO NOTHING;
         
         -- Log the change
@@ -28,7 +28,7 @@ BEGIN
             'role_permissions',
             auth.uid(),
             null,
-            permissions_array
+            role_data
         );
 
     EXCEPTION WHEN OTHERS THEN
@@ -47,7 +47,7 @@ BEGIN
             null,
             jsonb_build_object(
                 'error', SQLERRM,
-                'permissions', permissions_array
+                'permissions', role_data
             ),
             'error'
         );
@@ -57,7 +57,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.assign_collector_role(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_role_permissions(jsonb) TO authenticated;
 
 -- Create the permissions table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.permissions (

@@ -99,8 +99,8 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { data, error } = await supabase.rpc('assign_collector_role', {
-        permissions_array: JSON.stringify(permissions)
+      const { data, error } = await supabase.rpc('update_role_permissions', {
+        role_data: JSON.stringify(permissions)
       });
 
       if (error) throw error;
