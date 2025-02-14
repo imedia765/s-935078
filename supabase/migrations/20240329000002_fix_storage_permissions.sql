@@ -5,6 +5,7 @@ BEGIN;
     DROP POLICY IF EXISTS "Allow authenticated users to upload their own documents" ON storage.objects;
     DROP POLICY IF EXISTS "Allow authenticated users to update their own documents" ON storage.objects;
     DROP POLICY IF EXISTS "Allow authenticated users to delete their own documents" ON storage.objects;
+    DROP POLICY IF EXISTS "Allow authenticated users to access the bucket" ON storage.buckets;
 COMMIT;
 
 -- Reset ownership to postgres to ensure we have proper permissions
