@@ -11,6 +11,7 @@ interface EmailStatus {
   member_number?: string;
   email?: string;
   is_temp_email?: boolean;
+  has_auth_id?: boolean;
   error?: string;
 }
 
@@ -41,8 +42,9 @@ export const RequestResetForm = () => {
 
       if (error) throw error;
 
-      setEmailStatus(data as EmailStatus);
-      return data as EmailStatus;
+      const typedData = data as unknown as EmailStatus;
+      setEmailStatus(typedData);
+      return typedData;
     } catch (error: any) {
       console.error('Email status check error:', error);
       toast({
@@ -87,9 +89,9 @@ export const RequestResetForm = () => {
 
       if (resetError) throw resetError;
 
-      const response = resetResponse as PasswordResetResponse;
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to process reset request');
+      const typedResetResponse = resetResponse as unknown as PasswordResetResponse;
+      if (!typedResetResponse.success) {
+        throw new Error(typedResetResponse.error || 'Failed to process reset request');
       }
 
       // Send reset email using Loops
@@ -97,9 +99,9 @@ export const RequestResetForm = () => {
         'send-password-reset',
         {
           body: {
-            email: response.email,
+            email: typedResetResponse.email,
             memberNumber: memberNumber,
-            token: response.token
+            token: typedResetResponse.token
           },
         }
       );
