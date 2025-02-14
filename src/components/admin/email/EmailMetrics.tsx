@@ -172,3 +172,4 @@ function calculateRate(metrics: EmailMetricData[], type: keyof EmailMetricData):
   if (total === 0) return "0%";
   return `${Math.round((typeCount / total) * 100)}%`;
 }
+

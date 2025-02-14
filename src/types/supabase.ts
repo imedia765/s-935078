@@ -1,3 +1,4 @@
+
 export interface Database {
   public: {
     Tables: {
@@ -312,3 +313,4 @@ export interface Database {
     }
   }
 }
+
