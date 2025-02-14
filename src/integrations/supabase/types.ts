@@ -1881,6 +1881,45 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_email_transitions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          member_number: string
+          metadata: Json | null
+          new_email: string
+          old_email: string
+          status: string
+          transition_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          member_number: string
+          metadata?: Json | null
+          new_email: string
+          old_email: string
+          status?: string
+          transition_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          member_number?: string
+          metadata?: Json | null
+          new_email?: string
+          old_email?: string
+          status?: string
+          transition_type?: string
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           attempts: number
@@ -3191,6 +3230,12 @@ export type Database = {
           details: Json
         }[]
       }
+      get_member_email_status: {
+        Args: {
+          p_member_number: string
+        }
+        Returns: Json
+      }
       get_rls_policies: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3281,6 +3326,14 @@ export type Database = {
             }
             Returns: Json
           }
+      handle_password_reset_request: {
+        Args: {
+          p_member_number: string
+          p_email: string
+          p_new_email?: string
+        }
+        Returns: Json
+      }
       handle_password_reset_with_token:
         | {
             Args: {
@@ -3320,6 +3373,12 @@ export type Database = {
       }
       is_system_in_maintenance: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_temp_email: {
+        Args: {
+          email: string
+        }
         Returns: boolean
       }
       is_valid_email: {
