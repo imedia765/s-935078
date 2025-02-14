@@ -29,20 +29,26 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
 
   const ensureUserFolder = async (userId: string) => {
     try {
+      // Try to list files to see if folder exists
       const { data, error } = await supabase.storage
         .from('profile_documents')
         .list(`${userId}/`);
 
-      if (error && error.message.includes('Not Found')) {
+      if (error) {
+        console.error('Error checking user folder:', error);
         // Create an empty file to initialize the folder
-        await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('profile_documents')
-          .upload(`${userId}/.keep`, new Blob([''], { type: 'text/plain' }), {
-            upsert: true
-          });
+          .upload(`${userId}/.keep`, new Blob([''], { type: 'text/plain' }));
+        
+        if (uploadError) {
+          console.error('Error creating user folder:', uploadError);
+          throw uploadError;
+        }
       }
     } catch (error) {
       console.error('Error ensuring user folder:', error);
+      throw error;
     }
   };
 

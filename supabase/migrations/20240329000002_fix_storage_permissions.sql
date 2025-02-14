@@ -36,34 +36,19 @@ BEGIN;
     -- Then create storage object policies
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
-    USING (
-        auth.role() = 'authenticated' AND 
-        bucket_id = 'profile_documents'
-    );
+    USING (auth.role() = 'authenticated');
 
     CREATE POLICY "Allow authenticated users to upload their own documents"
     ON storage.objects FOR INSERT
-    WITH CHECK (
-        auth.role() = 'authenticated' AND 
-        bucket_id = 'profile_documents' AND 
-        storage.foldername(name)[1] = auth.uid()::text
-    );
+    WITH CHECK (auth.role() = 'authenticated');
 
     CREATE POLICY "Allow authenticated users to update their own documents"
     ON storage.objects FOR UPDATE
-    USING (
-        auth.role() = 'authenticated' AND 
-        bucket_id = 'profile_documents' AND 
-        storage.foldername(name)[1] = auth.uid()::text
-    );
+    USING (auth.role() = 'authenticated');
 
     CREATE POLICY "Allow authenticated users to delete their own documents"
     ON storage.objects FOR DELETE
-    USING (
-        auth.role() = 'authenticated' AND 
-        bucket_id = 'profile_documents' AND 
-        storage.foldername(name)[1] = auth.uid()::text
-    );
+    USING (auth.role() = 'authenticated');
 COMMIT;
 
 -- Grant permissions to authenticated users
