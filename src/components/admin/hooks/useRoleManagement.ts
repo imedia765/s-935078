@@ -44,7 +44,7 @@ export function useRoleManagement() {
   const fixAllCollectorsMutation = useMutation({
     mutationFn: async () => {
       console.log('Starting fix all collectors process...');
-      const { data, error } = await supabase.rpc('fix_role_sync');
+      const { data, error } = await supabase.rpc('assign_collector_role');
       if (error) throw error;
       
       // Safely cast the response to our expected type
@@ -123,8 +123,11 @@ export function useRoleManagement() {
 
       console.log("Magic link data:", data);
 
-      // Safely access session data with null check and provide default values
-      const token = data?.session?.access_token ?? '';
+      if (!data?.session) {
+        return { magicLink: '', email: user.email, token: '' };
+      }
+
+      const token = data.session.access_token;
       const magicLink = token ? `${window.location.origin}/auth/callback?token=${token}&type=magiclink` : '';
 
       return { magicLink, email: user.email, token };
