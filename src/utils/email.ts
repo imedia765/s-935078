@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface SendEmailParams {
@@ -25,6 +24,23 @@ export async function sendEmail({ to, subject, html, text, templateId, variables
       throw new Error('Loops integration is not properly configured');
     }
 
+    // Create email log entry first
+    const { data: emailLog, error: logError } = await supabase
+      .from('email_logs')
+      .insert({
+        recipient_email: to,
+        subject,
+        status: 'pending',
+        priority: 'normal',
+        category: templateId ? 'template' : 'custom',
+        template_name: templateId,
+        provider: 'loops'
+      })
+      .select()
+      .single();
+
+    if (logError) throw logError;
+
     const payload = templateId ? {
       transactionalId: templateId,
       email: to,
@@ -41,7 +57,7 @@ export async function sendEmail({ to, subject, html, text, templateId, variables
       }
     };
 
-    // Use Loops API
+    // Send via Loops API
     console.log('Sending email via Loops');
     const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
       method: 'POST',
@@ -55,10 +71,30 @@ export async function sendEmail({ to, subject, html, text, templateId, variables
     if (!loopsResponse.ok) {
       const errorData = await loopsResponse.json();
       console.error('Loops API error:', errorData);
+      
+      // Update log with error
+      await supabase
+        .from('email_logs')
+        .update({
+          status: 'failed',
+          error_message: errorData.message || 'Failed to send email through Loops'
+        })
+        .eq('id', emailLog.id);
+        
       throw new Error('Failed to send email through Loops');
     }
 
     const result = await loopsResponse.json();
+
+    // Update email log with Loops message ID
+    await supabase
+      .from('email_logs')
+      .update({
+        provider_message_id: result.emailId,
+        status: 'queued'
+      })
+      .eq('id', emailLog.id);
+
     console.log('Email sent successfully via Loops:', result);
     return result;
   } catch (error: any) {
@@ -101,4 +137,3 @@ export async function previewTemplate(templateId: string, variables: Record<stri
     throw error;
   }
 }
-

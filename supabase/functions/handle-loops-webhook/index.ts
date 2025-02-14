@@ -31,18 +31,31 @@ serve(async (req) => {
       'email.bounced': 'failed'
     } as const
 
-    // Insert event into our email_events table
-    const { error } = await supabaseClient
-      .from('email_events')
-      .insert({
-        event_type: eventTypeMap[payload.type] || 'delivered',
-        occurred_at: payload.data.timestamp,
-        metadata: {
-          ...payload.data,
-          provider: 'loops',
-          original_event_type: payload.type
-        }
-      })
+    // Find the email log by Loops message ID
+    const { data: emailLog, error: lookupError } = await supabaseClient
+      .from('email_logs')
+      .select('id')
+      .eq('provider_message_id', payload.data.emailId)
+      .single()
+
+    if (lookupError) {
+      throw lookupError
+    }
+
+    if (!emailLog) {
+      throw new Error('No matching email log found for Loops message ID: ' + payload.data.emailId)
+    }
+
+    // Track the event using our new function
+    const { error } = await supabaseClient.rpc('track_email_event', {
+      p_email_log_id: emailLog.id,
+      p_event_type: eventTypeMap[payload.type] || 'delivered',
+      p_metadata: {
+        provider: 'loops',
+        original_event_type: payload.type,
+        ...payload.data
+      }
+    })
 
     if (error) throw error
 
@@ -51,10 +64,10 @@ serve(async (req) => {
       status: 200,
     })
   } catch (error) {
+    console.error('Error processing webhook:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
   }
 })
-

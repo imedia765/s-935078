@@ -1,5 +1,5 @@
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -9,8 +9,6 @@ import { Button } from "@/components/ui/button";
 import { RotateCw } from "lucide-react";
 
 export function EmailQueueStatus() {
-  const queryClient = useQueryClient();
-
   const { data: loopsConfig } = useQuery({
     queryKey: ['loopsConfig'],
     queryFn: async () => {
@@ -32,15 +30,16 @@ export function EmailQueueStatus() {
 
       const { data: emailLogs, error } = await supabase
         .from('email_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .select('*, email_events(*)')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('priority', { ascending: true })
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return emailLogs;
     },
     enabled: !!loopsConfig?.is_active,
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 10000 // Refresh every 10 seconds
   });
 
   if (!loopsConfig?.is_active) {
@@ -61,6 +60,25 @@ export function EmailQueueStatus() {
         return 'bg-red-500/20 text-red-400';
       case 'pending':
         return 'bg-yellow-500/20 text-yellow-400';
+      case 'queued':
+        return 'bg-blue-500/20 text-blue-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'bg-red-500/20 text-red-400';
+      case 'high':
+        return 'bg-orange-500/20 text-orange-400';
+      case 'normal':
+        return 'bg-blue-500/20 text-blue-400';
+      case 'low':
+        return 'bg-gray-500/20 text-gray-400';
+      case 'bulk':
+        return 'bg-purple-500/20 text-purple-400';
       default:
         return 'bg-gray-500/20 text-gray-400';
     }
@@ -91,10 +109,23 @@ export function EmailQueueStatus() {
                     <Badge className={getStatusColor(email.status)}>
                       {email.status}
                     </Badge>
+                    <Badge className={getPriorityColor(email.priority)}>
+                      {email.priority}
+                    </Badge>
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(email.created_at), { addSuffix: true })}
                     </span>
                   </div>
+                  {email.next_attempt_at && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Next attempt: {formatDistanceToNow(new Date(email.next_attempt_at), { addSuffix: true })}
+                    </p>
+                  )}
+                  {email.attempts > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Attempts: {email.attempts}
+                    </p>
+                  )}
                 </div>
               </div>
               {email.error_message && (
