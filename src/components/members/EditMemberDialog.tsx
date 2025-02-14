@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,7 +41,7 @@ export function EditMemberDialog({
         <DialogHeader>
           <DialogTitle>Edit Member</DialogTitle>
           <DialogDescription>
-            Update the member details below
+            Update the member details below. Member number and collector cannot be changed.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={(e) => {
@@ -50,8 +51,11 @@ export function EditMemberDialog({
             full_name: formData.get('full_name') as string,
             email: formData.get('email') as string,
             phone: formData.get('phone') as string,
-            member_number: formData.get('member_number') as string,
-            collector_id: formData.get('collector_id') as string,
+            address: formData.get('address') as string,
+            town: formData.get('town') as string,
+            postcode: formData.get('postcode') as string,
+            member_number: member.member_number, // Keep original
+            collector_id: member.collector_id, // Keep original
           };
           onSubmit(member.id, memberData);
         }} className="space-y-4">
@@ -93,33 +97,63 @@ export function EditMemberDialog({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="address" className="text-right">
+                Address
+              </Label>
+              <Input
+                id="address"
+                name="address"
+                className="col-span-3"
+                defaultValue={member.address}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="town" className="text-right">
+                Town
+              </Label>
+              <Input
+                id="town"
+                name="town"
+                className="col-span-3"
+                defaultValue={member.town}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="postcode" className="text-right">
+                Postcode
+              </Label>
+              <Input
+                id="postcode"
+                name="postcode"
+                className="col-span-3"
+                defaultValue={member.postcode}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="member_number" className="text-right">
                 Member Number
               </Label>
               <Input
                 id="member_number"
                 name="member_number"
-                className="col-span-3"
+                className="col-span-3 bg-muted"
                 defaultValue={member.member_number}
-                required
+                disabled
+                readOnly
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="collector_id" className="text-right">
                 Collector
               </Label>
-              <Select name="collector_id" defaultValue={member.collector_id}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a collector" />
-                </SelectTrigger>
-                <SelectContent>
-                  {collectors?.map((collector) => (
-                    <SelectItem key={collector.id} value={collector.id}>
-                      {collector.name || `Collector ${collector.number}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="col-span-3">
+                <Input 
+                  value={collectors.find(c => c.id === member.collector_id)?.name || 'Unknown Collector'}
+                  className="bg-muted"
+                  disabled
+                  readOnly
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
