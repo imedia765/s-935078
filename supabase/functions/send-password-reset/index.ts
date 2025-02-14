@@ -91,8 +91,8 @@ serve(async (req) => {
           transactionalId: loopsIntegration.password_reset_template_id,
           email: email,
           dataVariables: {
-            magic_link_url: resetLink,
-            member_number: memberNumber
+            resetUrl: resetLink,  // Updated from magic_link_url to resetUrl
+            memberNumber: memberNumber  // Updated from member_number to memberNumber
           }
         })
       });
