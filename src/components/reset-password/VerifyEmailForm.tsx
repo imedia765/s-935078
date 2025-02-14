@@ -34,7 +34,11 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
             tableName: 'email_verification',
             recordId: verificationToken,
             severity: 'error',
-            metadata: { error: error.message, step: 'verify_email' }
+            metadata: { 
+              error: error.message, 
+              step: 'verify_email',
+              event_type: 'email_verification_failed'
+            }
           });
           throw error;
         }
@@ -60,7 +64,10 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
           tableName: 'email_verification',
           recordId: verificationToken,
           severity: 'info',
-          metadata: { step: 'verification_complete' }
+          metadata: { 
+            step: 'verification_complete',
+            event_type: 'email_verification_success'
+          }
         });
 
         // Show success message
@@ -78,7 +85,11 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
           tableName: 'email_verification',
           recordId: verificationToken,
           severity: 'error',
-          metadata: { error: error.message || 'Unknown error', step: 'verification_failed' }
+          metadata: { 
+            error: error.message || 'Unknown error', 
+            step: 'verification_failed',
+            event_type: 'email_verification_error'
+          }
         });
         toast({
           variant: "destructive",

@@ -33,7 +33,11 @@ export const RequestResetForm = () => {
           tableName: 'password_reset',
           recordId: memberNum,
           severity: 'error',
-          metadata: { error: error.message, step: 'check_email_status' }
+          metadata: { 
+            error: error.message, 
+            step: 'check_email_status',
+            event_type: 'email_status_check_failed'
+          }
         });
         throw error;
       }
@@ -58,7 +62,8 @@ export const RequestResetForm = () => {
         metadata: { 
           step: 'check_email_status',
           status: 'success',
-          is_temp_email: typedData.is_temp_email 
+          is_temp_email: typedData.is_temp_email,
+          event_type: 'email_status_check_success'
         }
       });
 
@@ -115,7 +120,11 @@ export const RequestResetForm = () => {
           tableName: 'password_reset',
           recordId: memberNumber,
           severity: 'error',
-          metadata: { error: resetError.message, step: 'initiate_reset' }
+          metadata: { 
+            error: resetError.message, 
+            step: 'initiate_reset',
+            event_type: 'reset_initiation_failed'
+          }
         });
         throw resetError;
       }
@@ -159,7 +168,11 @@ export const RequestResetForm = () => {
           tableName: 'password_reset',
           recordId: memberNumber,
           severity: 'error',
-          metadata: { error: emailError.message, step: 'send_email' }
+          metadata: { 
+            error: emailError.message, 
+            step: 'send_email',
+            event_type: 'reset_email_failed'
+          }
         });
         throw emailError;
       }
@@ -172,7 +185,8 @@ export const RequestResetForm = () => {
         severity: 'info',
         metadata: { 
           step: 'reset_complete',
-          requires_verification: typedResponse.requires_verification 
+          requires_verification: typedResponse.requires_verification,
+          event_type: 'reset_email_sent'
         }
       });
 
