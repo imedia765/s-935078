@@ -35,66 +35,56 @@ CREATE OR REPLACE FUNCTION public.update_role_permissions(
     permissions_array jsonb
 ) RETURNS void AS $$
 BEGIN
-    -- Clear existing permissions
-    DELETE FROM public.role_permissions;
-    
-    -- Insert new permissions
-    INSERT INTO public.role_permissions (role, permission_name)
-    SELECT 
-        (jsonb_array_elements(permissions_array)->>'role')::text,
-        (jsonb_array_elements(permissions_array)->>'permission_name')::text
-    WHERE (jsonb_array_elements(permissions_array)->>'granted')::boolean = true;
-    
-    -- Log the change
-    INSERT INTO public.audit_logs (
-        operation,
-        table_name,
-        user_id,
-        old_values,
-        new_values
-    ) VALUES (
-        'UPDATE',
-        'role_permissions',
-        auth.uid(),
-        null,
-        permissions_array
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+    -- Begin transaction
+    BEGIN
+        -- Clear existing permissions
+        DELETE FROM public.role_permissions;
+        
+        -- Insert new permissions
+        INSERT INTO public.role_permissions (role, permission_name)
+        SELECT 
+            (jsonb_array_elements(permissions_array)->>'role')::text,
+            (jsonb_array_elements(permissions_array)->>'permission_name')::text
+        WHERE (jsonb_array_elements(permissions_array)->>'granted')::boolean = true
+        ON CONFLICT (role, permission_name) DO NOTHING;
+        
+        -- Log the change
+        INSERT INTO public.audit_logs (
+            operation,
+            table_name,
+            user_id,
+            old_values,
+            new_values
+        ) VALUES (
+            'UPDATE',
+            'role_permissions',
+            auth.uid(),
+            null,
+            permissions_array
+        );
 
--- Function to set audit log retention
-CREATE OR REPLACE FUNCTION public.set_audit_log_retention(
-    p_retention_period text
-) RETURNS void AS $$
-DECLARE
-    v_days integer;
-BEGIN
-    -- Convert period to days
-    v_days := CASE p_retention_period
-        WHEN '30days' THEN 30
-        WHEN '90days' THEN 90
-        WHEN '180days' THEN 180
-        WHEN '1year' THEN 365
-        WHEN '2years' THEN 730
-        ELSE 90
+    EXCEPTION WHEN OTHERS THEN
+        -- Log error and re-raise
+        INSERT INTO public.audit_logs (
+            operation,
+            table_name,
+            user_id,
+            old_values,
+            new_values,
+            severity
+        ) VALUES (
+            'ERROR',
+            'role_permissions',
+            auth.uid(),
+            null,
+            jsonb_build_object(
+                'error', SQLERRM,
+                'permissions', permissions_array
+            ),
+            'error'
+        );
+        RAISE;
     END;
-    
-    -- Delete logs older than retention period
-    DELETE FROM public.audit_logs
-    WHERE created_at < now() - (v_days || ' days')::interval;
-    
-    -- Log the change
-    INSERT INTO public.audit_logs (
-        operation,
-        table_name,
-        user_id,
-        new_values
-    ) VALUES (
-        'UPDATE',
-        'audit_logs',
-        auth.uid(),
-        jsonb_build_object('retention_period', p_retention_period)
-    );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -105,4 +95,3 @@ CREATE POLICY "Allow authenticated users to view permissions"
     ON public.permissions FOR SELECT
     TO authenticated
     USING (true);
-

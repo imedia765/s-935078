@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,6 +25,7 @@ interface RolePermission {
 
 export function RolePermissionsMatrix() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [permissions, setPermissions] = useState<RolePermission[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -65,7 +66,7 @@ export function RolePermissionsMatrix() {
       // Get existing role permissions
       const { data: existingPerms } = await supabase
         .from('role_permissions')
-        .select('*');
+        .select('role, permission_name, created_at');
 
       if (existingPerms) {
         existingPerms.forEach(ep => {
@@ -98,33 +99,20 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // First, clear existing permissions
-      await supabase
-        .from('role_permissions')
-        .delete()
-        .eq('role', 'admin') // Only delete admin roles since that's what we're managing
-        .or('role.eq.collector,role.eq.member'); // And other valid roles
-
-      // Then insert new permissions
-      const { error } = await supabase
-        .from('role_permissions')
-        .insert(
-          permissions
-            .filter(p => p.granted)
-            .map(({ role, permission_name }) => ({
-              role,
-              permission_name,
-              created_at: new Date().toISOString()
-            }))
-        );
+      const { data, error } = await supabase.rpc('update_role_permissions', {
+        permissions_array: JSON.stringify(permissions)
+      });
 
       if (error) throw error;
 
+      await queryClient.invalidateQueries({ queryKey: ["rolePermissions"] });
+      
       toast({
         title: "Success",
         description: "Role permissions updated successfully",
       });
     } catch (error: any) {
+      console.error('Error saving permissions:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -150,7 +138,7 @@ export function RolePermissionsMatrix() {
         </h3>
         <Button onClick={handleSave} disabled={saving}>
           <Save className="mr-2 h-4 w-4" />
-          Save Changes
+          {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
 
