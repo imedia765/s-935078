@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,15 +6,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { EmailStatus, EmailTransitionResponse } from "./types";
-
-interface EmailStatus {
-  success: boolean;
-  member_number?: string;
-  email?: string;
-  is_temp_email?: boolean;
-  has_auth_id?: boolean;
-  error?: string;
-}
 
 export const RequestResetForm = () => {
   const [memberNumber, setMemberNumber] = useState("");
@@ -34,7 +26,11 @@ export const RequestResetForm = () => {
       if (error) throw error;
       if (!data) throw new Error('No data returned');
 
-      const typedData = data as EmailStatus;
+      const typedData = (data as unknown) as EmailStatus;
+      if (!('success' in typedData)) {
+        throw new Error('Invalid response format');
+      }
+      
       setEmailStatus(typedData);
       return typedData;
     } catch (error: any) {
@@ -81,7 +77,10 @@ export const RequestResetForm = () => {
       if (resetError) throw resetError;
       if (!resetResponse) throw new Error('No response from server');
 
-      const typedResponse = resetResponse as EmailTransitionResponse;
+      const typedResponse = (resetResponse as unknown) as EmailTransitionResponse;
+      if (!('success' in typedResponse)) {
+        throw new Error('Invalid response format');
+      }
 
       if (!typedResponse.success) {
         throw new Error(typedResponse.error || 'Failed to process reset request');

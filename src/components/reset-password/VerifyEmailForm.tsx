@@ -27,7 +27,10 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
         if (error) throw error;
         if (!data) throw new Error('No response from server');
 
-        const typedData = data as EmailVerificationResponse;
+        const typedData = (data as unknown) as EmailVerificationResponse;
+        if (!('success' in typedData)) {
+          throw new Error('Invalid response format');
+        }
 
         if (!typedData.success) {
           throw new Error(typedData.error || 'Verification failed');
