@@ -26,17 +26,20 @@ export const RequestResetForm = () => {
 
   const checkEmailStatus = async (memberNum: string) => {
     try {
-      const { data, error } = await supabase.rpc<EmailStatus, { p_member_number: string }>(
+      const { data, error } = await supabase.rpc<
+        EmailStatus,
+        { p_member_number: string }
+      >(
         'get_member_email_status',
         { p_member_number: memberNum }
       );
 
       if (error) throw error;
-
       if (!data) throw new Error('No data returned');
 
-      setEmailStatus(data);
-      return data;
+      const typedData = data as EmailStatus;
+      setEmailStatus(typedData);
+      return typedData;
     } catch (error: any) {
       console.error('Email status check error:', error);
       toast({
@@ -84,8 +87,10 @@ export const RequestResetForm = () => {
       if (resetError) throw resetError;
       if (!resetResponse) throw new Error('No response from server');
 
-      if (!resetResponse.success) {
-        throw new Error(resetResponse.error || 'Failed to process reset request');
+      const typedResponse = resetResponse as EmailTransitionResponse;
+
+      if (!typedResponse.success) {
+        throw new Error(typedResponse.error || 'Failed to process reset request');
       }
 
       // Send appropriate email based on whether verification is required
@@ -93,12 +98,12 @@ export const RequestResetForm = () => {
         'send-password-reset',
         {
           body: {
-            email: resetResponse.email,
+            email: typedResponse.email,
             memberNumber: memberNumber,
-            token: resetResponse.requires_verification ? 
-              resetResponse.verification_token : 
-              resetResponse.reset_token,
-            isVerification: resetResponse.requires_verification
+            token: typedResponse.requires_verification ? 
+              typedResponse.verification_token : 
+              typedResponse.reset_token,
+            isVerification: typedResponse.requires_verification
           },
         }
       );
@@ -106,10 +111,10 @@ export const RequestResetForm = () => {
       if (emailError) throw emailError;
 
       toast({
-        title: resetResponse.requires_verification ? 
+        title: typedResponse.requires_verification ? 
           "Verification Email Sent" : 
           "Reset Instructions Sent",
-        description: resetResponse.requires_verification ?
+        description: typedResponse.requires_verification ?
           "Please check your email to verify your new email address." :
           "Please check your email for password reset instructions. The link will expire in 1 hour.",
       });

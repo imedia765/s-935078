@@ -30,8 +30,10 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
         if (error) throw error;
         if (!data) throw new Error('No response from server');
 
-        if (!data.success) {
-          throw new Error(data.error || 'Verification failed');
+        const typedData = data as EmailVerificationResponse;
+
+        if (!typedData.success) {
+          throw new Error(typedData.error || 'Verification failed');
         }
 
         // Show success message
@@ -41,7 +43,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
         });
 
         // Redirect to password reset with the new token
-        navigate(`/reset-password?token=${data.reset_token}`);
+        navigate(`/reset-password?token=${typedData.reset_token}`);
       } catch (error: any) {
         console.error('Email verification error:', error);
         toast({
