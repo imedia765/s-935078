@@ -26,16 +26,17 @@ export const RequestResetForm = () => {
 
   const checkEmailStatus = async (memberNum: string) => {
     try {
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await supabase.rpc<EmailStatus, { p_member_number: string }>(
         'get_member_email_status',
         { p_member_number: memberNum }
       );
 
       if (error) throw error;
 
-      const typedData = data as EmailStatus;
-      setEmailStatus(typedData);
-      return typedData;
+      if (!data) throw new Error('No data returned');
+
+      setEmailStatus(data);
+      return data;
     } catch (error: any) {
       console.error('Email status check error:', error);
       toast({
@@ -69,7 +70,10 @@ export const RequestResetForm = () => {
     setIsLoading(true);
 
     try {
-      const { data: resetResponse, error: resetError } = await supabase.rpc<EmailTransitionResponse>(
+      const { data: resetResponse, error: resetError } = await supabase.rpc<
+        EmailTransitionResponse,
+        { p_member_number: string; p_new_email: string | null }
+      >(
         'initiate_email_transition_with_reset',
         {
           p_member_number: memberNumber,
@@ -78,6 +82,7 @@ export const RequestResetForm = () => {
       );
 
       if (resetError) throw resetError;
+      if (!resetResponse) throw new Error('No response from server');
 
       if (!resetResponse.success) {
         throw new Error(resetResponse.error || 'Failed to process reset request');
