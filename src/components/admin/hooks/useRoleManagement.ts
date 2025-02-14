@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleValidation } from "./useRoleValidation";
 import { useUserRoles } from "./useUserRoles";
+import { AuthResponse, Session } from "@supabase/supabase-js";
 
 interface CollectorSyncResult {
   success: boolean;
@@ -127,7 +128,8 @@ export function useRoleManagement() {
         return { magicLink: '', email: user.email, token: '' };
       }
 
-      const token = data.session.access_token;
+      const session = data.session as Session;
+      const token = session.access_token;
       const magicLink = token ? `${window.location.origin}/auth/callback?token=${token}&type=magiclink` : '';
 
       return { magicLink, email: user.email, token };
