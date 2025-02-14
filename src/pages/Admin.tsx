@@ -9,7 +9,15 @@ import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashbo
 import { DatabaseManagement } from "@/components/admin/database/DatabaseManagement";
 import { EmailStandardizationManager } from "@/components/admin/email/EmailStandardizationManager";
 import { useState } from "react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { 
+  ClipboardList, 
+  Users, 
+  Search, 
+  Settings, 
+  Mail, 
+  Database, 
+  FileCheck 
+} from "lucide-react";
 
 export default function Admin() {
   const [selectedTab, setSelectedTab] = useState("roles");
@@ -19,18 +27,57 @@ export default function Admin() {
       <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-gradient">Admin Dashboard</h1>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <ScrollArea className="w-full whitespace-nowrap">
-          <TabsList className="w-full lg:w-auto inline-flex justify-start bg-black/40 backdrop-blur-xl border border-white/10">
-            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-            <TabsTrigger value="roles">Role Management</TabsTrigger>
-            <TabsTrigger value="members">Member Search</TabsTrigger>
-            <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-            <TabsTrigger value="email">Email Server</TabsTrigger>
-            <TabsTrigger value="database">Database</TabsTrigger>
-            <TabsTrigger value="standardization">Email Standard.</TabsTrigger>
-          </TabsList>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        <TabsList className="w-full flex flex-col sm:flex-row gap-2 sm:gap-0 bg-transparent sm:bg-black/40 sm:backdrop-blur-xl border-0 sm:border sm:border-white/10">
+          <TabsTrigger 
+            value="audit" 
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <ClipboardList className="h-4 w-4" />
+            <span>Audit Logs</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="roles"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Users className="h-4 w-4" />
+            <span>Role Management</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="members"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Search className="h-4 w-4" />
+            <span>Member Search</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="maintenance"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Settings className="h-4 w-4" />
+            <span>Maintenance</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="email"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Mail className="h-4 w-4" />
+            <span>Email Server</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="database"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Database className="h-4 w-4" />
+            <span>Database</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="standardization"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <FileCheck className="h-4 w-4" />
+            <span>Email Standard.</span>
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="audit">
           <Card className="p-4 lg:p-6 glass-card">

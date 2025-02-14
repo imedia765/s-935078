@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { marked } from "marked";
+import { BookOpen, Users } from "lucide-react";
 
 interface DocumentationSection {
   id: string;
@@ -26,7 +27,6 @@ export default function Documentation() {
 
         if (error) throw error;
         
-        // Type assertion to ensure data matches our interface
         const typedData = data?.map(item => ({
           id: item.id,
           title: item.title,
@@ -68,9 +68,21 @@ export default function Documentation() {
       <h1 className="text-3xl font-bold mb-6 text-gradient">Documentation</h1>
 
       <Tabs defaultValue="user" className="w-full">
-        <TabsList>
-          <TabsTrigger value="user">User Guide</TabsTrigger>
-          <TabsTrigger value="admin">Admin Guide</TabsTrigger>
+        <TabsList className="w-full flex flex-col sm:flex-row gap-2 sm:gap-0 bg-transparent sm:bg-black/40 sm:backdrop-blur-xl border-0 sm:border sm:border-white/10">
+          <TabsTrigger 
+            value="user" 
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>User Guide</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="admin"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Users className="h-4 w-4" />
+            <span>Admin Guide</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="user">
