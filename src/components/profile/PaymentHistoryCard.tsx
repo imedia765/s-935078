@@ -16,6 +16,7 @@ import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { generateReceipt, getPaymentReceipt } from "@/utils/receiptGenerator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PaymentHistoryCardProps {
   memberData: MemberWithRelations | null;
@@ -95,7 +96,7 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
 
   if (isLoading) {
     return (
-      <Card className="glass-card p-6">
+      <Card className="glass-card p-4 sm:p-6">
         <div className="space-y-4">
           <Skeleton className="h-8 w-48" />
           <div className="space-y-2">
@@ -108,63 +109,111 @@ export function PaymentHistoryCard({ memberData, isLoading }: PaymentHistoryCard
     );
   }
 
+  const PaymentCard = ({ payment }: { payment: any }) => (
+    <div className="p-4 bg-muted/50 rounded-lg space-y-2 sm:hidden">
+      <div className="flex justify-between items-start">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">Payment #{payment.payment_number || 'N/A'}</p>
+          <p className="text-xs text-muted-foreground">
+            {payment.created_at ? format(new Date(payment.created_at), 'dd MMM yyyy') : 'N/A'}
+          </p>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(payment.status)}`}>
+          {payment.status || 'Unknown'}
+        </span>
+      </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-sm capitalize">{payment.payment_type}</p>
+          <p className="text-sm font-medium">£{payment.amount.toFixed(2)}</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => downloadReceipt(payment)}
+          disabled={downloadingReceipt === payment.id || payment.status !== 'approved'}
+          className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+          title={payment.status !== 'approved' ? 'Only approved payments have receipts' : 'Download receipt'}
+        >
+          {downloadingReceipt === payment.id ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Receipt className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <Card className="glass-card p-6">
+    <Card className="glass-card p-4 sm:p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-primary">Payment History</h2>
       </div>
       {payments.length === 0 ? (
         <p className="text-muted-foreground text-center py-4">No payment history available</p>
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Payment #</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>
-                    {payment.created_at ? format(new Date(payment.created_at), 'dd MMM yyyy') : 'N/A'}
-                  </TableCell>
-                  <TableCell>{payment.payment_number || 'N/A'}</TableCell>
-                  <TableCell className="capitalize">{payment.payment_type}</TableCell>
-                  <TableCell>£{payment.amount.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(payment.status)}`}>
-                      {payment.status || 'Unknown'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => downloadReceipt(payment)}
-                        disabled={downloadingReceipt === payment.id || payment.status !== 'approved'}
-                        className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
-                        title={payment.status !== 'approved' ? 'Only approved payments have receipts' : 'Download receipt'}
-                      >
-                        {downloadingReceipt === payment.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Receipt className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          {/* Mobile View */}
+          <div className="space-y-3 sm:hidden">
+            {payments.map((payment) => (
+              <PaymentCard key={payment.id} payment={payment} />
+            ))}
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden sm:block">
+            <ScrollArea className="w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Payment #</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell>
+                        {payment.created_at ? format(new Date(payment.created_at), 'dd MMM yyyy') : 'N/A'}
+                      </TableCell>
+                      <TableCell className="truncate max-w-[120px]">{payment.payment_number || 'N/A'}</TableCell>
+                      <TableCell className="capitalize">{payment.payment_type}</TableCell>
+                      <TableCell>£{payment.amount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(payment.status)}`}>
+                          {payment.status || 'Unknown'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => downloadReceipt(payment)}
+                            disabled={downloadingReceipt === payment.id || payment.status !== 'approved'}
+                            className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                            title={payment.status !== 'approved' ? 'Only approved payments have receipts' : 'Download receipt'}
+                          >
+                            {downloadingReceipt === payment.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Receipt className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
+        </>
       )}
     </Card>
   );

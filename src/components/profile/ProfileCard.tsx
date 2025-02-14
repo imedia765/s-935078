@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { AvatarSection } from "./AvatarSection";
 import { RoleBadges } from "./RoleBadges";
 import { ActionButtons } from "./ActionButtons";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProfileCardProps {
   memberData: MemberWithRelations | null;
@@ -59,7 +59,6 @@ export function ProfileCard({
   const renderField = (fieldName: keyof MemberWithRelations, label: string, type: string = "text") => {
     if (isEditing) {
       const value = editedData?.[fieldName];
-      // Only render input if value is string or number
       if (typeof value === 'string' || typeof value === 'number' || value === null) {
         return (
           <div className="space-y-2">
@@ -81,17 +80,26 @@ export function ProfileCard({
     const value = memberData?.[fieldName];
     if (typeof value === 'string' || typeof value === 'number' || value === null) {
       return (
-        <p className="text-foreground hover:text-primary transition-colors">
-          {value?.toString() || 'Not set'}
-        </p>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="text-foreground hover:text-primary transition-colors truncate">
+                {value?.toString() || 'Not set'}
+              </p>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{value?.toString() || 'Not set'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     }
     return null;
   };
 
   return (
-    <Card className="glass-card p-6">
-      <div className="flex items-start gap-6">
+    <Card className="glass-card p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
         <AvatarSection
           photoUrl={memberData?.photo_url}
           fullName={memberData?.full_name}
@@ -99,9 +107,9 @@ export function ProfileCard({
           onPhotoUpload={onPhotoUpload}
         />
         
-        <div className="flex-1">
-          <div className="flex justify-between items-start">
-            <div className="space-y-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+            <div className="space-y-4 w-full sm:w-auto">
               {isEditing ? (
                 <div className="space-y-2">
                   <Input
@@ -115,10 +123,12 @@ export function ProfileCard({
                   {renderValidationError("full_name")}
                 </div>
               ) : (
-                <h2 className="text-2xl font-semibold text-primary">{memberData?.full_name}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold text-primary truncate">
+                  {memberData?.full_name}
+                </h2>
               )}
               <div className="flex items-center gap-2">
-                <p className="text-muted-foreground font-mono">Member #{memberData?.member_number}</p>
+                <p className="text-sm text-muted-foreground font-mono">Member #{memberData?.member_number}</p>
               </div>
               <RoleBadges roles={memberData?.user_roles} />
             </div>
@@ -133,7 +143,7 @@ export function ProfileCard({
             />
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Email</p>
               {renderField("email", "Email")}
@@ -142,7 +152,7 @@ export function ProfileCard({
               <p className="text-sm text-muted-foreground mb-1">Phone</p>
               {renderField("phone", "Phone")}
             </div>
-            <div>
+            <div className="md:col-span-2">
               <p className="text-sm text-muted-foreground mb-1">Address</p>
               {renderField("address", "Address")}
             </div>
@@ -178,7 +188,7 @@ export function ProfileCard({
                   {renderValidationError("gender")}
                 </div>
               ) : (
-                <p className="text-foreground hover:text-primary transition-colors capitalize">
+                <p className="text-foreground hover:text-primary transition-colors capitalize truncate">
                   {memberData?.gender || 'Not set'}
                 </p>
               )}
@@ -204,14 +214,14 @@ export function ProfileCard({
                   {renderValidationError("marital_status")}
                 </div>
               ) : (
-                <p className="text-foreground hover:text-primary transition-colors capitalize">
+                <p className="text-foreground hover:text-primary transition-colors capitalize truncate">
                   {memberData?.marital_status || 'Not set'}
                 </p>
               )}
             </div>
             <div>
               <p className="text-sm text-muted-foreground mb-1">Collector</p>
-              <p className="text-foreground hover:text-primary transition-colors">
+              <p className="text-foreground hover:text-primary transition-colors truncate">
                 {memberData?.collector || 'Not assigned'}
               </p>
             </div>
