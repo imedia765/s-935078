@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Eye, Loader2 } from "lucide-react";
@@ -23,7 +24,7 @@ interface DocumentsCardProps {
 export function DocumentsCard({ documents: initialDocuments, onView, onDownload }: DocumentsCardProps) {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
 
   const fetchDocuments = async () => {
@@ -83,6 +84,10 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []); // Fetch documents on component mount
 
   const checkQuota = async (fileSize: number): Promise<boolean> => {
     try {
