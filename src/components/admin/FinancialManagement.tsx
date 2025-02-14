@@ -11,9 +11,12 @@ import { useFinancialMutations } from "./financial/hooks/useFinancialMutations";
 import { getPaymentStatusColor, getPaymentStatusIcon, formatMemberNumber, calculatePaymentStats } from "./financial/utils/helpers";
 import { exportToCSV, generatePDF } from "@/utils/exportUtils";
 import { useToast } from "@/components/ui/use-toast";
+import { BarChart3, Users, Receipt, FileText, UserSquare2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function FinancialManagement() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("overview");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
@@ -86,15 +89,45 @@ export function FinancialManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <h2 className="text-xl font-semibold text-gradient">Financial Management</h2>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="collectors">Collectors</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="stats">Member Stats</TabsTrigger>
+        <TabsList className="w-full flex flex-col sm:flex-row gap-2 sm:gap-0 bg-transparent sm:bg-black/40 sm:backdrop-blur-xl border-0 sm:border sm:border-white/10">
+          <TabsTrigger 
+            value="overview" 
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="collectors"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Collectors</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="payments"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <Receipt className="h-4 w-4" />
+            <span className="hidden sm:inline">Payments</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="reports"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Reports</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="stats"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+          >
+            <UserSquare2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Member Stats</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
