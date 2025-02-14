@@ -2906,14 +2906,23 @@ export type Database = {
           recommendations: Json
         }[]
       }
-      approve_role_change: {
-        Args: {
-          request_id: string
-          new_status: Database["public"]["Enums"]["approval_status"]
-          admin_id: string
-        }
-        Returns: Json
-      }
+      approve_role_change:
+        | {
+            Args: {
+              request_id: string
+              new_status: Database["public"]["Enums"]["approval_status"]
+              admin_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              request_id: string
+              new_status: string
+              admin_id: string
+            }
+            Returns: undefined
+          }
       assign_collector_role: {
         Args: {
           member_id: string
