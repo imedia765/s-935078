@@ -253,6 +253,40 @@ export interface Database {
           updated_at?: string
         }
       }
+      email_events: {
+        Row: {
+          id: string;
+          email_log_id: string | null;
+          event_type: 'delivered' | 'opened' | 'clicked' | 'failed';
+          occurred_at: string;
+          metadata: Record<string, any>;
+          created_at: string;
+        }
+        Insert: {
+          id?: string;
+          email_log_id?: string | null;
+          event_type: 'delivered' | 'opened' | 'clicked' | 'failed';
+          occurred_at?: string;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        }
+        Update: {
+          id?: string;
+          email_log_id?: string | null;
+          event_type?: 'delivered' | 'opened' | 'clicked' | 'failed';
+          occurred_at?: string;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_events_email_log_id_fkey"
+            columns: ["email_log_id"]
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Functions: {
       initiate_email_transition: {
