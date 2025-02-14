@@ -36,11 +36,18 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
 
       console.log('Fetching documents for user:', user.id);
 
+      // First ensure the user's folder exists
+      await supabase.storage
+        .from('profile_documents')
+        .upload(`${user.id}/.keep`, new Blob([''], { type: 'text/plain' }), {
+          upsert: true
+        });
+
       const { data: files, error } = await supabase.storage
         .from('profile_documents')
-        .list(user.id + '/', {
+        .list(`${user.id}/`, {
           limit: 100,
-          sortBy: { column: 'updated_at', order: 'desc' }
+          sortBy: { column: 'name', order: 'asc' }
         });
 
       if (error) {
@@ -50,29 +57,34 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
 
       console.log('Files retrieved:', files);
 
-      if (files && files.length > 0) {
-        const formattedDocs: Document[] = await Promise.all(
-          files.map(async (file) => {
-            const { data: { publicUrl } } = supabase.storage
-              .from('profile_documents')
-              .getPublicUrl(`${user.id}/${file.name}`);
+      if (files) {
+        // Filter out the .keep file
+        const actualFiles = files.filter(file => file.name !== '.keep');
+        
+        if (actualFiles.length > 0) {
+          const formattedDocs: Document[] = await Promise.all(
+            actualFiles.map(async (file) => {
+              const { data: { publicUrl } } = supabase.storage
+                .from('profile_documents')
+                .getPublicUrl(`${user.id}/${file.name}`);
 
-            const sizeInMB = (file.metadata.size / (1024 * 1024)).toFixed(2);
-            
-            return {
-              id: file.id,
-              title: file.name,
-              type: file.metadata.mimetype || 'Unknown',
-              size: `${sizeInMB}MB`,
-              updated_at: file.updated_at,
-              url: publicUrl
-            };
-          })
-        );
+              const sizeInMB = (file.metadata.size / (1024 * 1024)).toFixed(2);
+              
+              return {
+                id: file.id,
+                title: file.name,
+                type: file.metadata.mimetype || 'Unknown',
+                size: `${sizeInMB}MB`,
+                updated_at: file.updated_at,
+                url: publicUrl
+              };
+            })
+          );
 
-        setDocuments(formattedDocs);
-      } else {
-        setDocuments([]);
+          setDocuments(formattedDocs);
+        } else {
+          setDocuments([]);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching documents:', error);

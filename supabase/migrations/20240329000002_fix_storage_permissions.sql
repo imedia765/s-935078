@@ -23,7 +23,8 @@ BEGIN;
     ON storage.objects FOR SELECT
     USING (
         auth.role() = 'authenticated' AND 
-        bucket_id = 'profile_documents'
+        bucket_id = 'profile_documents' AND 
+        (storage.foldername(name))[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to upload their own documents"
@@ -51,9 +52,13 @@ BEGIN;
     );
 COMMIT;
 
--- Grant necessary permissions
+-- Ensure RLS is enabled
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Grant necessary permissions to authenticated users
 GRANT ALL ON storage.objects TO authenticated;
 GRANT ALL ON storage.buckets TO authenticated;
 
--- Enable RLS
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Reset ownership and permissions
+ALTER TABLE storage.objects OWNER TO authenticated;
+ALTER TABLE storage.buckets OWNER TO authenticated;
