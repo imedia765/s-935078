@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -7,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,68 +15,71 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useState } from "react";
 
 interface MoveMemberDialogProps {
-  isOpen: boolean;
+  open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (memberId: string, newCollectorId: string) => void;
-  member: any;
+  onConfirm: (collectorId: string) => void;
   collectors: any[];
+  loading?: boolean;
+  memberName?: string;
 }
 
 export function MoveMemberDialog({
-  isOpen,
+  open,
   onOpenChange,
-  onSubmit,
-  member,
+  onConfirm,
   collectors,
+  loading,
+  memberName,
 }: MoveMemberDialogProps) {
-  if (!member) return null;
+  const [selectedCollector, setSelectedCollector] = useState<string>("");
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-card">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Move Member</DialogTitle>
+          <DialogTitle>Move Member to Another Collector</DialogTitle>
           <DialogDescription>
-            Select a new collector for this member
+            Select a new collector for {memberName}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          const newCollectorId = formData.get('new_collector_id') as string;
-          if (member && newCollectorId) {
-            onSubmit(member.id, newCollectorId);
-          }
-        }} className="space-y-4">
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new_collector_id" className="text-right">
-                New Collector
-              </Label>
-              <Select name="new_collector_id" defaultValue={member.collector_id}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a collector" />
-                </SelectTrigger>
-                <SelectContent>
-                  {collectors?.map((collector) => (
-                    <SelectItem 
-                      key={collector.id} 
-                      value={collector.id}
-                      disabled={collector.id === member.collector_id}
-                    >
-                      {collector.name || `Collector ${collector.number}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit">Move Member</Button>
-          </DialogFooter>
-        </form>
+        <div className="space-y-4 py-4">
+          <Select
+            value={selectedCollector}
+            onValueChange={setSelectedCollector}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select collector" />
+            </SelectTrigger>
+            <SelectContent>
+              {collectors?.map((collector) => (
+                collector.id && (
+                  <SelectItem key={collector.id} value={collector.id}>
+                    {collector.name || `Collector ${collector.member_number}`} (#{collector.member_number})
+                  </SelectItem>
+                )
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => onConfirm(selectedCollector)}
+            disabled={!selectedCollector || loading}
+            className="w-full sm:w-auto"
+          >
+            {loading ? "Moving..." : "Move Member"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
