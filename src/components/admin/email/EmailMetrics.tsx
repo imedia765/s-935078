@@ -21,19 +21,14 @@ export function EmailMetrics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('email_events')
-        .select<'email_events', EmailEvent>(`
-          id,
-          event_type,
-          occurred_at,
-          metadata
-        `)
+        .select('*')
         .order('occurred_at', { ascending: true })
         .limit(100);
 
       if (error) throw error;
 
       // Process metrics
-      const processedData = (data || []).reduce((acc: EmailMetricData[], event) => {
+      const processedData = (data || []).reduce((acc: EmailMetricData[], event: any) => {
         const date = new Date(event.occurred_at).toLocaleDateString();
         const existing = acc.find(item => item.date === date);
 
@@ -168,8 +163,8 @@ function calculateRate(metrics: EmailMetricData[], type: keyof EmailMetricData):
   if (!metrics || metrics.length === 0) return "0%";
 
   const lastMetric = metrics[metrics.length - 1];
-  const total = lastMetric.total || 0;
-  const typeCount = lastMetric[type] || 0;
+  const total = Number(lastMetric.total) || 0;
+  const typeCount = Number(lastMetric[type]) || 0;
 
   if (total === 0) return "0%";
   return `${Math.round((typeCount / total) * 100)}%`;
