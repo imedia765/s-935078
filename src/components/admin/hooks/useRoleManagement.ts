@@ -1,9 +1,23 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleValidation } from "./useRoleValidation";
 import { useUserRoles } from "./useUserRoles";
+
+interface CollectorSyncResult {
+  success: boolean;
+  total_processed: number;
+  success_count: number;
+  failed_count: number;
+  results: Array<{
+    success: boolean;
+    member_number?: string;
+    error?: string;
+  }>;
+  timestamp: string;
+}
 
 export function useRoleManagement() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,9 +44,9 @@ export function useRoleManagement() {
   const fixAllCollectorsMutation = useMutation({
     mutationFn: async () => {
       console.log('Starting fix all collectors process...');
-      const { data, error } = await supabase.rpc('fix_all_collectors_role_sync');
+      const { data, error } = await supabase.rpc('sync_all_collectors_roles');
       if (error) throw error;
-      return data;
+      return data as CollectorSyncResult;
     },
     onSuccess: (data) => {
       console.log('Fix all collectors response:', data);
@@ -102,8 +116,9 @@ export function useRoleManagement() {
 
       console.log("Magic link data:", data);
 
+      // Safely access session data with null check
       const token = data?.session?.access_token || '';
-      const magicLink = `${window.location.origin}/auth/callback?token=${token}&type=magiclink`;
+      const magicLink = token ? `${window.location.origin}/auth/callback?token=${token}&type=magiclink` : '';
 
       return { magicLink, email: user.email, token };
     } catch (error: any) {

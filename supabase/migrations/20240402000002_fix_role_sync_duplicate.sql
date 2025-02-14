@@ -1,4 +1,82 @@
+-- Function to fix collector role sync with improved error handling and retry logic
+CREATE OR REPLACE FUNCTION public.sync_all_collectors_roles()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_collector RECORD;
+    v_success_count integer := 0;
+    v_failed_count integer := 0;
+    v_results jsonb[] := ARRAY[]::jsonb[];
+BEGIN
+    -- Reset any stuck sync statuses older than 1 hour
+    UPDATE sync_status
+    SET status = 'pending'
+    WHERE status = 'pending'
+    AND sync_started_at < now() - interval '1 hour';
 
+    -- Process each active collector
+    FOR v_collector IN (
+        SELECT DISTINCT m.member_number
+        FROM members m
+        JOIN members_collectors mc ON mc.member_number = m.member_number
+        WHERE mc.active = true
+        ORDER BY m.member_number
+    ) LOOP
+        DECLARE
+            v_result jsonb;
+        BEGIN
+            v_result := fix_collector_role_sync(v_collector.member_number);
+            
+            IF (v_result->>'success')::boolean THEN
+                v_success_count := v_success_count + 1;
+            ELSE
+                v_failed_count := v_failed_count + 1;
+            END IF;
+
+            v_results := array_append(v_results, v_result);
+
+        EXCEPTION WHEN OTHERS THEN
+            v_failed_count := v_failed_count + 1;
+            v_results := array_append(v_results, jsonb_build_object(
+                'success', false,
+                'member_number', v_collector.member_number,
+                'error', SQLERRM
+            ));
+        END;
+    END LOOP;
+
+    -- Log the bulk sync operation
+    INSERT INTO audit_logs (
+        operation,
+        table_name,
+        new_values,
+        severity
+    ) VALUES (
+        'bulk_update',
+        'user_roles',
+        jsonb_build_object(
+            'action', 'bulk_role_sync',
+            'success_count', v_success_count,
+            'failed_count', v_failed_count,
+            'timestamp', now()
+        ),
+        'info'
+    );
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'total_processed', v_success_count + v_failed_count,
+        'success_count', v_success_count,
+        'failed_count', v_failed_count,
+        'results', v_results,
+        'timestamp', now()::text
+    );
+END;
+$$;
+
+-- Keep the existing fix_collector_role_sync function as is
 -- Function to fix collector role sync with improved error handling and retry logic
 CREATE OR REPLACE FUNCTION public.fix_collector_role_sync(p_member_number text)
 RETURNS jsonb
@@ -152,84 +230,6 @@ BEGIN
         'auth_user_id', v_auth_user_id,
         'member_number', p_member_number,
         'retries', v_retry_count
-    );
-END;
-$$;
-
--- Function to fix all collectors role sync issues
-CREATE OR REPLACE FUNCTION public.fix_all_collectors_role_sync()
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_collector RECORD;
-    v_success_count integer := 0;
-    v_failed_count integer := 0;
-    v_results jsonb[] := ARRAY[]::jsonb[];
-BEGIN
-    -- Reset any stuck sync statuses older than 1 hour
-    UPDATE sync_status
-    SET status = 'pending'
-    WHERE status = 'pending'
-    AND sync_started_at < now() - interval '1 hour';
-
-    -- Process each active collector
-    FOR v_collector IN (
-        SELECT DISTINCT m.member_number
-        FROM members m
-        JOIN members_collectors mc ON mc.member_number = m.member_number
-        WHERE mc.active = true
-        ORDER BY m.member_number
-    ) LOOP
-        DECLARE
-            v_result jsonb;
-        BEGIN
-            v_result := fix_collector_role_sync(v_collector.member_number);
-            
-            IF (v_result->>'success')::boolean THEN
-                v_success_count := v_success_count + 1;
-            ELSE
-                v_failed_count := v_failed_count + 1;
-            END IF;
-
-            v_results := array_append(v_results, v_result);
-
-        EXCEPTION WHEN OTHERS THEN
-            v_failed_count := v_failed_count + 1;
-            v_results := array_append(v_results, jsonb_build_object(
-                'success', false,
-                'member_number', v_collector.member_number,
-                'error', SQLERRM
-            ));
-        END;
-    END LOOP;
-
-    -- Log the bulk sync operation
-    INSERT INTO audit_logs (
-        operation,
-        table_name,
-        new_values,
-        severity
-    ) VALUES (
-        'bulk_update',
-        'user_roles',
-        jsonb_build_object(
-            'action', 'bulk_role_sync',
-            'success_count', v_success_count,
-            'failed_count', v_failed_count,
-            'timestamp', now()
-        ),
-        'info'
-    );
-
-    RETURN jsonb_build_object(
-        'success', true,
-        'total_processed', v_success_count + v_failed_count,
-        'success_count', v_success_count,
-        'failed_count', v_failed_count,
-        'results', v_results,
-        'timestamp', now()
     );
 END;
 $$;
