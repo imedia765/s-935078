@@ -27,13 +27,20 @@ ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
 
 -- Create bucket policies
 BEGIN;
-    -- Allow authenticated users to read/write to their own folder
+    -- Allow authenticated users to list and read their own folder
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
     USING (
         auth.role() = 'authenticated' AND 
         bucket_id = 'profile_documents' AND 
-        (auth.uid()::text = storage.foldername(name)[1])
+        (
+            -- Allow listing the root folder
+            name = '' OR
+            -- Allow listing user's own folder
+            storage.foldername(name)[1] = auth.uid()::text OR
+            -- Allow access to files in user's folder
+            (storage.foldername(name))[1] = auth.uid()::text
+        )
     );
 
     CREATE POLICY "Allow authenticated users to upload their own documents"
@@ -41,7 +48,7 @@ BEGIN;
     WITH CHECK (
         auth.role() = 'authenticated' AND 
         bucket_id = 'profile_documents' AND 
-        (auth.uid()::text = storage.foldername(name)[1])
+        (storage.foldername(name))[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to update their own documents"
@@ -49,7 +56,7 @@ BEGIN;
     USING (
         auth.role() = 'authenticated' AND 
         bucket_id = 'profile_documents' AND 
-        (auth.uid()::text = storage.foldername(name)[1])
+        (storage.foldername(name))[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to delete their own documents"
@@ -57,7 +64,7 @@ BEGIN;
     USING (
         auth.role() = 'authenticated' AND 
         bucket_id = 'profile_documents' AND 
-        (auth.uid()::text = storage.foldername(name)[1])
+        (storage.foldername(name))[1] = auth.uid()::text
     );
 
     -- Allow authenticated users to access the bucket itself
