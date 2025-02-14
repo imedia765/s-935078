@@ -13,12 +13,13 @@ ALTER TABLE storage.objects OWNER TO postgres;
 ALTER TABLE storage.buckets OWNER TO postgres;
 
 -- Create bucket with proper ownership
-INSERT INTO storage.buckets (id, name, owner)
-SELECT 'profile_documents', 'profile_documents', (
-    SELECT oid FROM pg_roles WHERE rolname = 'postgres'
-)
-WHERE NOT EXISTS (
-    SELECT 1 FROM storage.buckets WHERE id = 'profile_documents'
+DELETE FROM storage.buckets WHERE id = 'profile_documents';
+INSERT INTO storage.buckets (id, name, owner, public)
+VALUES (
+    'profile_documents',
+    'profile_documents',
+    (SELECT oid FROM pg_roles WHERE rolname = 'postgres'),
+    false
 );
 
 -- Enable RLS
@@ -27,28 +28,17 @@ ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
 
 -- Create bucket policies
 BEGIN;
-    -- Create a policy to allow authenticated users to access the bucket first
+    -- First create bucket access policy
     CREATE POLICY "Allow authenticated users to access the bucket"
     ON storage.buckets FOR SELECT
-    USING (
-        auth.role() = 'authenticated' AND 
-        id = 'profile_documents'
-    );
+    USING (auth.role() = 'authenticated');
 
-    -- Then create object policies
+    -- Then create storage object policies
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
     USING (
         auth.role() = 'authenticated' AND 
-        bucket_id = 'profile_documents' AND 
-        (
-            -- Allow listing the root folder
-            name = '' OR
-            -- Allow listing any folder (needed for root bucket access)
-            position('/' in name) = 0 OR
-            -- Allow access to user's own folder
-            storage.foldername(name)[1] = auth.uid()::text
-        )
+        bucket_id = 'profile_documents'
     );
 
     CREATE POLICY "Allow authenticated users to upload their own documents"
