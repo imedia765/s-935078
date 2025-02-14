@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import type { EmailVerificationResponse } from "./types";
 
 interface VerifyEmailFormProps {
   verificationToken: string;
@@ -18,7 +19,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const { data, error } = await supabase.rpc(
+        const { data, error } = await supabase.rpc<EmailVerificationResponse>(
           'verify_email_transition',
           { p_verification_token: verificationToken }
         );

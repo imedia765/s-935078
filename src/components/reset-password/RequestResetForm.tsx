@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { EmailStatus, EmailTransitionResponse } from "./types";
 
 interface EmailStatus {
   success: boolean;
@@ -33,7 +33,7 @@ export const RequestResetForm = () => {
 
       if (error) throw error;
 
-      const typedData = data as unknown as EmailStatus;
+      const typedData = data as EmailStatus;
       setEmailStatus(typedData);
       return typedData;
     } catch (error: any) {
@@ -69,7 +69,7 @@ export const RequestResetForm = () => {
     setIsLoading(true);
 
     try {
-      const { data: resetResponse, error: resetError } = await supabase.rpc(
+      const { data: resetResponse, error: resetError } = await supabase.rpc<EmailTransitionResponse>(
         'initiate_email_transition_with_reset',
         {
           p_member_number: memberNumber,
