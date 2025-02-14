@@ -17,43 +17,49 @@ export function QueryAnalysis() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000, // Refresh every minute
-    staleTime: 1000 * 30, // Consider data stale after 30 seconds
-    gcTime: 1000 * 60 * 5 // Cache for 5 minutes (formerly cacheTime)
+    refetchInterval: 60000,
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 5
   });
 
   if (isLoading) {
-    return <div>Loading query performance data...</div>;
+    return (
+      <div className="p-4 text-center">
+        <p className="text-muted-foreground">Loading query performance data...</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <Card className="p-4">
+      <Card className="p-4 lg:p-6">
         <h3 className="text-lg font-medium mb-4">Slow Queries</h3>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Query</TableHead>
-              <TableHead>Execution Time (ms)</TableHead>
-              <TableHead>Rows Affected</TableHead>
-              <TableHead>Recorded At</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {queryLogs?.map((log) => (
-              <TableRow key={log.id}>
-                <TableCell className="font-mono text-xs">
-                  {log.query_text}
-                </TableCell>
-                <TableCell>{log.execution_time.toFixed(2)}</TableCell>
-                <TableCell>{log.rows_affected}</TableCell>
-                <TableCell>
-                  {new Date(log.recorded_at).toLocaleString()}
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[200px]">Query</TableHead>
+                <TableHead className="whitespace-nowrap">Execution Time (ms)</TableHead>
+                <TableHead className="whitespace-nowrap">Rows Affected</TableHead>
+                <TableHead className="whitespace-nowrap">Recorded At</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {queryLogs?.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell className="font-mono text-xs break-all">
+                    {log.query_text}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{log.execution_time.toFixed(2)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{log.rows_affected}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {new Date(log.recorded_at).toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
     </div>
   );
