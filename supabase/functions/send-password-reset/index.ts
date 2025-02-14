@@ -36,47 +36,59 @@ serve(async (req) => {
       throw new Error('Invalid email format');
     }
 
-    console.log(`[${new Date().toISOString()}] Processing reset request for ${memberNumber}`);
+    console.log(`[${new Date().toISOString()}] Starting password reset process for ${memberNumber}`);
 
-    const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
+    // Check Loops configuration first
+    const { data: loopsConfig, error: configCheckError } = await supabaseAdmin
+      .rpc('check_loops_config');
 
-    // Get Loops configuration
-    const { data: loopsConfig, error: configError } = await supabaseAdmin
+    if (configCheckError) {
+      console.error('Error checking Loops config:', configCheckError);
+      throw new Error('Failed to check Loops configuration');
+    }
+
+    if (!loopsConfig?.[0]?.has_api_key || !loopsConfig?.[0]?.is_active) {
+      console.error('Loops integration is not properly configured:', loopsConfig);
+      throw new Error('Loops integration is not properly configured or is inactive');
+    }
+
+    // Get full Loops configuration
+    const { data: loopsIntegration, error: integrationError } = await supabaseAdmin
       .from('loops_integration')
       .select('*')
       .single();
 
-    if (configError) {
-      console.error('Loops config error:', configError);
-      throw new Error('Failed to get Loops configuration');
+    if (integrationError) {
+      console.error('Error fetching Loops integration:', integrationError);
+      throw new Error('Failed to get Loops integration details');
     }
 
-    if (!loopsConfig?.api_key || !loopsConfig?.password_reset_template_id) {
-      console.error('Loops configuration missing:', { 
-        hasApiKey: !!loopsConfig.api_key, 
-        hasTemplateId: !!loopsConfig.password_reset_template_id 
+    if (!loopsIntegration?.api_key || !loopsIntegration?.password_reset_template_id) {
+      console.error('Missing required Loops configuration:', {
+        hasApiKey: !!loopsIntegration?.api_key,
+        hasTemplateId: !!loopsIntegration?.password_reset_template_id
       });
-      throw new Error('Loops configuration is incomplete');
+      throw new Error('Incomplete Loops configuration');
     }
+
+    const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
 
     console.log('Making request to Loops API:', {
-      templateId: loopsConfig.password_reset_template_id,
-      hasApiKey: !!loopsConfig.api_key,
+      templateId: loopsIntegration.password_reset_template_id,
       email,
       memberNumber,
       resetLink
     });
 
     try {
-      // Use Loops API to send email
       const loopsResponse = await fetch('https://api.loops.so/v1/transactional', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${loopsConfig.api_key}`,
+          'Authorization': `Bearer ${loopsIntegration.api_key}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          transactionalId: loopsConfig.password_reset_template_id,
+          transactionalId: loopsIntegration.password_reset_template_id,
           email: email,
           dataVariables: {
             magic_link_url: resetLink,
@@ -98,29 +110,30 @@ serve(async (req) => {
 
       const loopsResult = await loopsResponse.json();
       console.log('Loops email sent successfully:', loopsResult);
+
+      return new Response(
+        JSON.stringify({ 
+          message: "Password reset email sent successfully",
+          timing: {
+            timestamp: new Date().toISOString()
+          }
+        }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            "Content-Type": "application/json" 
+          } 
+        }
+      );
+
     } catch (loopsError: any) {
       console.error('Error calling Loops API:', {
         error: loopsError,
         message: loopsError.message,
         stack: loopsError.stack
       });
-      throw new Error(loopsError.message || 'Failed to send email through Loops');
+      throw new Error(`Failed to send email through Loops: ${loopsError.message}`);
     }
-    
-    return new Response(
-      JSON.stringify({ 
-        message: "Password reset email sent successfully",
-        timing: {
-          timestamp: new Date().toISOString()
-        }
-      }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          "Content-Type": "application/json" 
-        } 
-      }
-    );
 
   } catch (error: any) {
     console.error(`[${new Date().toISOString()}] Error:`, {
