@@ -11,17 +11,17 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts";
-import { EmailDeliveryMetric } from "@/types/email";
+import { EmailEvent, EmailMetricData } from "@/types/email";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export function EmailMetrics() {
-  const { data: metrics, isLoading, error } = useQuery({
+  const { data: metrics, isLoading, error } = useQuery<EmailMetricData[]>({
     queryKey: ['emailMetrics'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('email_events')
-        .select(`
+        .select<'email_events', EmailEvent>(`
           id,
           event_type,
           occurred_at,
@@ -33,7 +33,7 @@ export function EmailMetrics() {
       if (error) throw error;
 
       // Process metrics
-      const processedData = data.reduce((acc: any[], event) => {
+      const processedData = (data || []).reduce((acc: EmailMetricData[], event) => {
         const date = new Date(event.occurred_at).toLocaleDateString();
         const existing = acc.find(item => item.date === date);
 
@@ -71,7 +71,7 @@ export function EmailMetrics() {
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Failed to load email metrics: {error.message}
+          Failed to load email metrics: {(error as Error).message}
         </AlertDescription>
       </Alert>
     );
@@ -164,7 +164,7 @@ function MetricCard({ title, value, color }: { title: string; value: string; col
   );
 }
 
-function calculateRate(metrics: any[], type: string): string {
+function calculateRate(metrics: EmailMetricData[], type: keyof EmailMetricData): string {
   if (!metrics || metrics.length === 0) return "0%";
 
   const lastMetric = metrics[metrics.length - 1];

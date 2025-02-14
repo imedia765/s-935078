@@ -1,31 +1,18 @@
 
-export type EmailPriority = 'critical' | 'high' | 'normal' | 'low' | 'bulk';
-
-export interface EmailMetric {
+export interface EmailEvent {
   id: string;
-  metric_name: string;
-  metric_value: number;
-  recorded_at: string;
-  details: Record<string, any>;
+  email_log_id: string | null;
+  event_type: 'delivered' | 'opened' | 'clicked' | 'failed';
+  occurred_at: string;
+  metadata: Record<string, any>;
+  created_at: string;
 }
 
-export interface MonitoringRule {
-  id: string;
-  name: string;
-  metric_name: string;
-  threshold: number;
-  operator: string;
-  severity: string;
-  notification_channels: string[];
-  message_template: string;
-  cooldown_minutes: number;
-}
-
-export interface EmailDeliveryMetric {
-  id: string;
-  metric_type: string;
-  value: number;
-  recorded_at: string;
-  details: Record<string, any>;
-  configuration_id: string;
+export interface EmailMetricData {
+  date: string;
+  delivered?: number;
+  opened?: number;
+  clicked?: number;
+  failed?: number;
+  total: number;
 }
