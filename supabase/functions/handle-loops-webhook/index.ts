@@ -1,7 +1,17 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { LoopsWebhookPayload } from '../../../src/types/email'
+
+interface LoopsWebhookPayload {
+  type: 'email.sent' | 'email.delivered' | 'email.opened' | 'email.clicked' | 'email.bounced';
+  data: {
+    emailId: string;
+    timestamp: string;
+    recipient: string;
+    templateId?: string;
+    metadata?: Record<string, any>;
+  };
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

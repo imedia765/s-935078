@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 interface SendEmailParams {
@@ -28,13 +29,14 @@ export async function sendEmail({ to, subject, html, text, templateId, variables
     const { data: emailLog, error: logError } = await supabase
       .from('email_logs')
       .insert({
-        recipient_email: to,
+        to_email: to,
         subject,
         status: 'pending',
         priority: 'normal',
-        category: templateId ? 'template' : 'custom',
+        email_category: templateId ? 'template' : 'custom',
         template_name: templateId,
-        provider: 'loops'
+        provider: 'loops',
+        email_type: templateId ? 'notification' : 'custom'
       })
       .select()
       .single();
@@ -91,7 +93,7 @@ export async function sendEmail({ to, subject, html, text, templateId, variables
       .from('email_logs')
       .update({
         provider_message_id: result.emailId,
-        status: 'queued'
+        status: 'pending'
       })
       .eq('id', emailLog.id);
 
