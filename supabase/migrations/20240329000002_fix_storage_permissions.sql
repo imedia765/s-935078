@@ -27,7 +27,15 @@ ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
 
 -- Create bucket policies
 BEGIN;
-    -- Allow authenticated users to list and read their own folder
+    -- Create a policy to allow authenticated users to access the bucket first
+    CREATE POLICY "Allow authenticated users to access the bucket"
+    ON storage.buckets FOR SELECT
+    USING (
+        auth.role() = 'authenticated' AND 
+        id = 'profile_documents'
+    );
+
+    -- Then create object policies
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
     USING (
@@ -36,10 +44,10 @@ BEGIN;
         (
             -- Allow listing the root folder
             name = '' OR
-            -- Allow listing user's own folder
-            storage.foldername(name)[1] = auth.uid()::text OR
-            -- Allow access to files in user's folder
-            (storage.foldername(name))[1] = auth.uid()::text
+            -- Allow listing any folder (needed for root bucket access)
+            position('/' in name) = 0 OR
+            -- Allow access to user's own folder
+            storage.foldername(name)[1] = auth.uid()::text
         )
     );
 
@@ -48,7 +56,7 @@ BEGIN;
     WITH CHECK (
         auth.role() = 'authenticated' AND 
         bucket_id = 'profile_documents' AND 
-        (storage.foldername(name))[1] = auth.uid()::text
+        storage.foldername(name)[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to update their own documents"
@@ -56,7 +64,7 @@ BEGIN;
     USING (
         auth.role() = 'authenticated' AND 
         bucket_id = 'profile_documents' AND 
-        (storage.foldername(name))[1] = auth.uid()::text
+        storage.foldername(name)[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to delete their own documents"
@@ -64,15 +72,7 @@ BEGIN;
     USING (
         auth.role() = 'authenticated' AND 
         bucket_id = 'profile_documents' AND 
-        (storage.foldername(name))[1] = auth.uid()::text
-    );
-
-    -- Allow authenticated users to access the bucket itself
-    CREATE POLICY "Allow authenticated users to access the bucket"
-    ON storage.buckets FOR SELECT
-    USING (
-        auth.role() = 'authenticated' AND 
-        id = 'profile_documents'
+        storage.foldername(name)[1] = auth.uid()::text
     );
 COMMIT;
 
