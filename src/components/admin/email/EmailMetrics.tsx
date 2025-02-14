@@ -11,9 +11,12 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts";
-import { EmailEvent, EmailMetricData } from "@/types/email";
+import { EmailMetricData } from "@/types/email";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle } from "lucide-react";
+import { Database } from "@/types/supabase";
+
+type EmailEvent = Database['public']['Tables']['email_events']['Row'];
 
 export function EmailMetrics() {
   const { data: metrics, isLoading, error } = useQuery<EmailMetricData[]>({
@@ -23,12 +26,12 @@ export function EmailMetrics() {
         .from('email_events')
         .select('*')
         .order('occurred_at', { ascending: true })
-        .limit(100);
+        .limit(100) as { data: EmailEvent[] | null; error: any };
 
       if (error) throw error;
 
       // Process metrics
-      const processedData = (data || []).reduce((acc: EmailMetricData[], event: any) => {
+      const processedData = (data || []).reduce((acc: EmailMetricData[], event) => {
         const date = new Date(event.occurred_at).toLocaleDateString();
         const existing = acc.find(item => item.date === date);
 
