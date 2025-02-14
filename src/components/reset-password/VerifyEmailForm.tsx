@@ -23,7 +23,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
           EmailVerificationResponse,
           { p_verification_token: string }
         >(
-          'verify_email_transition',
+          'verify_email_transition' as any,
           { p_verification_token: verificationToken }
         );
 

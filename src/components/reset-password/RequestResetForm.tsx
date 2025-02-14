@@ -26,11 +26,8 @@ export const RequestResetForm = () => {
 
   const checkEmailStatus = async (memberNum: string) => {
     try {
-      const { data, error } = await supabase.rpc<
-        EmailStatus,
-        { p_member_number: string }
-      >(
-        'get_member_email_status',
+      const { data, error } = await supabase.rpc<EmailStatus, { p_member_number: string }>(
+        'get_member_email_status' as any,
         { p_member_number: memberNum }
       );
 
@@ -77,7 +74,7 @@ export const RequestResetForm = () => {
         EmailTransitionResponse,
         { p_member_number: string; p_new_email: string | null }
       >(
-        'initiate_email_transition_with_reset',
+        'initiate_email_transition_with_reset' as any,
         {
           p_member_number: memberNumber,
           p_new_email: emailStatus?.is_temp_email ? newEmail : null
