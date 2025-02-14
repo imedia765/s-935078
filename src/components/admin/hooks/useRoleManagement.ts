@@ -44,9 +44,16 @@ export function useRoleManagement() {
   const fixAllCollectorsMutation = useMutation({
     mutationFn: async () => {
       console.log('Starting fix all collectors process...');
-      const { data, error } = await supabase.rpc('sync_all_collectors_roles');
+      const { data, error } = await supabase.rpc('fix_role_sync');
       if (error) throw error;
-      return data as CollectorSyncResult;
+      
+      // Safely cast the response to our expected type
+      const result = data as unknown as CollectorSyncResult;
+      if (!result || typeof result.success_count !== 'number') {
+        throw new Error('Invalid response format from role sync');
+      }
+      
+      return result;
     },
     onSuccess: (data) => {
       console.log('Fix all collectors response:', data);
@@ -116,8 +123,8 @@ export function useRoleManagement() {
 
       console.log("Magic link data:", data);
 
-      // Safely access session data with null check
-      const token = data?.session?.access_token || '';
+      // Safely access session data with null check and provide default values
+      const token = data?.session?.access_token ?? '';
       const magicLink = token ? `${window.location.origin}/auth/callback?token=${token}&type=magiclink` : '';
 
       return { magicLink, email: user.email, token };
