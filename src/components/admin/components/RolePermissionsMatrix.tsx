@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,66 +26,93 @@ interface RolePermission {
 
 export function RolePermissionsMatrix() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [permissions, setPermissions] = useState<RolePermission[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const { data: rolePermissions, isLoading } = useQuery({
+  const { data: rolePermissions, isLoading, error } = useQuery({
     queryKey: ["rolePermissions"],
     queryFn: async () => {
-      // Fetch the base permissions first
-      const { data: basePermissionsData, error: permError } = await supabase
-        .from('permissions')
-        .select('id, name, description, category');
+      try {
+        // First check if we have a valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.error("No valid session:", sessionError);
+          navigate("/");
+          throw new Error("Please sign in to access this feature");
+        }
 
-      if (permError || !basePermissionsData) {
-        throw new Error("Failed to fetch base permissions");
-      }
+        // Fetch the base permissions
+        const { data: basePermissionsData, error: permError } = await supabase
+          .from('permissions')
+          .select('id, name, description, category');
 
-      const basePermissions = basePermissionsData as Permission[];
+        if (permError || !basePermissionsData) {
+          console.error("Permissions fetch error:", permError);
+          throw new Error("Failed to fetch base permissions");
+        }
 
-      // Then fetch the roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role');
+        const basePermissions = basePermissionsData as Permission[];
 
-      if (rolesError || !rolesData) {
-        throw new Error("Failed to fetch roles");
-      }
+        // Then fetch the roles
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role');
 
-      const uniqueRoles = Array.from(new Set(rolesData.map(r => r.role))) as AppRole[];
+        if (rolesError || !rolesData) {
+          console.error("Roles fetch error:", rolesError);
+          throw new Error("Failed to fetch roles");
+        }
 
-      // Create matrix
-      const matrix: RolePermission[] = uniqueRoles.flatMap(role =>
-        basePermissions.map(p => ({
-          role,
-          permission_name: p.name,
-          granted: false
-        }))
-      );
+        const uniqueRoles = Array.from(new Set(rolesData.map(r => r.role))) as AppRole[];
 
-      // Get existing role permissions
-      const { data: existingPerms } = await supabase
-        .from('role_permissions')
-        .select('role, permission_name, created_at');
+        // Create matrix
+        const matrix: RolePermission[] = uniqueRoles.flatMap(role =>
+          basePermissions.map(p => ({
+            role,
+            permission_name: p.name,
+            granted: false
+          }))
+        );
 
-      if (existingPerms) {
-        existingPerms.forEach(ep => {
-          const index = matrix.findIndex(
-            m => m.role === ep.role && m.permission_name === ep.permission_name
-          );
-          if (index !== -1) {
-            matrix[index].granted = true;
-          }
+        // Get existing role permissions
+        const { data: existingPerms, error: existingPermsError } = await supabase
+          .from('role_permissions')
+          .select('role, permission_name, created_at');
+
+        if (existingPermsError) {
+          console.error("Existing permissions fetch error:", existingPermsError);
+        }
+
+        if (existingPerms) {
+          existingPerms.forEach(ep => {
+            const index = matrix.findIndex(
+              m => m.role === ep.role && m.permission_name === ep.permission_name
+            );
+            if (index !== -1) {
+              matrix[index].granted = true;
+            }
+          });
+        }
+
+        setPermissions(matrix);
+        return {
+          roles: uniqueRoles,
+          permissions: basePermissions
+        };
+      } catch (error: any) {
+        console.error("Error in rolePermissions query:", error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
         });
+        throw error;
       }
-
-      setPermissions(matrix);
-      return {
-        roles: uniqueRoles,
-        permissions: basePermissions
-      };
-    }
+    },
+    retry: 1
   });
 
   const handlePermissionChange = (role: AppRole, permission: string) => {
@@ -99,6 +127,12 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
       // Convert permissions array to JSON-compatible format
       const permissionsJson = permissions.map(p => ({
         role: p.role,
@@ -121,8 +155,8 @@ export function RolePermissionsMatrix() {
       // Then approve the request
       const { error } = await supabase.rpc('approve_role_change', {
         request_id: requestData.id,
-        new_status: 'approved' as const,
-        admin_id: (await supabase.auth.getUser()).data.user?.id || ''
+        new_status: 'approved',
+        admin_id: user.id
       });
 
       if (error) throw error;
@@ -145,7 +179,13 @@ export function RolePermissionsMatrix() {
     }
   };
 
-  if (isLoading) return <div>Loading permissions matrix...</div>;
+  if (error) {
+    return <div className="p-4 text-red-500">Error loading permissions matrix: {error.message}</div>;
+  }
+
+  if (isLoading) {
+    return <div className="p-4">Loading permissions matrix...</div>;
+  }
 
   const roles = [...new Set(permissions.map(p => p.role))];
   const uniquePermissions = rolePermissions?.permissions || [];
