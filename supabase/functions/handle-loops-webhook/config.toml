@@ -1,0 +1,11 @@
+
+[build]
+template = "deno"
+
+[deploy]
+allowed_http_methods = ["POST", "OPTIONS"]
+
+[env]
+SUPABASE_URL = "env"
+SUPABASE_SERVICE_ROLE_KEY = "env"
+
