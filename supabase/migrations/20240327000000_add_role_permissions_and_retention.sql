@@ -1,20 +1,33 @@
 -- Create function to update role permissions with a different name that matches the schema
 CREATE OR REPLACE FUNCTION public.approve_role_change(
-    role_data jsonb
+    request_id text,
+    new_status text,
+    admin_id text,
+    role_permissions jsonb DEFAULT NULL
 ) RETURNS void AS $$
 BEGIN
     -- Begin transaction
     BEGIN
-        -- Clear existing permissions
-        DELETE FROM public.role_permissions;
-        
-        -- Insert new permissions
-        INSERT INTO public.role_permissions (role, permission_name)
-        SELECT 
-            (jsonb_array_elements(role_data)->>'role')::text,
-            (jsonb_array_elements(role_data)->>'permission_name')::text
-        WHERE (jsonb_array_elements(role_data)->>'granted')::boolean = true
-        ON CONFLICT (role, permission_name) DO NOTHING;
+        -- Update the role change request status
+        UPDATE role_change_requests 
+        SET status = new_status,
+            approved_by = admin_id,
+            approved_at = CASE WHEN new_status = 'approved' THEN NOW() ELSE NULL END
+        WHERE id = request_id;
+
+        -- If approved and role_permissions provided, update permissions
+        IF new_status = 'approved' AND role_permissions IS NOT NULL THEN
+            -- Clear existing permissions
+            DELETE FROM public.role_permissions;
+            
+            -- Insert new permissions
+            INSERT INTO public.role_permissions (role, permission_name)
+            SELECT 
+                (jsonb_array_elements(role_permissions)->>'role')::text,
+                (jsonb_array_elements(role_permissions)->>'permission_name')::text
+            WHERE (jsonb_array_elements(role_permissions)->>'granted')::boolean = true
+            ON CONFLICT (role, permission_name) DO NOTHING;
+        END IF;
         
         -- Log the change
         INSERT INTO public.audit_logs (
@@ -26,9 +39,13 @@ BEGIN
         ) VALUES (
             'UPDATE',
             'role_permissions',
-            auth.uid(),
+            admin_id,
             null,
-            role_data
+            jsonb_build_object(
+                'request_id', request_id,
+                'status', new_status,
+                'permissions', role_permissions
+            )
         );
 
     EXCEPTION WHEN OTHERS THEN
@@ -43,11 +60,12 @@ BEGIN
         ) VALUES (
             'ERROR',
             'role_permissions',
-            auth.uid(),
+            admin_id,
             null,
             jsonb_build_object(
                 'error', SQLERRM,
-                'permissions', role_data
+                'request_id', request_id,
+                'status', new_status
             ),
             'error'
         );
@@ -57,7 +75,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.approve_role_change(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.approve_role_change(text, text, text, jsonb) TO authenticated;
 
 -- Create the permissions table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.permissions (
