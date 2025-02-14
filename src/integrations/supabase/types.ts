@@ -531,6 +531,41 @@ export type Database = {
         }
         Relationships: []
       }
+      email_events: {
+        Row: {
+          created_at: string | null
+          email_log_id: string | null
+          event_type: string | null
+          id: string
+          metadata: Json | null
+          occurred_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_log_id?: string | null
+          event_type?: string | null
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_log_id?: string | null
+          event_type?: string | null
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_events_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           bounce_type: string | null
