@@ -176,7 +176,7 @@ export default function Members() {
         </Card>
 
         <EditMemberDialog
-          open={isEditDialogOpen}
+          isOpen={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           onSubmit={(id, data) => updateMemberMutation.mutate({ id, data })}
           member={editingMember}
