@@ -1,69 +1,109 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { EmailMetric } from "@/types/email";
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function EmailMetrics() {
-  const { data: metrics, isLoading } = useQuery({
-    queryKey: ['loops-metrics'],
+  const { data: loopsConfig } = useQuery({
+    queryKey: ['loopsConfig'],
     queryFn: async () => {
-      const { data: loopsConfig } = await supabase
+      const { data, error } = await supabase
         .from('loops_integration')
         .select('*')
         .limit(1)
         .single();
 
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: metrics, isLoading } = useQuery({
+    queryKey: ['loops-metrics'],
+    queryFn: async () => {
       if (!loopsConfig?.is_active) {
         return [];
       }
 
-      const { data, error } = await supabase
-        .from('email_metrics')
+      const { data: emailLogs, error } = await supabase
+        .from('email_logs')
         .select('*')
-        .order('recorded_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      return data as EmailMetric[];
+      return emailLogs;
     },
+    enabled: !!loopsConfig?.is_active,
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
-  if (isLoading) return <div>Loading metrics...</div>;
+  if (!loopsConfig?.is_active) {
+    return (
+      <Alert>
+        <AlertDescription>
+          Loops integration is not active. Please enable it in the Settings tab to view analytics.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
-  const successRate = metrics?.find(m => m.metric_name === 'delivery_success_rate')?.metric_value ?? 0;
-  const queueSize = metrics?.find(m => m.metric_name === 'queue_size')?.metric_value ?? 0;
-  const avgDeliveryTime = metrics?.find(m => m.metric_name === 'average_delivery_time')?.metric_value ?? 0;
+  if (isLoading) {
+    return <div>Loading metrics...</div>;
+  }
 
-  const chartData = metrics?.filter(m => m.metric_name === 'delivery_success_rate')
-    .map(m => ({
-      time: new Date(m.recorded_at).toLocaleTimeString(),
-      value: m.metric_value
-    }));
+  const calculateMetrics = () => {
+    if (!metrics?.length) return null;
+
+    const total = metrics.length;
+    const sent = metrics.filter(m => m.status === 'sent').length;
+    const failed = metrics.filter(m => m.status === 'failed').length;
+    const pending = metrics.filter(m => m.status === 'pending').length;
+
+    return {
+      successRate: (sent / total) * 100,
+      failureRate: (failed / total) * 100,
+      pendingRate: (pending / total) * 100
+    };
+  };
+
+  const stats = calculateMetrics();
+
+  if (!stats) {
+    return <div>No email metrics available</div>;
+  }
+
+  const chartData = metrics
+    ?.map((m: any) => ({
+      time: new Date(m.created_at).toLocaleTimeString(),
+      successRate: stats.successRate,
+      failureRate: stats.failureRate
+    }))
+    .reverse();
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-4">
-          <h3 className="text-sm font-medium">Delivery Success Rate</h3>
-          <p className={`text-2xl font-bold ${successRate >= 95 ? 'text-green-500' : 'text-yellow-500'}`}>
-            {successRate.toFixed(1)}%
+          <h3 className="text-sm font-medium">Success Rate</h3>
+          <p className={`text-2xl font-bold ${stats.successRate >= 95 ? 'text-green-500' : 'text-yellow-500'}`}>
+            {stats.successRate.toFixed(1)}%
           </p>
         </Card>
         
         <Card className="p-4">
-          <h3 className="text-sm font-medium">Current Queue Size</h3>
-          <p className={`text-2xl font-bold ${queueSize <= 100 ? 'text-green-500' : 'text-yellow-500'}`}>
-            {queueSize}
+          <h3 className="text-sm font-medium">Failure Rate</h3>
+          <p className={`text-2xl font-bold ${stats.failureRate <= 5 ? 'text-green-500' : 'text-red-500'}`}>
+            {stats.failureRate.toFixed(1)}%
           </p>
         </Card>
         
         <Card className="p-4">
-          <h3 className="text-sm font-medium">Avg. Delivery Time</h3>
-          <p className={`text-2xl font-bold ${avgDeliveryTime <= 5 ? 'text-green-500' : 'text-yellow-500'}`}>
-            {avgDeliveryTime.toFixed(1)}s
+          <h3 className="text-sm font-medium">Pending Rate</h3>
+          <p className={`text-2xl font-bold ${stats.pendingRate <= 10 ? 'text-green-500' : 'text-yellow-500'}`}>
+            {stats.pendingRate.toFixed(1)}%
           </p>
         </Card>
       </div>
@@ -77,7 +117,8 @@ export function EmailMetrics() {
               <XAxis dataKey="time" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#6C5DD3" />
+              <Line type="monotone" dataKey="successRate" stroke="#10b981" name="Success Rate (%)" />
+              <Line type="monotone" dataKey="failureRate" stroke="#ef4444" name="Failure Rate (%)" />
             </LineChart>
           </ResponsiveContainer>
         </div>
