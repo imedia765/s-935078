@@ -99,13 +99,23 @@ export function RolePermissionsMatrix() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Create a temporary request ID for this bulk update
-      const tempRequestId = crypto.randomUUID();
-      const { data, error } = await supabase.rpc('approve_role_change', {
-        request_id: tempRequestId,
+      // First create a role change request with the permissions data
+      const { data: requestData, error: requestError } = await supabase
+        .from('role_change_requests')
+        .insert({
+          permissions_data: permissions,
+          status: 'pending'
+        })
+        .select('id')
+        .single();
+
+      if (requestError) throw requestError;
+
+      // Then approve the request
+      const { error } = await supabase.rpc('approve_role_change', {
+        request_id: requestData.id,
         new_status: 'approved' as const,
-        admin_id: (await supabase.auth.getUser()).data.user?.id || '',
-        role_permissions: JSON.stringify(permissions)
+        admin_id: (await supabase.auth.getUser()).data.user?.id || ''
       });
 
       if (error) throw error;
