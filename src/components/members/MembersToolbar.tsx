@@ -45,8 +45,8 @@ export function MembersToolbar({
   currentCollector,
 }: MembersToolbarProps) {
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-col space-y-4 p-2">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-2xl font-bold text-gradient">Members List</h1>
         {isAdmin && (
           <AddMemberDialog onSubmit={onAddMember} collectors={collectors} />
@@ -54,7 +54,7 @@ export function MembersToolbar({
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0"> {/* Add min-w-0 to allow proper text truncation */}
           <SearchInput
             value={searchValue}
             placeholder="Search members..."
@@ -68,7 +68,7 @@ export function MembersToolbar({
               value={selectedCollector}
               onValueChange={onCollectorChange}
             >
-              <SelectTrigger className="w-full sm:w-[200px] glass-card">
+              <SelectTrigger className="w-full sm:w-[200px] h-10 glass-card">
                 <SelectValue placeholder="Filter by collector" />
               </SelectTrigger>
               <SelectContent>
@@ -76,26 +76,28 @@ export function MembersToolbar({
                 {collectors?.map((collector) => (
                   collector.id && (
                     <SelectItem key={collector.id} value={collector.id}>
-                      {collector.name || `Collector ${collector.member_number}`} (#{collector.member_number})
+                      <span className="truncate block">
+                        {collector.name || `Collector ${collector.member_number}`} (#{collector.member_number})
+                      </span>
                     </SelectItem>
                   )
                 ))}
               </SelectContent>
             </Select>
           ) : currentCollector && (
-            <div className="w-full sm:w-[200px] px-4 py-2 glass-card rounded-md text-sm">
+            <div className="w-full sm:w-[200px] px-4 py-2 glass-card rounded-md text-sm truncate">
               Current Group: {currentCollector.name}
             </div>
           )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto glass-card">
+              <Button variant="outline" className="w-full sm:w-auto h-10 glass-card">
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={onExportCSV}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Export to CSV

@@ -124,10 +124,10 @@ export function MembersTable({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full overflow-hidden">
       {selectedMembers.length > 0 && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-lg">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
             {selectedMembers.length} members selected
           </span>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -135,7 +135,7 @@ export function MembersTable({
               value={paymentMethod}
               onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
             >
-              <SelectTrigger className="w-full sm:w-32">
+              <SelectTrigger className="w-full sm:w-32 h-9">
                 <SelectValue placeholder="Payment Method" />
               </SelectTrigger>
               <SelectContent>
@@ -148,7 +148,7 @@ export function MembersTable({
               size="sm"
               onClick={handleBulkPayment}
               disabled={isRecordingPayments}
-              className="w-full sm:w-auto bg-primary/20 hover:bg-primary/30"
+              className="w-full sm:w-auto h-9 bg-primary/20 hover:bg-primary/30"
             >
               {isRecordingPayments ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -160,15 +160,15 @@ export function MembersTable({
           </div>
         </div>
       )}
-      <div className="space-y-4">
+      <div className="space-y-4 max-w-full">
         {members?.map((member) => (
-          <div key={member.id} className="flex items-start gap-4">
+          <div key={member.id} className="flex items-start gap-4 max-w-full px-2">
             <Checkbox
               checked={selectedMembers.includes(member.id)}
               onCheckedChange={(checked) => handleSelectMember(member.id, checked as boolean)}
-              className="mt-6"
+              className="mt-6 flex-shrink-0"
             />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0"> {/* Add min-w-0 to allow proper text truncation */}
               <MemberProfileCard
                 member={member}
                 onEdit={() => onEdit(member)}
