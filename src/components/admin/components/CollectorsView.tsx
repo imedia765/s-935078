@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Info, RefreshCw, Shield, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, RefreshCw, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,9 +42,14 @@ export function CollectorsView() {
   const { data: collectors, isLoading, error } = useQuery({
     queryKey: ["collectors-status"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_collectors_role_status');
-      if (error) throw error;
-      return data as CollectorStatus[];
+      try {
+        const { data, error } = await supabase.rpc('get_collectors_role_status');
+        if (error) throw error;
+        return data as CollectorStatus[];
+      } catch (err) {
+        console.error('Error fetching collectors:', err);
+        throw err;
+      }
     }
   });
 
@@ -82,8 +87,8 @@ export function CollectorsView() {
   if (isLoading) return <div>Loading collectors...</div>;
   if (error) return <div>Error loading collectors: {(error as Error).message}</div>;
 
-  // Ensure collectors is an array, even if empty
-  const collectorsData = collectors ?? [];
+  // Ensure we have a valid array of collectors
+  const collectorsData = Array.isArray(collectors) ? collectors : [];
 
   return (
     <Card className="p-6">
@@ -100,77 +105,85 @@ export function CollectorsView() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {collectorsData.map((collector) => (
-            <TableRow key={collector.member_number}>
-              <TableCell>{collector.collector_name}</TableCell>
-              <TableCell>{collector.member_number}</TableCell>
-              <TableCell>
-                {collector.contact_info.email || 'N/A'}<br />
-                {collector.contact_info.phone || 'N/A'}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-2">
-                  <Badge 
-                    variant={collector.role_verification.total_issues > 0 ? "destructive" : "default"}
-                    className="w-fit"
-                  >
-                    {collector.role_verification.total_issues} Issues
-                  </Badge>
-                  {collector.role_verification.issues.map((issue, idx) => (
-                    <div key={idx} className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <AlertCircle className="h-4 w-4" />
-                      {issue}
-                    </div>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {collector.auth_status.has_auth_id ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )}
-                  {collector.auth_status.status}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <Badge 
-                    variant={collector.sync_status.status === 'completed' ? "default" : "secondary"}
-                    className="w-fit"
-                  >
-                    {collector.sync_status.status}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    Last sync: {new Date(collector.last_sync).toLocaleString()}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-2"
-                  onClick={() => {
-                    if (collector.auth_status.has_auth_id) {
-                      syncRoleMutation.mutate(collector.member_number);
-                    } else {
-                      toast({
-                        title: "Error",
-                        description: "Cannot sync roles: No auth ID found",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  disabled={!collector.auth_status.has_auth_id || syncRoleMutation.isPending}
-                >
-                  <RefreshCw className={`h-4 w-4 ${syncRoleMutation.isPending ? 'animate-spin' : ''}`} />
-                  {syncRoleMutation.isPending ? 'Syncing...' : 'Sync Roles'}
-                </Button>
+          {collectorsData.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center text-muted-foreground">
+                No collectors found
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            collectorsData.map((collector) => (
+              <TableRow key={collector.member_number}>
+                <TableCell>{collector.collector_name || 'N/A'}</TableCell>
+                <TableCell>{collector.member_number}</TableCell>
+                <TableCell>
+                  {collector.contact_info?.email || 'N/A'}<br />
+                  {collector.contact_info?.phone || 'N/A'}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-2">
+                    <Badge 
+                      variant={collector.role_verification?.total_issues > 0 ? "destructive" : "default"}
+                      className="w-fit"
+                    >
+                      {collector.role_verification?.total_issues || 0} Issues
+                    </Badge>
+                    {collector.role_verification?.issues?.map((issue, idx) => (
+                      <div key={idx} className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <AlertCircle className="h-4 w-4" />
+                        {issue}
+                      </div>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {collector.auth_status?.has_auth_id ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                    {collector.auth_status?.status || 'Unknown'}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <Badge 
+                      variant={collector.sync_status?.status === 'completed' ? "default" : "secondary"}
+                      className="w-fit"
+                    >
+                      {collector.sync_status?.status || 'Unknown'}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Last sync: {collector.last_sync ? new Date(collector.last_sync).toLocaleString() : 'Never'}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => {
+                      if (collector.auth_status?.has_auth_id) {
+                        syncRoleMutation.mutate(collector.member_number);
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Cannot sync roles: No auth ID found",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!collector.auth_status?.has_auth_id || syncRoleMutation.isPending}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${syncRoleMutation.isPending ? 'animate-spin' : ''}`} />
+                    {syncRoleMutation.isPending ? 'Syncing...' : 'Sync Roles'}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </Card>
