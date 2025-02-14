@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuditEvent } from "@/utils/auditLogger";
 import type { EmailStatus, EmailTransitionResponse } from "./types";
 
 export const RequestResetForm = () => {
@@ -18,19 +19,49 @@ export const RequestResetForm = () => {
 
   const checkEmailStatus = async (memberNum: string) => {
     try {
+      console.log("Checking email status for member:", memberNum);
+      
       const { data, error } = await supabase.rpc(
         'get_member_email_status',
         { p_member_number: memberNum }
       );
 
-      if (error) throw error;
-      if (!data) throw new Error('No data returned');
+      if (error) {
+        console.error("RPC error during email status check:", error);
+        await logAuditEvent({
+          operation: 'update',
+          tableName: 'password_reset',
+          recordId: memberNum,
+          severity: 'error',
+          metadata: { error: error.message, step: 'check_email_status' }
+        });
+        throw error;
+      }
+
+      if (!data) {
+        console.error("No data returned from email status check");
+        throw new Error('No data returned');
+      }
 
       const typedData = (data as unknown) as EmailStatus;
       if (!('success' in typedData)) {
+        console.error("Invalid response format:", data);
         throw new Error('Invalid response format');
       }
       
+      console.log("Email status check result:", typedData);
+      await logAuditEvent({
+        operation: 'update',
+        tableName: 'password_reset',
+        recordId: memberNum,
+        severity: 'info',
+        metadata: { 
+          step: 'check_email_status',
+          status: 'success',
+          is_temp_email: typedData.is_temp_email 
+        }
+      });
+
       setEmailStatus(typedData);
       return typedData;
     } catch (error: any) {
@@ -48,11 +79,13 @@ export const RequestResetForm = () => {
     e.preventDefault();
     if (!memberNumber.trim()) return;
 
+    console.log("Starting member number submission for:", memberNumber);
     setIsLoading(true);
     const status = await checkEmailStatus(memberNumber);
     setIsLoading(false);
 
     if (!status?.success) {
+      console.warn("Member not found:", memberNumber);
       toast({
         variant: "destructive",
         title: "Member Not Found",
@@ -64,6 +97,7 @@ export const RequestResetForm = () => {
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log("Starting password reset request for member:", memberNumber);
 
     try {
       const { data: resetResponse, error: resetError } = await supabase.rpc(
@@ -74,17 +108,34 @@ export const RequestResetForm = () => {
         }
       );
 
-      if (resetError) throw resetError;
-      if (!resetResponse) throw new Error('No response from server');
+      if (resetError) {
+        console.error("RPC error during reset initiation:", resetError);
+        await logAuditEvent({
+          operation: 'update',
+          tableName: 'password_reset',
+          recordId: memberNumber,
+          severity: 'error',
+          metadata: { error: resetError.message, step: 'initiate_reset' }
+        });
+        throw resetError;
+      }
+
+      if (!resetResponse) {
+        console.error("No response from reset initiation");
+        throw new Error('No response from server');
+      }
 
       const typedResponse = (resetResponse as unknown) as EmailTransitionResponse;
       if (!('success' in typedResponse)) {
+        console.error("Invalid reset response format:", resetResponse);
         throw new Error('Invalid response format');
       }
 
       if (!typedResponse.success) {
         throw new Error(typedResponse.error || 'Failed to process reset request');
       }
+
+      console.log("Reset initiation successful, sending email...");
 
       // Send appropriate email based on whether verification is required
       const { error: emailError } = await supabase.functions.invoke(
@@ -101,7 +152,29 @@ export const RequestResetForm = () => {
         }
       );
 
-      if (emailError) throw emailError;
+      if (emailError) {
+        console.error("Error sending reset email:", emailError);
+        await logAuditEvent({
+          operation: 'update',
+          tableName: 'password_reset',
+          recordId: memberNumber,
+          severity: 'error',
+          metadata: { error: emailError.message, step: 'send_email' }
+        });
+        throw emailError;
+      }
+
+      console.log("Reset email sent successfully");
+      await logAuditEvent({
+        operation: 'update',
+        tableName: 'password_reset',
+        recordId: memberNumber,
+        severity: 'info',
+        metadata: { 
+          step: 'reset_complete',
+          requires_verification: typedResponse.requires_verification 
+        }
+      });
 
       toast({
         title: typedResponse.requires_verification ? 

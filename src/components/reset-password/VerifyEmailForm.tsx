@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { logAuditEvent } from "@/utils/auditLogger";
 import type { EmailVerificationResponse } from "./types";
 
 interface VerifyEmailFormProps {
@@ -18,23 +19,49 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
 
   useEffect(() => {
     const verifyEmail = async () => {
+      console.log("Starting email verification process");
+      
       try {
         const { data, error } = await supabase.rpc(
           'verify_email_transition',
           { p_verification_token: verificationToken }
         );
 
-        if (error) throw error;
-        if (!data) throw new Error('No response from server');
+        if (error) {
+          console.error("RPC error during email verification:", error);
+          await logAuditEvent({
+            operation: 'update',
+            tableName: 'email_verification',
+            recordId: verificationToken,
+            severity: 'error',
+            metadata: { error: error.message, step: 'verify_email' }
+          });
+          throw error;
+        }
+
+        if (!data) {
+          console.error("No response from email verification");
+          throw new Error('No response from server');
+        }
 
         const typedData = (data as unknown) as EmailVerificationResponse;
         if (!('success' in typedData)) {
+          console.error("Invalid verification response format:", data);
           throw new Error('Invalid response format');
         }
 
         if (!typedData.success) {
           throw new Error(typedData.error || 'Verification failed');
         }
+
+        console.log("Email verification successful");
+        await logAuditEvent({
+          operation: 'update',
+          tableName: 'email_verification',
+          recordId: verificationToken,
+          severity: 'info',
+          metadata: { step: 'verification_complete' }
+        });
 
         // Show success message
         toast({
@@ -46,6 +73,13 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
         navigate(`/reset-password?token=${typedData.reset_token}`);
       } catch (error: any) {
         console.error('Email verification error:', error);
+        await logAuditEvent({
+          operation: 'update',
+          tableName: 'email_verification',
+          recordId: verificationToken,
+          severity: 'error',
+          metadata: { error: error.message || 'Unknown error', step: 'verification_failed' }
+        });
         toast({
           variant: "destructive",
           title: "Verification Failed",
