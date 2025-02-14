@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface SendEmailParams {
@@ -29,16 +28,13 @@ export async function sendEmail({ to, subject, html, text, templateId, variables
     const { data: emailLog, error: logError } = await supabase
       .from('email_logs')
       .insert({
-        bounce_type: null,
-        daily_counter: 1,
-        delivered_at: null,
-        delivery_meta: {},
+        recipient_email: to,
+        subject,
+        status: 'pending',
         email_category: templateId ? 'template' : 'transactional',
         email_type: templateId ? 'notification' : 'system_announcement',
-        subject,
-        template_name: templateId,
-        provider: 'loops',
-        status: 'pending',
+        daily_counter: 1,
+        delivery_meta: {},
         priority: 'normal'
       })
       .select()
