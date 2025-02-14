@@ -14,11 +14,10 @@ ALTER TABLE storage.buckets OWNER TO postgres;
 
 -- Create bucket with proper ownership
 DELETE FROM storage.buckets WHERE id = 'profile_documents';
-INSERT INTO storage.buckets (id, name, owner, public)
+INSERT INTO storage.buckets (id, name, public)
 VALUES (
     'profile_documents',
     'profile_documents',
-    (SELECT oid FROM pg_roles WHERE rolname = 'postgres'),
     false
 );
 
@@ -36,19 +35,35 @@ BEGIN;
     -- Then create storage object policies
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
-    USING (auth.role() = 'authenticated');
+    USING (
+        auth.role() = 'authenticated' 
+        AND (bucket_id = 'profile_documents')
+        AND (auth.uid()::text = (storage.foldername(name))[1])
+    );
 
     CREATE POLICY "Allow authenticated users to upload their own documents"
     ON storage.objects FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated');
+    WITH CHECK (
+        auth.role() = 'authenticated' 
+        AND (bucket_id = 'profile_documents')
+        AND (auth.uid()::text = (storage.foldername(name))[1])
+    );
 
     CREATE POLICY "Allow authenticated users to update their own documents"
     ON storage.objects FOR UPDATE
-    USING (auth.role() = 'authenticated');
+    USING (
+        auth.role() = 'authenticated' 
+        AND (bucket_id = 'profile_documents')
+        AND (auth.uid()::text = (storage.foldername(name))[1])
+    );
 
     CREATE POLICY "Allow authenticated users to delete their own documents"
     ON storage.objects FOR DELETE
-    USING (auth.role() = 'authenticated');
+    USING (
+        auth.role() = 'authenticated' 
+        AND (bucket_id = 'profile_documents')
+        AND (auth.uid()::text = (storage.foldername(name))[1])
+    );
 COMMIT;
 
 -- Grant permissions to authenticated users
