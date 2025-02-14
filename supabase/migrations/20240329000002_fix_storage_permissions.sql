@@ -77,3 +77,4 @@ GRANT ALL ON storage.buckets TO postgres;
 -- Reset ownership to postgres
 ALTER TABLE storage.objects OWNER TO postgres;
 ALTER TABLE storage.buckets OWNER TO postgres;
+
