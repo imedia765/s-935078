@@ -82,6 +82,9 @@ export function CollectorsView() {
   if (isLoading) return <div>Loading collectors...</div>;
   if (error) return <div>Error loading collectors: {(error as Error).message}</div>;
 
+  // Ensure collectors is an array, even if empty
+  const collectorsData = collectors ?? [];
+
   return (
     <Card className="p-6">
       <Table>
@@ -97,7 +100,7 @@ export function CollectorsView() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {collectors?.map((collector) => (
+          {collectorsData.map((collector) => (
             <TableRow key={collector.member_number}>
               <TableCell>{collector.collector_name}</TableCell>
               <TableCell>{collector.member_number}</TableCell>
