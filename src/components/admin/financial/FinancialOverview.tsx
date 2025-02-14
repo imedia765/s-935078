@@ -33,7 +33,7 @@ export function FinancialOverview({ payments, isLoading, error }: FinancialOverv
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 glass-card">
           <div className="flex items-center space-x-2">
             <Receipt className="h-5 w-5 text-primary" />
@@ -79,13 +79,13 @@ export function FinancialOverview({ payments, isLoading, error }: FinancialOverv
         <Card className="p-4 glass-card">
           <h3 className="text-lg font-semibold mb-4">Payment Methods</h3>
           <div className="space-y-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center p-2 rounded-lg bg-primary/5">
               <span>Cash</span>
-              <span>{payments?.paymentMethods.cash || 0}</span>
+              <span className="font-semibold">{payments?.paymentMethods.cash || 0}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center p-2 rounded-lg bg-primary/5">
               <span>Bank Transfer</span>
-              <span>{payments?.paymentMethods.bankTransfer || 0}</span>
+              <span className="font-semibold">{payments?.paymentMethods.bankTransfer || 0}</span>
             </div>
           </div>
         </Card>
@@ -94,11 +94,14 @@ export function FinancialOverview({ payments, isLoading, error }: FinancialOverv
           <h3 className="text-lg font-semibold mb-4">Recent Payments</h3>
           <div className="space-y-2">
             {payments?.recentPayments.map((payment, index) => (
-              <div key={index} className="flex justify-between">
-                <span>{payment.members?.full_name}</span>
-                <span>£{payment.amount}</span>
+              <div 
+                key={index} 
+                className="flex justify-between items-center p-2 rounded-lg bg-primary/5"
+              >
+                <span className="truncate mr-2">{payment.members?.full_name}</span>
+                <span className="font-semibold shrink-0">£{payment.amount}</span>
               </div>
-            )) || <p>No recent payments</p>}
+            )) || <p className="text-muted-foreground">No recent payments</p>}
           </div>
         </Card>
       </div>
