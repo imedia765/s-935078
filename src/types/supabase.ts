@@ -320,10 +320,10 @@ export interface Database {
       }
       get_audit_activity_summary: {
         Args: {
-          start_date?: string;
-          end_date?: string;
-          operation_filter?: string;
-          severity_filter?: string;
+          start_date?: string | null;
+          end_date?: string | null;
+          operation_filter?: string | null;
+          severity_filter?: string | null;
         };
         Returns: {
           hour_bucket: string;
