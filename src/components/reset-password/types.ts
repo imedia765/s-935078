@@ -6,6 +6,8 @@ export interface EmailTransitionResponse {
   requires_verification?: boolean;
   verification_token?: string;
   reset_token?: string;
+  code?: string;
+  remaining_time?: string;
 }
 
 export interface EmailVerificationResponse {
@@ -22,3 +24,4 @@ export interface EmailStatus {
   has_auth_id?: boolean;
   error?: string;
 }
+
