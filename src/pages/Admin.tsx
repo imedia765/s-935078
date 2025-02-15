@@ -8,7 +8,6 @@ import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
 import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashboard";
 import { DatabaseManagement } from "@/components/admin/database/DatabaseManagement";
 import { EmailStandardizationManager } from "@/components/admin/email/EmailStandardizationManager";
-import { MobileBuildProgress } from "@/components/admin/mobile/MobileBuildProgress";
 import { useState } from "react";
 import { 
   ClipboardList, 
@@ -17,8 +16,7 @@ import {
   Settings, 
   Mail, 
   Database, 
-  FileCheck,
-  Smartphone
+  FileCheck 
 } from "lucide-react";
 
 export default function Admin() {
@@ -79,13 +77,6 @@ export default function Admin() {
             <FileCheck className="h-4 w-4" />
             <span>Email Standard.</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="mobile"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
-          >
-            <Smartphone className="h-4 w-4" />
-            <span>Mobile Build</span>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="audit">
@@ -128,12 +119,6 @@ export default function Admin() {
 
         <TabsContent value="standardization">
           <EmailStandardizationManager />
-        </TabsContent>
-
-        <TabsContent value="mobile">
-          <Card className="p-4 lg:p-6 glass-card">
-            <MobileBuildProgress />
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
