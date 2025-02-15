@@ -1,78 +1,31 @@
 
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, ChevronDown, ChevronUp, Zap, Edit2, Trash2, Mail, Phone, Calendar, User, Home, Users, CreditCard, Clock, PlusCircle } from "lucide-react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ChevronDown,
-  ChevronUp,
-  Edit2,
-  Trash2,
-  Users,
-  Activity,
-  DollarSign,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Home,
-  Phone,
-  Mail,
-  Calendar,
-  User,
-  CreditCard,
-  PlusCircle,
-  Loader2,
-  Zap
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface MemberProfileCardProps {
-  member: {
-    id: string;
-    full_name: string;
-    email: string;
-    phone?: string;
-    member_number: string;
-    status: string;
-    address?: string;
-    town?: string;
-    postcode?: string;
-    date_of_birth?: string;
-    marital_status?: string;
-    membership_type?: string;
-    payment_date?: string;
-    yearly_payment_status?: string;
-    yearly_payment_due_date?: string;
-    yearly_payment_amount?: number;
-    emergency_collection_status?: string;
-    emergency_collection_amount?: number;
-    emergency_collection_due_date?: string;
-    collector?: string;
-    family_members?: Array<{
-      full_name: string;
-      relationship: string;
-      date_of_birth?: string;
-      gender?: string;
-    }>;
-  };
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  member: any;
+  onEdit?: () => void;
+  onDelete?: () => void;
   onToggleStatus?: () => void;
   onMove?: () => void;
   onExportIndividual?: () => void;
 }
 
-export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, onMove, onExportIndividual }: MemberProfileCardProps) {
+export function MemberProfileCard({
+  member,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onMove,
+  onExportIndividual
+}: MemberProfileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -89,61 +42,14 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
     }
   };
 
-  const getPaymentStatusIcon = (status?: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'overdue':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <DollarSign className="h-4 w-4 text-gray-500" />;
-    }
-  };
+  const InfoItem = ({ icon: Icon, label, value }: { icon: any, label: string, value: string | null }) => (
+    <div className="flex items-center gap-2 text-sm">
+      <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <span className="text-muted-foreground truncate">{value || 'Not set'}</span>
+    </div>
+  );
 
   const handleRecordPayment = async () => {
-    try {
-      const { data: collector } = await supabase
-        .from('members_collectors')
-        .select('id')
-        .eq('name', member.collector)
-        .single();
-
-      if (!collector) {
-        throw new Error('Collector not found');
-      }
-
-      const { data, error } = await supabase
-        .from('payment_requests')
-        .insert({
-          member_id: member.id,
-          collector_id: collector.id,
-          member_number: member.member_number,
-          amount: 40,
-          payment_type: 'yearly',
-          payment_method: paymentMethod,
-          status: 'pending',
-          notes: 'Yearly membership payment'
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Payment Recorded",
-        description: "Payment has been recorded and is pending approval",
-      });
-    } catch (error) {
-      console.error('Error recording payment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to record payment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleQuickPay = async () => {
     try {
       setIsProcessing(true);
       const { data: collector } = await supabase
@@ -164,7 +70,7 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
           member_number: member.member_number,
           amount: member.yearly_payment_amount || 40,
           payment_type: 'yearly',
-          payment_method: 'cash',
+          payment_method: paymentMethod,
           status: 'pending',
           notes: 'Quick yearly membership payment'
         });
@@ -175,8 +81,8 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
         title: "Payment Recorded",
         description: "Payment has been recorded and is pending approval",
       });
-    } catch (error) {
-      console.error('Error recording quick payment:', error);
+    } catch (error: any) {
+      console.error('Error recording payment:', error);
       toast({
         title: "Error",
         description: "Failed to record payment. Please try again.",
@@ -188,225 +94,184 @@ export function MemberProfileCard({ member, onEdit, onDelete, onToggleStatus, on
   };
 
   return (
-    <Card className="p-4 sm:p-6 glass-card transition-all duration-200 hover:shadow-md">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div className="space-y-2 w-full sm:w-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <h3 className="text-base sm:text-lg font-semibold text-primary">{member.full_name}</h3>
-            <Badge className={cn("text-xs font-medium w-fit", getStatusColor(member.status))}>
-              {member.status}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground break-all">{member.email}</p>
-          <p className="text-sm font-mono text-primary/70">{member.member_number}</p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleQuickPay}
-            disabled={isProcessing}
-            className="h-10 sm:h-8 flex-1 sm:flex-none bg-primary/20 hover:bg-primary/30 flex items-center gap-1"
-          >
-            {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Zap className="h-4 w-4" />
-            )}
-            Quick Pay
-          </Button>
-          {onEdit && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(member.id)}
-              className="h-10 sm:h-8 w-10 sm:w-8 p-0 hover:text-primary flex-1 sm:flex-none"
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-          )}
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(member.id)}
-              className="h-10 sm:h-8 w-10 sm:w-8 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 flex-1 sm:flex-none"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-10 sm:h-8 w-10 sm:w-8 p-0 hover:text-primary flex-1 sm:flex-none"
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="mt-6 space-y-6 border-t pt-6">
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-primary flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Personal Information
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {member.date_of_birth && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4 text-primary/70 flex-shrink-0" />
-                  <span className="truncate">DOB: <span className="text-foreground">{format(new Date(member.date_of_birth), 'PPP')}</span></span>
-                </div>
-              )}
-              {member.marital_status && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Users className="h-4 w-4 text-primary/70 flex-shrink-0" />
-                  <span className="truncate">Marital Status: <span className="text-foreground">{member.marital_status}</span></span>
-                </div>
-              )}
-              {member.membership_type && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <CreditCard className="h-4 w-4 text-primary/70 flex-shrink-0" />
-                  <span className="truncate">Membership: <span className="text-foreground">{member.membership_type}</span></span>
-                </div>
-              )}
+    <Card className="overflow-hidden transition-all duration-200">
+      <div className="p-3 space-y-2">
+        {/* Header Section */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-medium truncate">{member.full_name}</h3>
+              <Badge variant="outline" className={`shrink-0 ${getStatusColor(member.status)}`}>
+                {member.status}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+              <Mail className="h-4 w-4" />
+              <span className="truncate">{member.email}</span>
             </div>
           </div>
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRecordPayment}
+              disabled={isProcessing}
+              className="h-8 px-2 bg-primary/20 hover:bg-primary/30"
+            >
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline ml-1">Quick Pay</span>
+            </Button>
+            <div className="flex items-center gap-1">
+              {onEdit && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onEdit}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onDelete}
+                  className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-8 w-8 p-0"
+              >
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
 
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-primary flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Payment Information
-            </h4>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-muted/50 rounded-lg p-4 hover:bg-muted/70 transition-colors">
-                <div className="text-sm font-medium mb-2 text-primary">Yearly Payment</div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {getPaymentStatusIcon(member.yearly_payment_status)}
-                    <span className="text-sm truncate">{member.yearly_payment_status}</span>
-                  </div>
-                  {member.yearly_payment_amount && (
-                    <span className="text-sm font-medium text-foreground">
-                      £{member.yearly_payment_amount.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                {member.yearly_payment_due_date && (
-                  <div className="text-xs text-muted-foreground mt-2">
-                    Due: {format(new Date(member.yearly_payment_due_date), 'PPP')}
+        {/* Quick Info Section */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+          <InfoItem icon={User} label="ID" value={member.member_number} />
+          <InfoItem icon={Calendar} label="DOB" value={member.date_of_birth} />
+          <InfoItem icon={Phone} label="Phone" value={member.phone} />
+          <InfoItem icon={Home} label="Address" value={member.address} />
+        </div>
+
+        {/* Expanded Content */}
+        {isExpanded && (
+          <div className="mt-3 pt-3 border-t space-y-3">
+            {/* Payment Info */}
+            {(member.yearly_payment_status || member.emergency_collection_status) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {member.yearly_payment_status && (
+                  <div className="bg-muted/30 rounded p-2">
+                    <div className="text-sm font-medium mb-1">Yearly Payment</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">{member.yearly_payment_status}</span>
+                      {member.yearly_payment_amount && (
+                        <span className="text-sm font-medium">
+                          £{member.yearly_payment_amount.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {member.yearly_payment_due_date && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Due: {format(new Date(member.yearly_payment_due_date), 'PP')}
+                      </div>
+                    )}
                   </div>
                 )}
-                <div className="mt-4 space-y-2">
-                  <Select
-                    value={paymentMethod}
-                    onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
-                  >
-                    <SelectTrigger className="w-full h-10">
-                      <SelectValue placeholder="Payment Method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRecordPayment}
-                    className="w-full h-10 bg-primary/20 hover:bg-primary/30"
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Record Payment
-                  </Button>
-                </div>
-              </div>
 
-              {member.emergency_collection_status && (
-                <div className="bg-muted/50 rounded-lg p-4 hover:bg-muted/70 transition-colors">
-                  <div className="text-sm font-medium mb-2 text-primary">Emergency Collection</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {getPaymentStatusIcon(member.emergency_collection_status)}
-                      <span className="text-sm truncate">{member.emergency_collection_status}</span>
+                {member.emergency_collection_status && (
+                  <div className="bg-muted/30 rounded p-2">
+                    <div className="text-sm font-medium mb-1">Emergency Collection</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">{member.emergency_collection_status}</span>
+                      {member.emergency_collection_amount && (
+                        <span className="text-sm font-medium">
+                          £{member.emergency_collection_amount.toFixed(2)}
+                        </span>
+                      )}
                     </div>
-                    {member.emergency_collection_amount && (
-                      <span className="text-sm font-medium text-foreground">
-                        £{member.emergency_collection_amount.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  {member.emergency_collection_due_date && (
-                    <div className="text-xs text-muted-foreground mt-2">
-                      Due: {format(new Date(member.emergency_collection_due_date), 'PPP')}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {member.family_members && member.family_members.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-primary flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Family Members
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {member.family_members.map((familyMember, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col gap-2 bg-muted/50 rounded-lg p-4 hover:bg-muted/70 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground truncate">{familyMember.full_name}</span>
-                      <Badge variant="outline" className="text-primary shrink-0">{familyMember.relationship}</Badge>
-                    </div>
-                    {familyMember.date_of_birth && (
-                      <div className="text-xs text-muted-foreground truncate">
-                        DOB: {format(new Date(familyMember.date_of_birth), 'PPP')}
-                      </div>
-                    )}
-                    {familyMember.gender && (
-                      <div className="text-xs text-muted-foreground truncate">
-                        Gender: {familyMember.gender}
+                    {member.emergency_collection_due_date && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Due: {format(new Date(member.emergency_collection_due_date), 'PP')}
                       </div>
                     )}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-primary flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Recent Activity
-            </h4>
-            <div className="space-y-2">
-              {member.payment_date && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4 text-primary/70 flex-shrink-0" />
-                  <span className="truncate">Last payment: <span className="text-foreground">{format(new Date(member.payment_date), 'PPP')}</span></span>
+            {/* Family Members */}
+            {member.family_members && member.family_members.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4" />
+                  <h4 className="text-sm font-medium">Family Members</h4>
                 </div>
-              )}
-              {member.collector && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="h-4 w-4 text-primary/70 flex-shrink-0" />
-                  <span className="truncate">Collector: <span className="text-foreground">{member.collector}</span></span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {member.family_members.map((familyMember: any, index: number) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 bg-muted/30 rounded p-2"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">
+                            {familyMember.full_name}
+                          </span>
+                          <Badge variant="outline" className="shrink-0">
+                            {familyMember.relationship}
+                          </Badge>
+                        </div>
+                        {familyMember.date_of_birth && (
+                          <div className="text-xs text-muted-foreground">
+                            DOB: {format(new Date(familyMember.date_of_birth), 'PP')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            {member.member_notes && member.member_notes.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4" />
+                  <h4 className="text-sm font-medium">Notes</h4>
+                </div>
+                <div className="space-y-2">
+                  {member.member_notes.map((note: any, index: number) => (
+                    <div key={index} className="bg-muted/30 rounded p-2">
+                      <Badge variant="outline" className="mb-1">
+                        {note.note_type}
+                      </Badge>
+                      <p className="text-sm">{note.note_text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </Card>
   );
 }
