@@ -39,8 +39,24 @@ function isAllowedOrigin(origin: string | null): boolean {
   });
 }
 
+async function checkRateLimit(ipAddress: string, memberNumber: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .rpc('check_rate_limit', { 
+      p_ip_address: ipAddress,
+      p_member_number: memberNumber 
+    });
+
+  if (error) {
+    console.error('Rate limit check error:', error);
+    return false;
+  }
+
+  return data?.allowed ?? false;
+}
+
 serve(async (req) => {
   const origin = req.headers.get('origin');
+  const clientIp = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for') || 'unknown';
   const isAllowed = isAllowedOrigin(origin);
   
   // Set CORS headers for all responses
@@ -76,6 +92,7 @@ serve(async (req) => {
     const requestData = await req.json() as RequestBody;
     const { email, memberNumber, token } = requestData;
 
+    // Input validation
     if (!email || !memberNumber || !token) {
       throw new Error('Missing required fields');
     }
@@ -83,6 +100,26 @@ serve(async (req) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new Error('Invalid email format');
+    }
+
+    // Check rate limiting
+    const isAllowedByRateLimit = await checkRateLimit(clientIp, memberNumber);
+    if (!isAllowedByRateLimit) {
+      console.warn('Rate limit exceeded:', { ip: clientIp, memberNumber });
+      return new Response(
+        JSON.stringify({
+          error: 'Too many requests. Please try again later.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 429,
+          headers: {
+            ...responseHeaders,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
     }
 
     console.log(`[${new Date().toISOString()}] Starting password reset process for ${memberNumber}`);
@@ -154,7 +191,8 @@ serve(async (req) => {
         statusText: loopsResponse.statusText,
         headers: Object.fromEntries(loopsResponse.headers.entries()),
         origin: origin,
-        resetLink: resetLink
+        resetLink: resetLink,
+        clientIp: clientIp
       };
       console.log('Loops API response details:', responseDetails);
 
@@ -182,7 +220,8 @@ serve(async (req) => {
             generated_at: new Date().toISOString(),
             success: true,
             origin: origin,
-            reset_link: resetLink
+            reset_link: resetLink,
+            ip_address: clientIp
           },
           severity: 'info'
         });
@@ -207,7 +246,8 @@ serve(async (req) => {
         error: loopsError,
         message: loopsError.message,
         stack: loopsError.stack,
-        origin: origin
+        origin: origin,
+        clientIp: clientIp
       });
 
       // Log the failed attempt
@@ -221,7 +261,8 @@ serve(async (req) => {
             member_number: memberNumber,
             error: loopsError.message,
             timestamp: new Date().toISOString(),
-            origin: origin
+            origin: origin,
+            ip_address: clientIp
           },
           severity: 'error'
         });
@@ -234,12 +275,14 @@ serve(async (req) => {
       error: error,
       message: error.message,
       stack: error.stack,
-      origin: origin
+      origin: origin,
+      clientIp: clientIp
     });
     
     return new Response(
       JSON.stringify({ 
         error: error.message || "Failed to send password reset email",
+        code: error.code || 'UNKNOWN_ERROR',
         timing: {
           timestamp: new Date().toISOString()
         }
@@ -249,7 +292,7 @@ serve(async (req) => {
           ...responseHeaders,
           'Content-Type': 'application/json'
         },
-        status: 500
+        status: error.message?.includes('Too many requests') ? 429 : 500
       }
     );
   }
