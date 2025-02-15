@@ -19,11 +19,11 @@ SET subject = 'Reset Your PWA Burton Password',
         
         <div style="color: #34495e; margin-bottom: 20px;">
             <p>We received a request to reset your PWA Burton account password.</p>
-            <p><strong>Member Number:</strong> {memberNumber}</p>
+            <p><strong>Member Number:</strong> {DATA_VARIABLE:memberNumber}</p>
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="{resetUrl}" style="background-color: #6C5DD3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+            <a href="{DATA_VARIABLE:resetUrl}" style="background-color: #6C5DD3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
         </div>
 
         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; color: #666;">
@@ -70,3 +70,4 @@ INSERT INTO audit_logs (
 );
 
 COMMIT;
+
