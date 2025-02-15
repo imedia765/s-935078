@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { format } from "date-fns";
 import { AvatarSection } from "./AvatarSection";
 import { RoleBadges } from "./RoleBadges";
 import { ActionButtons } from "./ActionButtons";
+import { PasswordChangeDialog } from "./PasswordChangeDialog";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -131,6 +133,9 @@ export function ProfileCard({
                 <p className="text-sm text-muted-foreground font-mono">Member #{memberData?.member_number}</p>
               </div>
               <RoleBadges roles={memberData?.user_roles} />
+              {!isEditing && memberData?.member_number && (
+                <PasswordChangeDialog memberNumber={memberData.member_number} />
+              )}
             </div>
             
             <ActionButtons
