@@ -1,3 +1,4 @@
+
 -- First, ensure we have the proper extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -38,26 +39,20 @@ ON CONFLICT (id) DO UPDATE SET
     file_size_limit = EXCLUDED.file_size_limit,
     allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- Create bucket access policies
-CREATE POLICY "Allow authenticated users to use bucket"
+-- Create bucket-level policies
+CREATE POLICY "Allow authenticated users to access profile_documents bucket"
 ON storage.buckets FOR ALL
 TO authenticated
 USING (name = 'profile_documents');
 
 -- Create object-level policies
 BEGIN;
-    -- Allow users to list their own documents
-    CREATE POLICY "Allow users to list their own documents"
+    -- Allow users to list objects in the bucket (including root)
+    CREATE POLICY "Allow authenticated users to list objects"
     ON storage.objects FOR SELECT
     TO authenticated
     USING (
-        bucket_id = 'profile_documents' AND
-        (
-            -- Allow users to list their own directory
-            auth.uid()::text = (storage.foldername(name))[1] OR
-            -- Allow users to see the root directory
-            name = '.keep'
-        )
+        bucket_id = 'profile_documents'
     );
 
     -- Allow users to read their own documents

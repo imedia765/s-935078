@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Eye, Loader2 } from "lucide-react";
@@ -56,6 +55,21 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
 
       console.log('Fetching documents for user:', user.id);
 
+      // First ensure user directory exists by creating a .keep file if needed
+      const { data: keepFile, error: keepError } = await supabase.storage
+        .from('profile_documents')
+        .list(`${user.id}`, {
+          limit: 1,
+          search: '.keep'
+        });
+
+      if (!keepFile?.length) {
+        await supabase.storage
+          .from('profile_documents')
+          .upload(`${user.id}/.keep`, new Blob([''], { type: 'text/plain' }));
+      }
+
+      // Now list all files in user's directory
       const { data: files, error } = await supabase.storage
         .from('profile_documents')
         .list(`${user.id}/`, {
