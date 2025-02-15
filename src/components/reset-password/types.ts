@@ -1,9 +1,12 @@
 
 import { Json } from "@/integrations/supabase/types";
 
-export interface EmailTransitionResponse {
+export interface RPCResponse {
   success: boolean;
   error?: string;
+}
+
+export interface EmailTransitionResponse extends RPCResponse {
   email?: string;
   requires_verification?: boolean;
   verification_token?: string;
@@ -12,9 +15,7 @@ export interface EmailTransitionResponse {
   remaining_time?: string;
 }
 
-export interface EmailVerificationResponse {
-  success: boolean;
-  error?: string;
+export interface EmailVerificationResponse extends RPCResponse {
   reset_token?: string;
 }
 

@@ -20,7 +20,7 @@ export const usePasswordReset = () => {
     isTemporaryEmail: boolean
   ) => {
     try {
-      const { data: resetResponse, error: resetError } = await supabase.rpc<EmailTransitionResponse, ResetFlowParams>(
+      const { data: response, error: resetError } = await supabase.rpc(
         'initiate_password_reset_flow',
         {
           p_member_number: memberNumber,
@@ -47,15 +47,15 @@ export const usePasswordReset = () => {
         throw resetError;
       }
 
+      const resetResponse = response as EmailTransitionResponse;
       if (!resetResponse) {
         console.error("No response from reset initiation");
         throw new Error('No response from server');
       }
 
-      const typedResponse = resetResponse;
-      if (!typedResponse.success) {
-        if (typedResponse.code === 'RATE_LIMIT_EXCEEDED') {
-          const remainingTime = Math.ceil(parseInt(typedResponse.remaining_time || '0') / 60);
+      if (!resetResponse.success) {
+        if (resetResponse.code === 'RATE_LIMIT_EXCEEDED') {
+          const remainingTime = Math.ceil(parseInt(resetResponse.remaining_time || '0') / 60);
           toast({
             variant: "destructive",
             title: "Too Many Attempts",
@@ -63,7 +63,7 @@ export const usePasswordReset = () => {
           });
           return false;
         }
-        throw new Error(typedResponse.error || 'Failed to process reset request');
+        throw new Error(resetResponse.error || 'Failed to process reset request');
       }
 
       console.log("Reset initiation successful, sending email...");
@@ -73,12 +73,12 @@ export const usePasswordReset = () => {
         'send-password-reset',
         {
           body: {
-            email: typedResponse.email,
+            email: resetResponse.email,
             memberNumber: memberNumber,
-            token: typedResponse.requires_verification ? 
-              typedResponse.verification_token : 
-              typedResponse.reset_token,
-            isVerification: typedResponse.requires_verification
+            token: resetResponse.requires_verification ? 
+              resetResponse.verification_token : 
+              resetResponse.reset_token,
+            isVerification: resetResponse.requires_verification
           },
         }
       );
@@ -109,17 +109,17 @@ export const usePasswordReset = () => {
         severity: 'info',
         metadata: { 
           step: 'reset_complete',
-          requires_verification: typedResponse.requires_verification,
+          requires_verification: resetResponse.requires_verification,
           event_type: 'reset_email_sent',
           origin: window.location.origin
         }
       });
 
       toast({
-        title: typedResponse.requires_verification ? 
+        title: resetResponse.requires_verification ? 
           "Verification Email Sent" : 
           "Reset Instructions Sent",
-        description: typedResponse.requires_verification ?
+        description: resetResponse.requires_verification ?
           "Please check your email to verify your new email address." :
           "Please check your email for password reset instructions. The link will expire in 1 hour.",
       });
