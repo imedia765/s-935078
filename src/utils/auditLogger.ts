@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/types/supabase';
 
@@ -158,7 +159,6 @@ export async function getAuditActivitySummary(options?: AuditActivityOptions) {
     };
 
     const { data, error } = await supabase
-      .from('audit_logs')
       .rpc('get_audit_activity_summary', params);
 
     if (error) throw error;
