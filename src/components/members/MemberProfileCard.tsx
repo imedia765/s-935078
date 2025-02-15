@@ -59,7 +59,6 @@ export function MemberProfileCard({
           member_number: member.member_number,
           notes: 'Quick yearly membership payment',
           created_at: new Date().toISOString(),
-          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Due in 7 days
           has_supporting_docs: false
         });
 
