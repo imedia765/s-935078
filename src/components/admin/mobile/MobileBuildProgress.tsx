@@ -1,10 +1,9 @@
-
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Smartphone, Apple, Android, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Smartphone, Apple, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
 interface BuildTask {
   id: string;
@@ -160,7 +159,7 @@ export function MobileBuildProgress() {
             <span>iOS</span>
           </div>
           <div className="flex items-center gap-2">
-            <Android className="w-5 h-5" />
+            <Smartphone className="w-5 h-5" />
             <span>Android</span>
           </div>
         </div>
