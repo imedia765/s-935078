@@ -24,4 +24,3 @@ export interface EmailStatus {
   has_auth_id?: boolean;
   error?: string;
 }
-

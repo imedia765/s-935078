@@ -22,7 +22,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
       console.log("Starting email verification process");
       
       try {
-        const { data, error } = await supabase.rpc(
+        const { data, error } = await supabase.rpc<EmailVerificationResponse>(
           'verify_email_and_get_reset_token',
           { p_verification_token: verificationToken }
         );
@@ -46,11 +46,6 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
         if (!data) {
           console.error("No response from email verification");
           throw new Error('No response from server');
-        }
-
-        if (!('success' in data)) {
-          console.error("Invalid verification response format:", data);
-          throw new Error('Invalid response format');
         }
 
         if (!data.success) {

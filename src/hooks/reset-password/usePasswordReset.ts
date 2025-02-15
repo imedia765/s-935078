@@ -2,7 +2,6 @@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logAuditEvent } from "@/utils/auditLogger";
-import { getBaseUrl } from "@/utils/urlUtils";
 import type { EmailTransitionResponse } from "@/components/reset-password/types";
 
 export const usePasswordReset = () => {
@@ -15,10 +14,12 @@ export const usePasswordReset = () => {
   ) => {
     try {
       const { data: resetResponse, error: resetError } = await supabase.rpc(
-        'initiate_email_transition_with_reset',
+        'initiate_password_reset_flow',
         {
           p_member_number: memberNumber,
-          p_new_email: isTemporaryEmail ? newEmail : null
+          p_new_email: isTemporaryEmail ? newEmail : null,
+          p_ip_address: window.location.hostname,
+          p_user_agent: window.navigator.userAgent
         }
       );
 
@@ -44,7 +45,7 @@ export const usePasswordReset = () => {
         throw new Error('No response from server');
       }
 
-      const typedResponse = (resetResponse as unknown) as EmailTransitionResponse;
+      const typedResponse = resetResponse as EmailTransitionResponse;
       if (!('success' in typedResponse)) {
         console.error("Invalid reset response format:", resetResponse);
         throw new Error('Invalid response format');
@@ -56,7 +57,7 @@ export const usePasswordReset = () => {
           toast({
             variant: "destructive",
             title: "Too Many Attempts",
-            description: `Please wait ${remainingTime} minutes before trying again. If you need immediate assistance, contact support.`,
+            description: `Please wait ${remainingTime} minutes before trying again.`,
           });
           return false;
         }
@@ -66,7 +67,7 @@ export const usePasswordReset = () => {
       console.log("Reset initiation successful, sending email...");
 
       // Send appropriate email based on whether verification is required
-      const { error: emailError, data: emailResponse } = await supabase.functions.invoke(
+      const { error: emailError } = await supabase.functions.invoke(
         'send-password-reset',
         {
           body: {
@@ -75,7 +76,7 @@ export const usePasswordReset = () => {
             token: typedResponse.requires_verification ? 
               typedResponse.verification_token : 
               typedResponse.reset_token,
-            isVerification: typedResponse.requires_verification // Add this flag
+            isVerification: typedResponse.requires_verification
           },
         }
       );
@@ -83,30 +84,6 @@ export const usePasswordReset = () => {
       if (emailError) {
         console.error("Error sending reset email:", emailError);
         
-        if (emailError.status === 429) {
-          const rateLimitData = JSON.parse(emailError.message);
-          toast({
-            variant: "destructive",
-            title: "Too Many Attempts",
-            description: "Please wait before trying again. If you need immediate assistance, contact support.",
-          });
-          
-          await logAuditEvent({
-            operation: 'update',
-            tableName: 'password_reset',
-            recordId: memberNumber,
-            severity: 'warning',
-            metadata: { 
-              error: 'Rate limit exceeded', 
-              step: 'send_email',
-              event_type: 'rate_limit_exceeded',
-              origin: window.location.origin
-            }
-          });
-          
-          return false;
-        }
-
         await logAuditEvent({
           operation: 'update',
           tableName: 'password_reset',
