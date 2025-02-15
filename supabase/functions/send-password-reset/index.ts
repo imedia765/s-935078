@@ -71,7 +71,9 @@ serve(async (req) => {
       throw new Error('Incomplete Loops configuration');
     }
 
-    const resetLink = `https://pwaburton.co.uk/reset-password?token=${token}`;
+    // Generate reset link - ensure it uses HTTPS and handles www/non-www
+    const baseUrl = "https://pwaburton.co.uk";
+    const resetLink = `${baseUrl}/reset-password?token=${token}&ref=email`;
 
     console.log('Making request to Loops API:', {
       templateId: loopsIntegration.password_reset_template_id,
@@ -117,6 +119,21 @@ serve(async (req) => {
       const loopsResult = await loopsResponse.json();
       console.log('Loops email sent successfully:', loopsResult);
 
+      // Log the successful reset link generation
+      await supabaseAdmin
+        .from('audit_logs')
+        .insert({
+          operation: 'password_reset_requested',
+          table_name: 'password_reset_tokens',
+          record_id: token,
+          metadata: {
+            member_number: memberNumber,
+            generated_at: new Date().toISOString(),
+            success: true
+          },
+          severity: 'info'
+        });
+
       return new Response(
         JSON.stringify({ 
           message: "Password reset email sent successfully",
@@ -138,6 +155,22 @@ serve(async (req) => {
         message: loopsError.message,
         stack: loopsError.stack
       });
+
+      // Log the failed attempt
+      await supabaseAdmin
+        .from('audit_logs')
+        .insert({
+          operation: 'password_reset_failed',
+          table_name: 'password_reset_tokens',
+          record_id: token,
+          metadata: {
+            member_number: memberNumber,
+            error: loopsError.message,
+            timestamp: new Date().toISOString()
+          },
+          severity: 'error'
+        });
+
       throw new Error(`Failed to send email through Loops: ${loopsError.message}`);
     }
 
@@ -165,3 +198,4 @@ serve(async (req) => {
     );
   }
 });
+

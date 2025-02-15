@@ -1,14 +1,37 @@
 
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Navigate } from "react-router-dom";
 import { Instructions } from "@/components/reset-password/Instructions";
 import { RequestResetForm } from "@/components/reset-password/RequestResetForm";
 import { ResetPasswordForm } from "@/components/reset-password/ResetPasswordForm";
 import { VerifyEmailForm } from "@/components/reset-password/VerifyEmailForm";
+import { normalizeProductionUrl } from "@/utils/urlUtils";
+import { useEffect } from "react";
 
 export const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const resetToken = searchParams.get("token");
   const verifyToken = searchParams.get("verify");
+  const ref = searchParams.get("ref");
+
+  // Handle www to non-www redirect
+  useEffect(() => {
+    if (window.location.hostname === `www.pwaburton.co.uk`) {
+      const newUrl = normalizeProductionUrl(window.location.href);
+      window.location.replace(newUrl);
+    }
+  }, []);
+
+  // Log page access for debugging
+  useEffect(() => {
+    if (resetToken || verifyToken) {
+      console.log('Reset password page accessed:', {
+        hasResetToken: !!resetToken,
+        hasVerifyToken: !!verifyToken,
+        referrer: ref,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [resetToken, verifyToken, ref]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 login-container">
@@ -32,3 +55,4 @@ export const ResetPassword = () => {
 };
 
 export default ResetPassword;
+
