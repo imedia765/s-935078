@@ -2,6 +2,7 @@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logAuditEvent } from "@/utils/auditLogger";
+import { getBaseUrl } from "@/utils/urlUtils";
 import type { EmailTransitionResponse } from "@/components/reset-password/types";
 
 export const usePasswordReset = () => {
@@ -31,7 +32,8 @@ export const usePasswordReset = () => {
           metadata: { 
             error: resetError.message, 
             step: 'initiate_reset',
-            event_type: 'reset_initiation_failed'
+            event_type: 'reset_initiation_failed',
+            origin: window.location.origin
           }
         });
         throw resetError;
@@ -79,7 +81,8 @@ export const usePasswordReset = () => {
           metadata: { 
             error: emailError.message, 
             step: 'send_email',
-            event_type: 'reset_email_failed'
+            event_type: 'reset_email_failed',
+            origin: window.location.origin
           }
         });
         throw emailError;
@@ -94,7 +97,8 @@ export const usePasswordReset = () => {
         metadata: { 
           step: 'reset_complete',
           requires_verification: typedResponse.requires_verification,
-          event_type: 'reset_email_sent'
+          event_type: 'reset_email_sent',
+          origin: window.location.origin
         }
       });
 

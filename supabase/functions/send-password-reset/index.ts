@@ -2,9 +2,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
+const ALLOWED_ORIGINS = [
+  'https://pwaburton.co.uk',
+  'https://www.pwaburton.co.uk',
+  'http://localhost:5173'
+];
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 interface RequestBody {
@@ -19,8 +27,34 @@ const supabaseAdmin = createClient(
 );
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(req.headers.get('origin') || '') 
+          ? req.headers.get('origin')! 
+          : ALLOWED_ORIGINS[0]
+      } 
+    });
+  }
+
+  // Validate origin
+  const origin = req.headers.get('origin');
+  if (!ALLOWED_ORIGINS.includes(origin || '')) {
+    return new Response(
+      JSON.stringify({ 
+        error: 'Invalid origin',
+        timestamp: new Date().toISOString()
+      }),
+      { 
+        status: 403,
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   }
 
   try {
@@ -71,7 +105,7 @@ serve(async (req) => {
       throw new Error('Incomplete Loops configuration');
     }
 
-    // Generate reset link - ensure it uses HTTPS and non-www domain
+    // Generate reset link - always use non-www domain
     const baseUrl = "https://pwaburton.co.uk";
     const resetLink = `${baseUrl}/reset-password?token=${token}&ref=email`;
 
@@ -99,11 +133,12 @@ serve(async (req) => {
         })
       });
 
-      // Log the complete response details for debugging
+      // Enhanced response logging
       const responseDetails = {
         status: loopsResponse.status,
         statusText: loopsResponse.statusText,
-        headers: Object.fromEntries(loopsResponse.headers.entries())
+        headers: Object.fromEntries(loopsResponse.headers.entries()),
+        origin: origin
       };
       console.log('Loops API response details:', responseDetails);
 
@@ -129,7 +164,8 @@ serve(async (req) => {
           metadata: {
             member_number: memberNumber,
             generated_at: new Date().toISOString(),
-            success: true
+            success: true,
+            origin: origin
           },
           severity: 'info'
         });
@@ -144,6 +180,7 @@ serve(async (req) => {
         { 
           headers: { 
             ...corsHeaders,
+            'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
             "Content-Type": "application/json" 
           } 
         }
@@ -153,7 +190,8 @@ serve(async (req) => {
       console.error('Error calling Loops API:', {
         error: loopsError,
         message: loopsError.message,
-        stack: loopsError.stack
+        stack: loopsError.stack,
+        origin: origin
       });
 
       // Log the failed attempt
@@ -166,7 +204,8 @@ serve(async (req) => {
           metadata: {
             member_number: memberNumber,
             error: loopsError.message,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            origin: origin
           },
           severity: 'error'
         });
@@ -178,7 +217,8 @@ serve(async (req) => {
     console.error(`[${new Date().toISOString()}] Error:`, {
       error: error,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      origin: origin
     });
     
     return new Response(
@@ -191,6 +231,7 @@ serve(async (req) => {
       { 
         headers: { 
           ...corsHeaders,
+          'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
           "Content-Type": "application/json" 
         },
         status: 500
@@ -198,4 +239,3 @@ serve(async (req) => {
     );
   }
 });
-
