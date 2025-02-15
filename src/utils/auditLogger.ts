@@ -148,17 +148,22 @@ export function subscribeToAuditLogs(callback: (payload: any) => void) {
 
 export async function getAuditActivitySummary(options?: AuditActivityOptions) {
   try {
-    type GetAuditActivitySummaryFn = Database['public']['Functions']['get_audit_activity_summary'];
-    
-    const { data, error } = await supabase.rpc<
-      GetAuditActivitySummaryFn['Returns'],
-      GetAuditActivitySummaryFn['Args']
-    >('get_audit_activity_summary', {
+    const { data, error } = await supabase.rpc('get_audit_activity_summary', {
       start_date: options?.startDate?.toISOString() || null,
       end_date: options?.endDate?.toISOString() || null,
       operation_filter: options?.operation || null,
       severity_filter: options?.severity || null
-    });
+    }) as unknown as {
+      data: Array<{
+        hour_bucket: string;
+        operation: string;
+        count: number;
+        severity: string;
+        table_name: string;
+        user_id: string;
+      }> | null;
+      error: Error | null;
+    };
 
     if (error) throw error;
     return data;
