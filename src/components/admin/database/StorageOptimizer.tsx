@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ServerCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface StorageMetric {
   table_name: string;
@@ -18,15 +19,31 @@ interface StorageMetric {
 }
 
 export function StorageOptimizer() {
-  const { data: storageMetrics, isLoading } = useQuery({
+  const { data: storageMetrics, isLoading, error } = useQuery({
     queryKey: ["storageMetrics"],
     queryFn: async () => {
+      console.log("Fetching storage metrics...");
       const { data, error } = await supabase.rpc('analyze_storage_metrics');
-      if (error) throw error;
+      if (error) {
+        console.error("Storage metrics error:", error);
+        throw error;
+      }
+      console.log("Storage metrics response:", data);
       return data as StorageMetric[];
     },
+    retry: 1,
     refetchInterval: 300000 // Refresh every 5 minutes
   });
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Failed to load storage metrics: {(error as Error).message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (isLoading) {
     return <div>Loading storage metrics...</div>;
