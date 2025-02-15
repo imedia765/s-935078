@@ -34,6 +34,21 @@ function ScrollToTop() {
   return null;
 }
 
+// Layout component for consistent page structure
+const PageLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary">
+        Skip to main content
+      </a>
+      <main id="main-content" className="pt-24">
+        {children}
+      </main>
+    </div>
+  );
+};
+
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: UserRole }) => {
   const { data: userRoles, isLoading } = useQuery({
     queryKey: ["userRoles"],
@@ -52,12 +67,14 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode,
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Checking permissions...</p>
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Checking permissions...</p>
+          </div>
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
@@ -65,7 +82,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode,
     return <Navigate to="/" replace />
   }
 
-  return <>{children}</>
+  return <PageLayout>{children}</PageLayout>
 }
 
 const App = () => (
@@ -76,43 +93,38 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
-          <div className="min-h-screen bg-background">
-            <Navigation />
-            <div className="pt-24">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/documentation" element={<Documentation />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route 
-                  path="/admin" 
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <Admin />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/members" 
-                  element={
-                    <ProtectedRoute requiredRole="collector">
-                      <Members />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/financials" 
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <Financials />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
-          </div>
+          <Routes>
+            <Route path="/" element={<PageLayout><Index /></PageLayout>} />
+            <Route path="/profile" element={<PageLayout><Profile /></PageLayout>} />
+            <Route path="/documentation" element={<PageLayout><Documentation /></PageLayout>} />
+            <Route path="/verify-email" element={<PageLayout><VerifyEmail /></PageLayout>} />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Admin />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/members" 
+              element={
+                <ProtectedRoute requiredRole="collector">
+                  <Members />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/financials" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Financials />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/reset-password" element={<PageLayout><ResetPassword /></PageLayout>} />
+            <Route path="*" element={<PageLayout><NotFound /></PageLayout>} />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    /* Light mode variables */
+    /* Light mode variables with improved contrast */
     --background: 0 0% 98%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -29,6 +29,7 @@
   }
 
   .dark {
+    /* Dark mode variables with improved contrast */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -65,10 +66,10 @@
     @apply transition-all duration-200;
   }
 
-  /* Light mode */
+  /* Light mode with improved contrast */
   :root {
     .glass-card {
-      @apply bg-white/90 backdrop-blur-xl border border-gray-200 text-foreground shadow-sm;
+      @apply bg-white/95 backdrop-blur-xl border border-gray-200 text-foreground shadow-sm;
     }
 
     .nav-gradient {
@@ -76,10 +77,10 @@
     }
   }
 
-  /* Dark mode */
+  /* Dark mode with improved contrast */
   .dark {
     .glass-card {
-      @apply bg-black/40 backdrop-blur-xl border border-white/10 text-foreground;
+      @apply bg-black/60 backdrop-blur-xl border border-white/10 text-foreground;
     }
 
     .nav-gradient {
@@ -87,13 +88,13 @@
     }
   }
 
-  /* Shared styles */
+  /* Shared styles with improved accessibility */
   .member-info {
-    @apply text-foreground/80;
+    @apply text-foreground/90;
   }
 
   .member-label {
-    @apply text-foreground/70 font-medium;
+    @apply text-foreground/80 font-medium;
   }
 
   .member-value {
@@ -101,7 +102,7 @@
   }
 
   .status-badge {
-    @apply bg-opacity-20 text-opacity-90;
+    @apply bg-opacity-40 text-opacity-100;
   }
 
   .announcement-card {
@@ -112,21 +113,21 @@
     @apply text-primary font-semibold;
   }
 
-  /* Form elements */
+  /* Form elements with improved contrast */
   input, select, textarea {
     @apply bg-background border-input text-foreground;
   }
 
-  /* Table styles */
+  /* Table styles with improved contrast */
   th {
-    @apply text-foreground/70 bg-muted/50;
+    @apply text-foreground/80 bg-muted/50;
   }
 
   td {
     @apply text-foreground;
   }
 
-  /* Button styles */
+  /* Button styles with improved contrast */
   .btn-primary {
     @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
@@ -135,7 +136,7 @@
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
 
-  /* Card content */
+  /* Card content with improved contrast */
   .card-title {
     @apply text-foreground font-semibold;
   }
@@ -144,12 +145,22 @@
     @apply text-muted-foreground;
   }
 
-  /* Navigation */
+  /* Navigation with improved contrast */
   .nav-link {
-    @apply text-foreground/70 hover:text-primary;
+    @apply text-foreground/80 hover:text-primary;
   }
 
   .nav-link.active {
-    @apply text-primary bg-primary/10;
+    @apply text-primary bg-primary/40;
+  }
+
+  /* Focus styles */
+  .focus-visible:focus {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Skip link */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50;
   }
 }
