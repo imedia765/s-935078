@@ -8,7 +8,7 @@ import { AuditLogViewer } from "@/components/admin/audit/AuditLogViewer";
 import { EmailServerDashboard } from "@/components/admin/email/EmailServerDashboard";
 import { DatabaseManagement } from "@/components/admin/database/DatabaseManagement";
 import { EmailStandardizationManager } from "@/components/admin/email/EmailStandardizationManager";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ClipboardList, 
   Users, 
@@ -21,6 +21,11 @@ import {
 
 export default function Admin() {
   const [selectedTab, setSelectedTab] = useState("roles");
+
+  // Scroll to top when tab changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [selectedTab]);
 
   return (
     <div className="container mx-auto p-4 lg:p-6 space-y-6">
