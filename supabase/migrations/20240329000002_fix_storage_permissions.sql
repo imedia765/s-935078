@@ -6,36 +6,50 @@ BEGIN;
     DROP POLICY IF EXISTS "Allow authenticated users to update their own documents" ON storage.objects;
     DROP POLICY IF EXISTS "Allow authenticated users to delete their own documents" ON storage.objects;
     DROP POLICY IF EXISTS "Allow authenticated users to access the bucket" ON storage.buckets;
+    DROP POLICY IF EXISTS "Allow authenticated users to create buckets" ON storage.buckets;
 COMMIT;
 
 -- Reset ownership to postgres to ensure we have proper permissions
 ALTER TABLE storage.objects OWNER TO postgres;
 ALTER TABLE storage.buckets OWNER TO postgres;
 
--- Create bucket with proper ownership
-DELETE FROM storage.buckets WHERE id = 'profile_documents';
-INSERT INTO storage.buckets (id, name, public)
-VALUES (
-    'profile_documents',
-    'profile_documents',
-    false
-);
-
 -- Enable RLS
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
 
--- Create bucket policies
+-- Create bucket policies first
 BEGIN;
-    -- First create bucket access policy
+    -- Allow authenticated users to create and access buckets
+    CREATE POLICY "Allow authenticated users to create buckets"
+    ON storage.buckets FOR INSERT
+    WITH CHECK (
+        auth.role() = 'authenticated'
+    );
+
     CREATE POLICY "Allow authenticated users to access the bucket"
     ON storage.buckets FOR SELECT
     USING (
         auth.role() = 'authenticated'
-        AND id = 'profile_documents'
     );
+COMMIT;
 
-    -- Then create storage object policies
+-- Create the bucket after policies are in place
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM storage.buckets WHERE id = 'profile_documents'
+    ) THEN
+        INSERT INTO storage.buckets (id, name, public)
+        VALUES (
+            'profile_documents',
+            'profile_documents',
+            false
+        );
+    END IF;
+END $$;
+
+-- Create storage object policies
+BEGIN;
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
     USING (
