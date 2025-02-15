@@ -1,4 +1,3 @@
-
 import { useProfileManagement } from "@/hooks/useProfileManagement";
 import { ProfileCard } from "@/components/profile/ProfileCard";
 import { BankDetailsCard } from "@/components/profile/BankDetailsCard";
@@ -62,7 +61,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-        <div className="pt-20 p-6">
+        <main className="pt-20 p-6" role="main" aria-label="Profile Loading">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex justify-between items-center mb-8">
               <div className="h-8 w-48 bg-primary/10 animate-pulse rounded" />
@@ -97,29 +96,32 @@ const Profile = () => {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-6 max-w-md">
-          <div className="flex items-center gap-2 mb-4 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">Error Loading Profile</h2>
-          </div>
-          <p className="text-destructive mb-4">{error}</p>
-          <Button 
-            onClick={handleRetry}
-            className="w-full"
-            variant="outline"
-          >
-            <RefreshCcw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="min-h-screen bg-background flex items-center justify-center" role="main" aria-label="Error State">
+          <Card className="p-6 max-w-md">
+            <div className="flex items-center gap-2 mb-4 text-destructive">
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+              <h1 className="text-xl font-semibold">Error Loading Profile</h1>
+            </div>
+            <p className="text-destructive mb-4">{error}</p>
+            <Button 
+              onClick={handleRetry}
+              className="w-full"
+              variant="outline"
+            >
+              <RefreshCcw className="h-4 w-4 mr-2" aria-hidden="true" />
+              Retry
+            </Button>
+          </Card>
+        </main>
       </div>
     );
   }
@@ -129,13 +131,16 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="pt-20 p-6">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary">
+        Skip to main content
+      </a>
+      <main id="main-content" className="pt-20 p-6" role="main" aria-label="Member Profile">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <header className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-primary">
               Member Dashboard
             </h1>
-          </div>
+          </header>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <ProfileCard
@@ -173,17 +178,17 @@ const Profile = () => {
                 isLoading={loadingStates.payments}
               />
             </div>
-            <div className="space-y-6">
+            <aside className="space-y-6">
               <AnnouncementsCard announcements={announcements} />
               <DocumentsCard
                 documents={[]}
                 onView={() => {}}
                 onDownload={() => {}}
               />
-            </div>
+            </aside>
           </div>
         </div>
-      </div>
+      </main>
       <FamilyMemberDialogs
         isAddOpen={isAddFamilyMemberOpen}
         isEditOpen={isEditFamilyMemberOpen}

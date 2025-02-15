@@ -1,4 +1,3 @@
-
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
 import { User, Settings, Users, LogOut, Loader2, Sun, Moon, Wallet, Menu, X } from "lucide-react"
@@ -92,15 +91,15 @@ export const Navigation = () => {
   const isLoading = sessionLoading || rolesLoading
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 nav-gradient">
+    <nav className="fixed top-0 left-0 right-0 z-50 nav-gradient" aria-label="Main Navigation">
       <div className="max-w-7xl mx-auto">
         <div className="py-2 border-b border-white/10">
           <div className="flex items-center justify-between px-4">
             <h3 className="text-sm font-medium text-primary">PWA Burton</h3>
-            <p className="text-lg font-arabic text-primary tracking-wider truncate max-w-[200px] md:max-w-none">
+            <p className="text-lg font-arabic text-primary tracking-wider truncate max-w-[200px] md:max-w-none" aria-label="Bismillah">
               بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
             </p>
-            <div className="w-[88px]" />
+            <div className="w-[88px]" aria-hidden="true" />
           </div>
         </div>
 
@@ -108,26 +107,26 @@ export const Navigation = () => {
           <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-3 relative">
             {isLoading ? (
               <div className="flex items-center space-x-2">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
                 <span className="text-xs text-muted-foreground">Loading...</span>
               </div>
             ) : (
               <>
-                {/* Mobile Menu Toggle */}
                 <Button
                   variant="ghost"
                   size="icon"
                   className="lg:hidden"
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  aria-expanded={isMenuOpen}
+                  aria-label="Toggle navigation menu"
                 >
                   {isMenuOpen ? (
-                    <X className="h-5 w-5" />
+                    <X className="h-5 w-5" aria-hidden="true" />
                   ) : (
-                    <Menu className="h-5 w-5" />
+                    <Menu className="h-5 w-5" aria-hidden="true" />
                   )}
                 </Button>
 
-                {/* Navigation Menu */}
                 <NavigationMenu className={cn(
                   "fixed inset-x-0 top-[105px] bg-background/95 backdrop-blur-sm lg:relative lg:top-0 lg:bg-transparent lg:backdrop-blur-none transition-all duration-200 border-b border-white/10 lg:border-none",
                   isMenuOpen ? "block" : "hidden lg:block"
@@ -138,17 +137,18 @@ export const Navigation = () => {
                         <NavigationMenuLink
                           className={cn(
                             "group inline-flex h-9 w-full items-center justify-start rounded-md px-3 lg:px-4 py-2 text-sm font-medium transition-all duration-200",
-                            "hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+                            "hover:bg-primary/40 hover:text-primary focus:bg-primary/40 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                             isActive(item.path) ? 
-                              "bg-primary/20 text-primary shadow-sm" : 
+                              "bg-primary/40 text-primary shadow-sm" : 
                               "bg-black/40 text-foreground"
                           )}
                           onClick={() => {
-                            navigate(item.path)
-                            setIsMenuOpen(false)
+                            navigate(item.path);
+                            setIsMenuOpen(false);
                           }}
                         >
-                          {item.icon} <span className="ml-1.5">{item.label}</span>
+                          {item.icon}
+                          <span className="ml-1.5">{item.label}</span>
                         </NavigationMenuLink>
                       </NavigationMenuItem>
                     ))}
@@ -156,31 +156,29 @@ export const Navigation = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 bg-black/40 text-foreground hover:bg-primary/20 hover:text-primary"
+                        className="h-9 w-9 bg-black/40 text-foreground hover:bg-primary/40 hover:text-primary"
                         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                        aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
                       >
                         {theme === "dark" ? (
-                          <Sun className="h-4 w-4" />
+                          <Sun className="h-4 w-4" aria-hidden="true" />
                         ) : (
-                          <Moon className="h-4 w-4" />
+                          <Moon className="h-4 w-4" aria-hidden="true" />
                         )}
-                        <span className="sr-only">Toggle theme</span>
                       </Button>
                     </NavigationMenuItem>
                     <NavigationMenuItem className="w-full lg:w-auto lg:ml-auto">
-                      <NavigationMenuLink
-                        className={cn(
-                          "group inline-flex h-8 w-full items-center justify-start rounded-md px-2.5 lg:px-3 py-1 text-sm font-medium transition-all duration-200",
-                          "hover:bg-red-500/20 hover:text-red-500 focus:bg-red-500/20 focus:text-red-500 focus:outline-none",
-                          "bg-black/40 text-red-500"
-                        )}
+                      <Button
+                        variant="ghost"
+                        className="w-full flex items-center justify-start px-3 h-9 bg-red-500/40 text-red-500 hover:bg-red-500/50 hover:text-red-400"
                         onClick={() => {
-                          handleSignOut()
-                          setIsMenuOpen(false)
+                          handleSignOut();
+                          setIsMenuOpen(false);
                         }}
                       >
-                        <LogOut className="h-4 w-4" /> <span className="ml-1.5">Sign Out</span>
-                      </NavigationMenuLink>
+                        <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
+                        Sign Out
+                      </Button>
                     </NavigationMenuItem>
                   </NavigationMenuList>
                 </NavigationMenu>
@@ -189,6 +187,6 @@ export const Navigation = () => {
           </div>
         )}
       </div>
-    </div>
+    </nav>
   );
 }
