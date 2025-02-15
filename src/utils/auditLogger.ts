@@ -16,6 +16,13 @@ interface AuditLogParams {
   userId?: string;
 }
 
+interface AuditActivityOptions {
+  startDate?: Date;
+  endDate?: Date;
+  operation?: string;
+  severity?: AuditSeverity;
+}
+
 function mapOperationToDatabase(operation: AuditOperation): DatabaseOperation {
   switch (operation) {
     case 'approve':
@@ -68,7 +75,7 @@ export async function logAuditEvent({
     }
   } catch (error: any) {
     console.error('Failed to log audit event:', error);
-    throw error; // Re-throw to allow proper error handling upstream
+    throw error;
   }
 }
 
@@ -116,7 +123,6 @@ export async function getAuditLogs(tableName?: string, recordId?: string, option
   }
 }
 
-// Function to subscribe to audit log changes
 export function subscribeToAuditLogs(callback: (payload: any) => void) {
   const channel = supabase
     .channel('audit_logs_channel')
@@ -139,16 +145,18 @@ export function subscribeToAuditLogs(callback: (payload: any) => void) {
   };
 }
 
-// Function to get audit activity summary
-export async function getAuditActivitySummary(options?: {
-  startDate?: Date;
-  endDate?: Date;
-  operation?: string;
-  severity?: AuditSeverity;
-}) {
+export async function getAuditActivitySummary(options?: AuditActivityOptions) {
   try {
+    // Convert dates to ISO strings for RPC call
+    const rpcParams = {
+      start_date: options?.startDate?.toISOString(),
+      end_date: options?.endDate?.toISOString(),
+      operation_filter: options?.operation,
+      severity_filter: options?.severity
+    };
+
     const { data, error } = await supabase
-      .rpc('get_audit_activity_summary', options);
+      .rpc('get_audit_activity_summary', rpcParams);
 
     if (error) throw error;
     return data;
@@ -157,4 +165,3 @@ export async function getAuditActivitySummary(options?: {
     throw error;
   }
 }
-
