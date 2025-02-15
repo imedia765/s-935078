@@ -159,7 +159,7 @@ export async function getAuditActivitySummary(options?: AuditActivityOptions) {
     };
 
     const { data, error } = await supabase
-      .rpc<AuditActivityResult[]>('get_audit_activity_summary', params);
+      .rpc<AuditActivityResult[], AuditActivityParams>('get_audit_activity_summary', params);
 
     if (error) throw error;
     return data;
