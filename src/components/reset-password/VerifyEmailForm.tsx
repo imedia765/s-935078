@@ -23,7 +23,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
       
       try {
         const { data, error } = await supabase.rpc(
-          'verify_email_transition',
+          'verify_email_and_get_reset_token',
           { p_verification_token: verificationToken }
         );
 
@@ -48,14 +48,13 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
           throw new Error('No response from server');
         }
 
-        const typedData = (data as unknown) as EmailVerificationResponse;
-        if (!('success' in typedData)) {
+        if (!('success' in data)) {
           console.error("Invalid verification response format:", data);
           throw new Error('Invalid response format');
         }
 
-        if (!typedData.success) {
-          throw new Error(typedData.error || 'Verification failed');
+        if (!data.success) {
+          throw new Error(data.error || 'Verification failed');
         }
 
         console.log("Email verification successful");
@@ -77,7 +76,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
         });
 
         // Redirect to password reset with the new token
-        navigate(`/reset-password?token=${typedData.reset_token}`);
+        navigate(`/reset-password?token=${data.reset_token}`);
       } catch (error: any) {
         console.error('Email verification error:', error);
         await logAuditEvent({
