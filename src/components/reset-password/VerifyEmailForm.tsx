@@ -22,7 +22,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
       console.log("Starting email verification process");
       
       try {
-        const { data, error } = await supabase.rpc<EmailVerificationResponse>(
+        const { data, error } = await supabase.rpc<EmailVerificationResponse, { p_verification_token: string }>(
           'verify_email_and_get_reset_token',
           { p_verification_token: verificationToken }
         );
@@ -43,13 +43,14 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
           throw error;
         }
 
-        if (!data) {
+        const verificationResponse = data as EmailVerificationResponse;
+        if (!verificationResponse) {
           console.error("No response from email verification");
           throw new Error('No response from server');
         }
 
-        if (!data.success) {
-          throw new Error(data.error || 'Verification failed');
+        if (!verificationResponse.success) {
+          throw new Error(verificationResponse.error || 'Verification failed');
         }
 
         console.log("Email verification successful");
@@ -71,7 +72,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
         });
 
         // Redirect to password reset with the new token
-        navigate(`/reset-password?token=${data.reset_token}`);
+        navigate(`/reset-password?token=${verificationResponse.reset_token}`);
       } catch (error: any) {
         console.error('Email verification error:', error);
         await logAuditEvent({

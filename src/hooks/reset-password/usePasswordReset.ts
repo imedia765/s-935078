@@ -4,6 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAuditEvent } from "@/utils/auditLogger";
 import type { EmailTransitionResponse } from "@/components/reset-password/types";
 
+interface ResetFlowParams {
+  p_member_number: string;
+  p_new_email: string | null;
+  p_ip_address: string;
+  p_user_agent: string;
+}
+
 export const usePasswordReset = () => {
   const { toast } = useToast();
 
@@ -13,7 +20,7 @@ export const usePasswordReset = () => {
     isTemporaryEmail: boolean
   ) => {
     try {
-      const { data: resetResponse, error: resetError } = await supabase.rpc(
+      const { data: resetResponse, error: resetError } = await supabase.rpc<EmailTransitionResponse, ResetFlowParams>(
         'initiate_password_reset_flow',
         {
           p_member_number: memberNumber,
@@ -45,12 +52,7 @@ export const usePasswordReset = () => {
         throw new Error('No response from server');
       }
 
-      const typedResponse = resetResponse as EmailTransitionResponse;
-      if (!('success' in typedResponse)) {
-        console.error("Invalid reset response format:", resetResponse);
-        throw new Error('Invalid response format');
-      }
-
+      const typedResponse = resetResponse;
       if (!typedResponse.success) {
         if (typedResponse.code === 'RATE_LIMIT_EXCEEDED') {
           const remainingTime = Math.ceil(parseInt(typedResponse.remaining_time || '0') / 60);
