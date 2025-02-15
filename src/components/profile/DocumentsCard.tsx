@@ -5,6 +5,7 @@ import { FileText, Download, Eye, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface Document {
   id: string;
@@ -23,13 +24,31 @@ interface DocumentsCardProps {
 
 export function DocumentsCard({ documents: initialDocuments, onView, onDownload }: DocumentsCardProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
 
+  const checkSession = async () => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session) {
+      console.error('Session check failed:', error);
+      toast({
+        title: "Session Expired",
+        description: "Please sign in again",
+        variant: "destructive"
+      });
+      navigate("/");
+      return false;
+    }
+    return true;
+  };
+
   const createBucketIfNotExists = async () => {
     try {
-      // Check if bucket exists
+      if (!(await checkSession())) return;
+
+      // Try to get bucket info first
       const { data: buckets, error: listError } = await supabase
         .storage
         .listBuckets();
@@ -39,7 +58,8 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
       const bucketExists = buckets.some(b => b.name === 'profile_documents');
 
       if (!bucketExists) {
-        const { data, error: createError } = await supabase
+        console.log('Creating profile_documents bucket...');
+        const { error: createError } = await supabase
           .storage
           .createBucket('profile_documents', {
             public: false,
@@ -48,7 +68,7 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
           });
 
         if (createError) throw createError;
-        console.log('Created profile_documents bucket');
+        console.log('Created profile_documents bucket successfully');
       }
     } catch (error) {
       console.error('Error checking/creating bucket:', error);
@@ -59,6 +79,8 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
 
   const ensureUserFolder = async (userId: string) => {
     try {
+      if (!(await checkSession())) return;
+
       await createBucketIfNotExists();
       
       // Try to list files to see if folder exists
@@ -86,6 +108,8 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
 
   const fetchDocuments = async () => {
     try {
+      if (!(await checkSession())) return;
+
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -136,6 +160,9 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
       }
     } catch (error: any) {
       console.error('Error fetching documents:', error);
+      if (error.message?.includes('session')) {
+        navigate("/");
+      }
       toast({
         title: "Error",
         description: "Failed to load documents",
@@ -155,6 +182,8 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
     if (!file) return;
 
     try {
+      if (!(await checkSession())) return;
+      
       setIsUploading(true);
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -183,6 +212,9 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
 
     } catch (error: any) {
       console.error('Upload error:', error);
+      if (error.message?.includes('session')) {
+        navigate("/");
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to upload document",
@@ -194,11 +226,14 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
   };
 
   const handleViewDocument = async (doc: Document) => {
+    if (!(await checkSession())) return;
     window.open(doc.url, '_blank');
   };
 
   const handleDownloadDocument = async (doc: Document) => {
     try {
+      if (!(await checkSession())) return;
+      
       const response = await fetch(doc.url);
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
