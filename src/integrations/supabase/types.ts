@@ -3379,24 +3379,16 @@ export type Database = {
         }
         Returns: Json
       }
-      handle_password_reset_with_token:
-        | {
-            Args: {
-              token_value: string
-              new_password: string
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              token_value: string
-              new_password: string
-              ip_address?: string
-              user_agent?: string
-              client_info?: Json
-            }
-            Returns: Json
-          }
+      handle_password_reset_with_token: {
+        Args: {
+          token_value: string
+          new_password: string
+          ip_address?: string
+          user_agent?: string
+          client_info?: Json
+        }
+        Returns: Json
+      }
       initiate_email_transition: {
         Args: {
           p_member_number: string
