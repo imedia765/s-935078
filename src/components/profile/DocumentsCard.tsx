@@ -44,68 +44,6 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
     return true;
   };
 
-  const createBucketIfNotExists = async () => {
-    try {
-      if (!(await checkSession())) return;
-
-      // Try to get bucket info first
-      const { data: buckets, error: listError } = await supabase
-        .storage
-        .listBuckets();
-
-      if (listError) throw listError;
-
-      const bucketExists = buckets.some(b => b.name === 'profile_documents');
-
-      if (!bucketExists) {
-        console.log('Creating profile_documents bucket...');
-        const { error: createError } = await supabase
-          .storage
-          .createBucket('profile_documents', {
-            public: false,
-            allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-            fileSizeLimit: 5242880, // 5MB
-          });
-
-        if (createError) throw createError;
-        console.log('Created profile_documents bucket successfully');
-      }
-    } catch (error) {
-      console.error('Error checking/creating bucket:', error);
-      // Don't throw - let the operation continue even if we can't create the bucket
-      // The backend migration should handle bucket creation
-    }
-  };
-
-  const ensureUserFolder = async (userId: string) => {
-    try {
-      if (!(await checkSession())) return;
-
-      await createBucketIfNotExists();
-      
-      // Try to list files to see if folder exists
-      const { data, error } = await supabase.storage
-        .from('profile_documents')
-        .list(`${userId}/`);
-
-      if (error) {
-        console.error('Error checking user folder:', error);
-        // Create an empty file to initialize the folder
-        const { error: uploadError } = await supabase.storage
-          .from('profile_documents')
-          .upload(`${userId}/.keep`, new Blob([''], { type: 'text/plain' }));
-        
-        if (uploadError) {
-          console.error('Error creating user folder:', uploadError);
-          throw uploadError;
-        }
-      }
-    } catch (error) {
-      console.error('Error ensuring user folder:', error);
-      throw error;
-    }
-  };
-
   const fetchDocuments = async () => {
     try {
       if (!(await checkSession())) return;
@@ -117,9 +55,6 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
       }
 
       console.log('Fetching documents for user:', user.id);
-
-      // Ensure user folder exists
-      await ensureUserFolder(user.id);
 
       const { data: files, error } = await supabase.storage
         .from('profile_documents')
