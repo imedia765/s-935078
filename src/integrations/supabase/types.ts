@@ -1928,6 +1928,7 @@ export type Database = {
           old_email: string
           status: string
           transition_type: string
+          verification_token: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -1940,6 +1941,7 @@ export type Database = {
           old_email: string
           status?: string
           transition_type: string
+          verification_token?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -1952,6 +1954,7 @@ export type Database = {
           old_email?: string
           status?: string
           transition_type?: string
+          verification_token?: string | null
         }
         Relationships: []
       }
@@ -1992,7 +1995,7 @@ export type Database = {
           expires_at: string
           id: string
           invalidated_at: string | null
-          member_number: string | null
+          member_number: string
           token: string
           used_at: string | null
           user_id: string | null
@@ -2003,7 +2006,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invalidated_at?: string | null
-          member_number?: string | null
+          member_number: string
           token: string
           used_at?: string | null
           user_id?: string | null
@@ -2014,27 +2017,12 @@ export type Database = {
           expires_at?: string
           id?: string
           invalidated_at?: string | null
-          member_number?: string | null
+          member_number?: string
           token?: string
           used_at?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "password_reset_tokens_member_number_fkey"
-            columns: ["member_number"]
-            isOneToOne: false
-            referencedRelation: "email_sync_status"
-            referencedColumns: ["member_number"]
-          },
-          {
-            foreignKeyName: "password_reset_tokens_member_number_fkey"
-            columns: ["member_number"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["member_number"]
-          },
-        ]
+        Relationships: []
       }
       payment_analytics_summary: {
         Row: {
