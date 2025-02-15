@@ -57,7 +57,7 @@ export const usePasswordReset = () => {
       console.log("Reset initiation successful, sending email...");
 
       // Send appropriate email based on whether verification is required
-      const { error: emailError } = await supabase.functions.invoke(
+      const { error: emailError, data: emailResponse } = await supabase.functions.invoke(
         'send-password-reset',
         {
           body: {
@@ -73,6 +73,32 @@ export const usePasswordReset = () => {
 
       if (emailError) {
         console.error("Error sending reset email:", emailError);
+        
+        // Handle rate limit error specifically
+        if (emailError.status === 429) {
+          const rateLimitData = JSON.parse(emailError.message);
+          toast({
+            variant: "destructive",
+            title: "Too Many Attempts",
+            description: "Please wait before trying again. If you need immediate assistance, contact support.",
+          });
+          
+          await logAuditEvent({
+            operation: 'update',
+            tableName: 'password_reset',
+            recordId: memberNumber,
+            severity: 'warning',
+            metadata: { 
+              error: 'Rate limit exceeded', 
+              step: 'send_email',
+              event_type: 'rate_limit_exceeded',
+              origin: window.location.origin
+            }
+          });
+          
+          return false;
+        }
+
         await logAuditEvent({
           operation: 'update',
           tableName: 'password_reset',

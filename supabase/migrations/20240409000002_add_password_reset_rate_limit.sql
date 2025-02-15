@@ -25,6 +25,7 @@ CREATE OR REPLACE FUNCTION check_password_reset_rate_limit(
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_rate_limit record;
@@ -86,6 +87,7 @@ CREATE OR REPLACE FUNCTION reset_password_rate_limit(
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
     DELETE FROM password_reset_rate_limits
@@ -93,5 +95,23 @@ BEGIN
     AND ip_address = p_ip_address;
 END;
 $$;
+
+-- Grant necessary permissions
+GRANT USAGE ON SCHEMA public TO service_role;
+GRANT ALL ON TABLE password_reset_rate_limits TO service_role;
+GRANT EXECUTE ON FUNCTION check_password_reset_rate_limit TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION reset_password_rate_limit TO anon, authenticated, service_role;
+
+-- Add rollback in case of failure
+SAVEPOINT create_rate_limit_objects;
+
+DO $$
+BEGIN
+    -- Test the function
+    PERFORM check_password_reset_rate_limit('TEST123', '127.0.0.1');
+EXCEPTION WHEN OTHERS THEN
+    ROLLBACK TO create_rate_limit_objects;
+    RAISE EXCEPTION 'Failed to create rate limit objects: %', SQLERRM;
+END $$;
 
 COMMIT;
