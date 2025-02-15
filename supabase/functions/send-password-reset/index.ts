@@ -41,7 +41,7 @@ function isAllowedOrigin(origin: string | null): boolean {
 
 async function checkRateLimit(ipAddress: string, memberNumber: string): Promise<boolean> {
   const { data, error } = await supabaseAdmin
-    .rpc('check_rate_limit', { 
+    .rpc('check_password_reset_rate_limit', { 
       p_ip_address: ipAddress,
       p_member_number: memberNumber 
     });
