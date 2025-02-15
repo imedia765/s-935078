@@ -42,7 +42,7 @@ const PageLayout = ({ children }: { children: React.ReactNode }) => {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary">
         Skip to main content
       </a>
-      <main id="main-content" className="pt-24">
+      <main id="main-content" role="main" aria-label="Main content" className="pt-24">
         {children}
       </main>
     </div>

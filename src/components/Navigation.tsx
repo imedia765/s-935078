@@ -97,17 +97,18 @@ export const Navigation = () => {
         <div className="py-2 border-b border-white/10">
           <div className="flex items-center justify-between px-4">
             <h3 className="text-sm font-medium text-primary">PWA Burton</h3>
-            <p className="text-lg font-arabic text-primary tracking-wider truncate max-w-[200px] md:max-w-none" aria-label="Bismillah">
+            <p className="text-lg font-arabic text-primary tracking-wider truncate max-w-[200px] md:max-w-none" lang="ar">
               بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
             </p>
-            <div className="w-[88px]" aria-hidden="true" />
+            <span className="w-[88px] invisible" />
           </div>
         </div>
 
         {session && (
           <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-3 relative">
             {isLoading ? (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2" role="status">
+                <span className="sr-only">Loading...</span>
                 <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
                 <span className="text-xs text-muted-foreground">Loading...</span>
               </div>
@@ -121,6 +122,9 @@ export const Navigation = () => {
                   aria-expanded={isMenuOpen}
                   aria-label="Toggle navigation menu"
                 >
+                  <span className="sr-only">
+                    {isMenuOpen ? "Close menu" : "Open menu"}
+                  </span>
                   {isMenuOpen ? (
                     <X className="h-5 w-5" aria-hidden="true" />
                   ) : (
@@ -148,8 +152,10 @@ export const Navigation = () => {
                             setIsMenuOpen(false);
                           }}
                         >
-                          {item.icon}
-                          <span className="ml-1.5">{item.label}</span>
+                          <span className="flex items-center">
+                            {React.cloneElement(item.icon, { 'aria-hidden': true })}
+                            <span className="ml-1.5">{item.label}</span>
+                          </span>
                         </NavigationMenuLink>
                       </NavigationMenuItem>
                     ))}
@@ -178,7 +184,7 @@ export const Navigation = () => {
                         }}
                       >
                         <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
-                        Sign Out
+                        <span>Sign Out</span>
                       </Button>
                     </NavigationMenuItem>
                   </NavigationMenuList>
