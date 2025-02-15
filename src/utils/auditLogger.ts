@@ -150,7 +150,10 @@ export async function getAuditActivitySummary(options?: AuditActivityOptions) {
   try {
     type GetAuditActivitySummaryFn = Database['public']['Functions']['get_audit_activity_summary'];
     
-    const { data, error } = await supabase.rpc<GetAuditActivitySummaryFn>('get_audit_activity_summary' as any, {
+    const { data, error } = await supabase.rpc<
+      GetAuditActivitySummaryFn['Returns'],
+      GetAuditActivitySummaryFn['Args']
+    >('get_audit_activity_summary', {
       start_date: options?.startDate?.toISOString() || null,
       end_date: options?.endDate?.toISOString() || null,
       operation_filter: options?.operation || null,
