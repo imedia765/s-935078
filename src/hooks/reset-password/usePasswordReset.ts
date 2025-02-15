@@ -1,15 +1,17 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { logAuditEvent } from "@/utils/auditLogger";
 import type { EmailTransitionResponse } from "@/components/reset-password/types";
 
-interface ResetFlowParams {
-  p_member_number: string;
-  p_new_email: string | null;
-  p_ip_address: string;
-  p_user_agent: string;
-}
+const isEmailTransitionResponse = (data: unknown): data is EmailTransitionResponse => {
+  const response = data as EmailTransitionResponse;
+  return (
+    typeof response === 'object' &&
+    response !== null &&
+    'success' in response &&
+    typeof response.success === 'boolean'
+  );
+};
 
 export const usePasswordReset = () => {
   const { toast } = useToast();
@@ -20,7 +22,7 @@ export const usePasswordReset = () => {
     isTemporaryEmail: boolean
   ) => {
     try {
-      const { data: response, error: resetError } = await supabase.rpc(
+      const { data: rawResponse, error: resetError } = await supabase.rpc(
         'initiate_password_reset_flow',
         {
           p_member_number: memberNumber,
@@ -47,15 +49,14 @@ export const usePasswordReset = () => {
         throw resetError;
       }
 
-      const resetResponse = response as EmailTransitionResponse;
-      if (!resetResponse) {
-        console.error("No response from reset initiation");
-        throw new Error('No response from server');
+      if (!isEmailTransitionResponse(rawResponse)) {
+        console.error("Invalid response format from reset initiation");
+        throw new Error('Invalid response format from server');
       }
 
-      if (!resetResponse.success) {
-        if (resetResponse.code === 'RATE_LIMIT_EXCEEDED') {
-          const remainingTime = Math.ceil(parseInt(resetResponse.remaining_time || '0') / 60);
+      if (!rawResponse.success) {
+        if (rawResponse.code === 'RATE_LIMIT_EXCEEDED') {
+          const remainingTime = Math.ceil(parseInt(rawResponse.remaining_time || '0') / 60);
           toast({
             variant: "destructive",
             title: "Too Many Attempts",
@@ -63,7 +64,7 @@ export const usePasswordReset = () => {
           });
           return false;
         }
-        throw new Error(resetResponse.error || 'Failed to process reset request');
+        throw new Error(rawResponse.error || 'Failed to process reset request');
       }
 
       console.log("Reset initiation successful, sending email...");
@@ -73,12 +74,12 @@ export const usePasswordReset = () => {
         'send-password-reset',
         {
           body: {
-            email: resetResponse.email,
+            email: rawResponse.email,
             memberNumber: memberNumber,
-            token: resetResponse.requires_verification ? 
-              resetResponse.verification_token : 
-              resetResponse.reset_token,
-            isVerification: resetResponse.requires_verification
+            token: rawResponse.requires_verification ? 
+              rawResponse.verification_token : 
+              rawResponse.reset_token,
+            isVerification: rawResponse.requires_verification
           },
         }
       );
@@ -109,17 +110,17 @@ export const usePasswordReset = () => {
         severity: 'info',
         metadata: { 
           step: 'reset_complete',
-          requires_verification: resetResponse.requires_verification,
+          requires_verification: rawResponse.requires_verification,
           event_type: 'reset_email_sent',
           origin: window.location.origin
         }
       });
 
       toast({
-        title: resetResponse.requires_verification ? 
+        title: rawResponse.requires_verification ? 
           "Verification Email Sent" : 
           "Reset Instructions Sent",
-        description: resetResponse.requires_verification ?
+        description: rawResponse.requires_verification ?
           "Please check your email to verify your new email address." :
           "Please check your email for password reset instructions. The link will expire in 1 hour.",
       });

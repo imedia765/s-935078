@@ -12,6 +12,16 @@ interface VerifyEmailFormProps {
   verificationToken: string;
 }
 
+const isEmailVerificationResponse = (data: unknown): data is EmailVerificationResponse => {
+  const response = data as EmailVerificationResponse;
+  return (
+    typeof response === 'object' &&
+    response !== null &&
+    'success' in response &&
+    typeof response.success === 'boolean'
+  );
+};
+
 export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -22,7 +32,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
       console.log("Starting email verification process");
       
       try {
-        const { data: response, error } = await supabase.rpc(
+        const { data: rawResponse, error } = await supabase.rpc(
           'verify_email_and_get_reset_token',
           { p_verification_token: verificationToken }
         );
@@ -43,14 +53,13 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
           throw error;
         }
 
-        const verificationResponse = response as EmailVerificationResponse;
-        if (!verificationResponse) {
-          console.error("No response from email verification");
-          throw new Error('No response from server');
+        if (!isEmailVerificationResponse(rawResponse)) {
+          console.error("Invalid response format from email verification");
+          throw new Error('Invalid response format from server');
         }
 
-        if (!verificationResponse.success) {
-          throw new Error(verificationResponse.error || 'Verification failed');
+        if (!rawResponse.success) {
+          throw new Error(rawResponse.error || 'Verification failed');
         }
 
         console.log("Email verification successful");
@@ -70,7 +79,7 @@ export const VerifyEmailForm = ({ verificationToken }: VerifyEmailFormProps) => 
           description: "Your email has been verified. You can now reset your password.",
         });
 
-        navigate(`/reset-password?token=${verificationResponse.reset_token}`);
+        navigate(`/reset-password?token=${rawResponse.reset_token}`);
       } catch (error: any) {
         console.error('Email verification error:', error);
         await logAuditEvent({
