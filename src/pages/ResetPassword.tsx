@@ -12,7 +12,7 @@ export const ResetPassword = () => {
   const verifyToken = searchParams.get("verify");
   const ref = searchParams.get("ref");
 
-  // Log page access for debugging
+  // Log page access for debugging and audit
   useEffect(() => {
     if (resetToken || verifyToken) {
       console.log('Reset password page accessed:', {
