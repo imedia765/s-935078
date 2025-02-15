@@ -1374,7 +1374,7 @@ export type Database = {
       login_attempt_tracking: {
         Row: {
           actual_email: string | null
-          attempted_email: string
+          attempted_email: string | null
           created_at: string | null
           error_details: Json | null
           id: string
@@ -1385,7 +1385,7 @@ export type Database = {
         }
         Insert: {
           actual_email?: string | null
-          attempted_email: string
+          attempted_email?: string | null
           created_at?: string | null
           error_details?: Json | null
           id?: string
@@ -1396,7 +1396,7 @@ export type Database = {
         }
         Update: {
           actual_email?: string | null
-          attempted_email?: string
+          attempted_email?: string | null
           created_at?: string | null
           error_details?: Json | null
           id?: string
