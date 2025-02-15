@@ -39,6 +39,17 @@ export function useSessionPersistence() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[Session Event]:", event, "Session:", session?.expires_at);
       
+      if (!session && event !== 'INITIAL_SESSION') {
+        console.log("[Session] No session found, redirecting to login");
+        navigate("/");
+        toast({
+          title: "Session Ended",
+          description: "Please sign in again to continue.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       switch (event) {
         case 'SIGNED_OUT':
           console.log("[Session] User signed out");
@@ -82,42 +93,43 @@ export function useSessionPersistence() {
         case 'PASSWORD_RECOVERY':
           console.log("[Session] Password recovery initiated");
           break;
-
-        default:
-          if (!session) {
-            console.log("[Session] Session ended");
-            navigate("/");
-            toast({
-              title: "Session Ended",
-              description: "Your session has ended. Please sign in again to continue.",
-              variant: "destructive",
-            });
-          }
       }
     });
 
-    // Attempt to refresh the session on mount
-    const refreshSession = async () => {
+    // Check for existing session on mount
+    const checkSession = async () => {
       try {
-        const { data, error } = await supabase.auth.refreshSession();
-        if (error) throw error;
-        console.log("[Session] Initial refresh successful:", data.session?.expires_at);
-      } catch (error) {
-        console.error("[Session] Refresh error:", error);
-        if (window.location.pathname !== "/") {
-          navigate("/");
-          toast({
-            title: "Session Error",
-            description: "Please sign in again to continue.",
-            variant: "destructive",
-          });
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("[Session] Initial session check:", session);
+        
+        if (!session) {
+          console.log("[Session] No session found on initial check");
+          if (window.location.pathname !== "/") {
+            navigate("/");
+          }
+        } else {
+          // Only attempt refresh if we have a session
+          const { error } = await supabase.auth.refreshSession();
+          if (error) {
+            console.error("[Session] Refresh error:", error);
+            if (error.message.includes("refresh_token_not_found")) {
+              navigate("/");
+              toast({
+                title: "Session Expired",
+                description: "Please sign in again to continue.",
+                variant: "destructive",
+              });
+            }
+          }
         }
+      } catch (error) {
+        console.error("[Session] Check error:", error);
       } finally {
         setSessionChecked(true);
       }
     };
 
-    refreshSession();
+    checkSession();
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
