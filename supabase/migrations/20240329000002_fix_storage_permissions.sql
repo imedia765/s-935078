@@ -1,4 +1,3 @@
-
 -- First, ensure we have the proper extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
