@@ -1,4 +1,5 @@
 
+import React, { useState } from "react";
 import { Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,19 +65,16 @@ export function RoleManagement() {
       )
     : [];
 
-  if (isLoadingUsers || isLoadingValidation) return <div>Loading...</div>;
-
-  const hasIssues = filteredValidations?.some((validation: any) => validation.status !== 'Good');
-
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
+    <Tabs value={activeTab} onValueChange={setActiveTab} aria-label="Role management sections">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Search className="w-4 h-4 text-muted-foreground" />
+            <Search className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Select
               value={searchType}
               onValueChange={(value: SearchType) => setSearchType(value)}
+              aria-label="Search type"
             >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Search by..." />
@@ -100,6 +98,7 @@ export function RoleManagement() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
+              aria-label={`Search ${activeTab}`}
             />
           </div>
           {hasIssues && (
@@ -108,14 +107,15 @@ export function RoleManagement() {
               onClick={handleFixAllIssues}
               disabled={isFixingAll}
               className="flex items-center gap-2"
+              aria-busy={isFixingAll}
             >
-              <RefreshCw className={`h-4 w-4 ${isFixingAll ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${isFixingAll ? 'animate-spin' : ''}`} aria-hidden="true" />
               {isFixingAll ? 'Fixing Issues...' : 'Fix All Issues'}
             </Button>
           )}
         </div>
 
-        <TabsList>
+        <TabsList aria-label="Role management options">
           <TabsTrigger value="table">Table View</TabsTrigger>
           <TabsTrigger value="errors">Error View</TabsTrigger>
           <TabsTrigger value="requests">Change Requests</TabsTrigger>
@@ -124,7 +124,7 @@ export function RoleManagement() {
           <TabsTrigger value="audit">Audit Logs</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="errors">
+        <TabsContent value="errors" role="tabpanel">
           <ErrorView
             validations={filteredValidations}
             generateMagicLink={generateMagicLink}
@@ -133,30 +133,29 @@ export function RoleManagement() {
           />
         </TabsContent>
 
-        <TabsContent value="table">
+        <TabsContent value="table" role="tabpanel">
           <UserTable 
             users={filteredUsers ?? []} 
             generateMagicLink={generateMagicLink}
           />
         </TabsContent>
 
-        <TabsContent value="requests">
+        <TabsContent value="requests" role="tabpanel">
           <RoleChangeRequests />
         </TabsContent>
 
-        <TabsContent value="permissions">
+        <TabsContent value="permissions" role="tabpanel">
           <RolePermissionsMatrix />
         </TabsContent>
 
-        <TabsContent value="collectors">
+        <TabsContent value="collectors" role="tabpanel">
           <CollectorsView />
         </TabsContent>
 
-        <TabsContent value="audit">
+        <TabsContent value="audit" role="tabpanel">
           <AuditView auditLogs={filteredAuditLogs ?? []} />
         </TabsContent>
       </div>
     </Tabs>
   );
 }
-
