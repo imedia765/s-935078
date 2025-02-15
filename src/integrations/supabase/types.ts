@@ -1955,6 +1955,36 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_rate_limits: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          id: string
+          ip_address: string
+          last_attempt: string | null
+          locked_until: string | null
+          member_number: string
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          ip_address: string
+          last_attempt?: string | null
+          locked_until?: string | null
+          member_number: string
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string
+          last_attempt?: string | null
+          locked_until?: string | null
+          member_number?: string
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           attempts: number
@@ -3060,6 +3090,13 @@ export type Database = {
           details: Json
         }[]
       }
+      check_password_reset_rate_limit: {
+        Args: {
+          p_member_number: string
+          p_ip_address: string
+        }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           p_ip_address: string
@@ -3486,6 +3523,13 @@ export type Database = {
       reset_failed_login: {
         Args: {
           member_number: string
+        }
+        Returns: undefined
+      }
+      reset_password_rate_limit: {
+        Args: {
+          p_member_number: string
+          p_ip_address: string
         }
         Returns: undefined
       }
