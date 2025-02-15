@@ -44,17 +44,23 @@ export function MemberProfileCard({
         throw new Error('Collector not found');
       }
 
+      // Generate a unique payment number
+      const paymentNumber = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
       const { data, error } = await supabase
         .from('payment_requests')
         .insert({
-          member_id: member.id,
+          payment_number: paymentNumber,
+          amount: member.yearly_payment_amount || 40,
+          payment_method: paymentMethod,
+          payment_type: 'yearly',
+          status: 'pending',
           collector_id: collector.id,
           member_number: member.member_number,
-          amount: member.yearly_payment_amount || 40,
-          payment_type: 'yearly',
-          payment_method: paymentMethod,
-          status: 'pending',
-          notes: 'Quick yearly membership payment'
+          notes: 'Quick yearly membership payment',
+          created_at: new Date().toISOString(),
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Due in 7 days
+          has_supporting_docs: false
         });
 
       if (error) throw error;
