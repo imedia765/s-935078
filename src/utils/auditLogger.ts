@@ -152,17 +152,17 @@ export async function getAuditActivitySummary(options?: AuditActivityOptions) {
     type AuditActivityResult = Database['public']['Functions']['get_audit_activity_summary']['Returns'][number];
 
     const params: AuditActivityParams = {
-      start_date: options?.startDate?.toISOString() || null,
-      end_date: options?.endDate?.toISOString() || null,
-      operation_filter: options?.operation || null,
-      severity_filter: options?.severity || null
+      start_date: options?.startDate?.toISOString() ?? null,
+      end_date: options?.endDate?.toISOString() ?? null,
+      operation_filter: options?.operation ?? null,
+      severity_filter: options?.severity ?? null
     };
 
     const { data, error } = await supabase
-      .rpc('get_audit_activity_summary', params);
+      .rpc<AuditActivityResult[]>('get_audit_activity_summary', params);
 
     if (error) throw error;
-    return data as AuditActivityResult[];
+    return data;
   } catch (error) {
     console.error('Error fetching audit activity summary:', error);
     throw error;
