@@ -2024,6 +2024,78 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_transitions: {
+        Row: {
+          attempts: number | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          member_number: string
+          metadata: Json | null
+          new_email: string | null
+          old_email: string
+          reset_expires_at: string | null
+          reset_sent_at: string | null
+          reset_token: string | null
+          status:
+            | Database["public"]["Enums"]["email_verification_status"]
+            | null
+          updated_at: string
+          user_agent: string | null
+          verification_expires_at: string | null
+          verification_sent_at: string | null
+          verification_token: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          member_number: string
+          metadata?: Json | null
+          new_email?: string | null
+          old_email: string
+          reset_expires_at?: string | null
+          reset_sent_at?: string | null
+          reset_token?: string | null
+          status?:
+            | Database["public"]["Enums"]["email_verification_status"]
+            | null
+          updated_at?: string
+          user_agent?: string | null
+          verification_expires_at?: string | null
+          verification_sent_at?: string | null
+          verification_token?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          member_number?: string
+          metadata?: Json | null
+          new_email?: string | null
+          old_email?: string
+          reset_expires_at?: string | null
+          reset_sent_at?: string | null
+          reset_token?: string | null
+          status?:
+            | Database["public"]["Enums"]["email_verification_status"]
+            | null
+          updated_at?: string
+          user_agent?: string | null
+          verification_expires_at?: string | null
+          verification_sent_at?: string | null
+          verification_token?: string | null
+        }
+        Relationships: []
+      }
       payment_analytics_summary: {
         Row: {
           calculated_at: string | null
@@ -3428,6 +3500,15 @@ export type Database = {
         }
         Returns: Json
       }
+      initiate_password_reset_flow: {
+        Args: {
+          p_member_number: string
+          p_new_email?: string
+          p_ip_address?: string
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
       is_admin: {
         Args: {
           user_uid: string
@@ -3634,7 +3715,7 @@ export type Database = {
       }
       validate_reset_token: {
         Args: {
-          token_value: string
+          p_reset_token: string
         }
         Returns: Json
       }
@@ -3649,6 +3730,12 @@ export type Database = {
       verify_backup: {
         Args: {
           backup_id: string
+        }
+        Returns: Json
+      }
+      verify_email_and_get_reset_token: {
+        Args: {
+          p_verification_token: string
         }
         Returns: Json
       }
@@ -3689,6 +3776,7 @@ export type Database = {
         | "system_announcement"
         | "payment_confirmation"
         | "payment_receipt"
+      email_verification_status: "pending" | "verified" | "completed" | "failed"
       health_status: "healthy" | "warning" | "critical"
       monitoring_event_type:
         | "system_performance"
