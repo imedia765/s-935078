@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION public.assign_collector_role()
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_result jsonb;
@@ -110,5 +111,11 @@ BEGIN
 END;
 $$;
 
+-- Revoke existing permissions
+REVOKE ALL ON FUNCTION public.assign_collector_role() FROM PUBLIC;
+
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION public.assign_collector_role() TO authenticated;
+
+-- Add function comment
+COMMENT ON FUNCTION public.assign_collector_role() IS 'Assigns collector roles to active collectors and maintains role synchronization';
