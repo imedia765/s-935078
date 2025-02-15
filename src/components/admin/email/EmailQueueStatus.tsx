@@ -30,7 +30,7 @@ export function EmailQueueStatus() {
 
       const { data: emailLogs, error } = await supabase
         .from('email_logs')
-        .select('*, email_events(*)')
+        .select('*')
         .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('priority', { ascending: true })
         .order('created_at', { ascending: false });
@@ -116,14 +116,19 @@ export function EmailQueueStatus() {
                       {formatDistanceToNow(new Date(email.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  {email.next_attempt_at && (
+                  {email.next_retry_at && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Next attempt: {formatDistanceToNow(new Date(email.next_attempt_at), { addSuffix: true })}
+                      Next retry: {formatDistanceToNow(new Date(email.next_retry_at), { addSuffix: true })}
                     </p>
                   )}
-                  {email.attempts > 0 && (
+                  {email.retry_count > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Attempts: {email.attempts}
+                      Retry count: {email.retry_count}
+                    </p>
+                  )}
+                  {email.delivered_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Delivered: {formatDistanceToNow(new Date(email.delivered_at), { addSuffix: true })}
                     </p>
                   )}
                 </div>
