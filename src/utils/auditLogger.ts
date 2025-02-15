@@ -171,7 +171,7 @@ export async function getAuditActivitySummary(options?: AuditActivityOptions) {
       severity_filter: options?.severity || null
     };
 
-    const { data, error } = await supabase.rpc<AuditActivityResult[]>('get_audit_activity_summary', params);
+    const { data, error } = await supabase.rpc<AuditActivityResult[], AuditActivityParams>('get_audit_activity_summary', params);
 
     if (error) throw error;
     return data;
