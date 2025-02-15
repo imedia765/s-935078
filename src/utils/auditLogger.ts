@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/types/supabase';
 
@@ -147,7 +148,9 @@ export function subscribeToAuditLogs(callback: (payload: any) => void) {
 
 export async function getAuditActivitySummary(options?: AuditActivityOptions) {
   try {
-    const { data, error } = await supabase.rpc('get_audit_activity_summary', {
+    type GetAuditActivitySummaryFn = Database['public']['Functions']['get_audit_activity_summary'];
+    
+    const { data, error } = await supabase.rpc<GetAuditActivitySummaryFn>('get_audit_activity_summary' as any, {
       start_date: options?.startDate?.toISOString() || null,
       end_date: options?.endDate?.toISOString() || null,
       operation_filter: options?.operation || null,
