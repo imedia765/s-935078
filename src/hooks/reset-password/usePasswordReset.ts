@@ -51,6 +51,16 @@ export const usePasswordReset = () => {
       }
 
       if (!typedResponse.success) {
+        // Handle rate limit error specifically
+        if (typedResponse.code === 'RATE_LIMIT_EXCEEDED') {
+          const remainingTime = Math.ceil(parseInt(typedResponse.remaining_time || '0') / 60);
+          toast({
+            variant: "destructive",
+            title: "Too Many Attempts",
+            description: `Please wait ${remainingTime} minutes before trying again. If you need immediate assistance, contact support.`,
+          });
+          return false;
+        }
         throw new Error(typedResponse.error || 'Failed to process reset request');
       }
 
