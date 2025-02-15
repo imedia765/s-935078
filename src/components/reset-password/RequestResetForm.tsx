@@ -31,7 +31,7 @@ export const RequestResetForm = () => {
       toast({
         variant: "destructive",
         title: "Member Not Found",
-        description: "No member found with this member number",
+        description: status?.error || "No member found with this member number",
       });
     } else {
       setEmailStatus(status);
@@ -47,7 +47,7 @@ export const RequestResetForm = () => {
 
     const success = await initiatePasswordReset(
       memberNumber,
-      emailStatus.is_temp_email ? newEmail : null,
+      emailStatus.is_temp_email ? newEmail : email,
       !!emailStatus.is_temp_email
     );
 
@@ -65,6 +65,7 @@ export const RequestResetForm = () => {
     setEmailStatus(null);
     setEmail("");
     setNewEmail("");
+    setMemberNumber("");
   };
 
   if (!emailStatus) {
