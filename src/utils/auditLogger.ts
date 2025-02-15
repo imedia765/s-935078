@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/types/supabase';
 
 type AuditOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE' | 'approve' | 'reject';
 type DatabaseOperation = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE';
@@ -147,8 +148,7 @@ export function subscribeToAuditLogs(callback: (payload: any) => void) {
 
 export async function getAuditActivitySummary(options?: AuditActivityOptions) {
   try {
-    // Convert dates to ISO strings for RPC call
-    const rpcParams = {
+    const rpcParams: Database['public']['Functions']['get_audit_activity_summary']['Args'] = {
       start_date: options?.startDate?.toISOString(),
       end_date: options?.endDate?.toISOString(),
       operation_filter: options?.operation,

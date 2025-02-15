@@ -1,4 +1,3 @@
-
 export interface Database {
   public: {
     Tables: {
@@ -310,7 +309,22 @@ export interface Database {
           error?: string
         }
       }
+      get_audit_activity_summary: {
+        Args: {
+          start_date?: string;
+          end_date?: string;
+          operation_filter?: string;
+          severity_filter?: string;
+        };
+        Returns: {
+          hour_bucket: string;
+          operation: string;
+          count: number;
+          severity: string;
+          table_name: string;
+          user_id: string;
+        }[];
+      }
     }
   }
 }
-
