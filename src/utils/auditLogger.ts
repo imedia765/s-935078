@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/types/supabase';
 
@@ -148,21 +147,8 @@ export function subscribeToAuditLogs(callback: (payload: any) => void) {
 
 export async function getAuditActivitySummary(options?: AuditActivityOptions) {
   try {
-    interface AuditActivityParams {
-      start_date: string | null;
-      end_date: string | null;
-      operation_filter: string | null;
-      severity_filter: string | null;
-    }
-
-    interface AuditActivityResult {
-      hour_bucket: string;
-      operation: string;
-      count: number;
-      severity: string;
-      table_name: string;
-      user_id: string;
-    }
+    type AuditActivityParams = Database['public']['Functions']['get_audit_activity_summary']['Args'];
+    type AuditActivityResult = Database['public']['Functions']['get_audit_activity_summary']['Returns'][number];
 
     const params: AuditActivityParams = {
       start_date: options?.startDate?.toISOString() || null,
@@ -171,10 +157,12 @@ export async function getAuditActivitySummary(options?: AuditActivityOptions) {
       severity_filter: options?.severity || null
     };
 
-    const { data, error } = await supabase.rpc<AuditActivityResult[], AuditActivityParams>('get_audit_activity_summary', params);
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .rpc('get_audit_activity_summary', params);
 
     if (error) throw error;
-    return data;
+    return data as AuditActivityResult[];
   } catch (error) {
     console.error('Error fetching audit activity summary:', error);
     throw error;
