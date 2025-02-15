@@ -2,8 +2,9 @@
 -- First, ensure we have the proper extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Drop existing policies
+-- Clear out any existing bucket and policies
 BEGIN;
+    -- Drop existing policies
     DROP POLICY IF EXISTS "Allow authenticated users to read their own documents" ON storage.objects;
     DROP POLICY IF EXISTS "Allow authenticated users to upload their own documents" ON storage.objects;
     DROP POLICY IF EXISTS "Allow authenticated users to update their own documents" ON storage.objects;
@@ -11,51 +12,52 @@ BEGIN;
     DROP POLICY IF EXISTS "Allow authenticated users to access the bucket" ON storage.buckets;
     DROP POLICY IF EXISTS "Allow service role to access buckets" ON storage.buckets;
     DROP POLICY IF EXISTS "Allow users to list their own documents" ON storage.objects;
+    DROP POLICY IF EXISTS "Allow authenticated users to list objects" ON storage.objects;
+    
+    -- Delete existing bucket if it exists
+    DELETE FROM storage.buckets WHERE id = 'profile_documents';
 COMMIT;
 
 -- Reset permissions
 ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
--- Ensure the bucket exists with proper configuration
-INSERT INTO storage.buckets (id, name, owner, created_at, updated_at, public, file_size_limit, allowed_mime_types)
+-- Create the bucket with proper configuration
+INSERT INTO storage.buckets (id, name, public)
 VALUES (
     'profile_documents',
     'profile_documents',
-    NULL,
-    NOW(),
-    NOW(),
-    false,
-    52428800, -- 50MB limit
-    ARRAY[
+    false
+);
+
+-- Update bucket configuration
+UPDATE storage.buckets
+SET 
+    file_size_limit = 52428800, -- 50MB limit
+    allowed_mime_types = ARRAY[
         'application/pdf',
         'image/jpeg',
         'image/png',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ]
-)
-ON CONFLICT (id) DO UPDATE SET
-    file_size_limit = EXCLUDED.file_size_limit,
-    allowed_mime_types = EXCLUDED.allowed_mime_types;
+WHERE id = 'profile_documents';
 
--- Create bucket-level policies
-CREATE POLICY "Allow authenticated users to access profile_documents bucket"
+-- Create bucket access policy
+CREATE POLICY "Allow authenticated users to use bucket"
 ON storage.buckets FOR ALL
 TO authenticated
 USING (name = 'profile_documents');
 
 -- Create object-level policies
 BEGIN;
-    -- Allow users to list objects in the bucket (including root)
+    -- Basic list access for authenticated users
     CREATE POLICY "Allow authenticated users to list objects"
     ON storage.objects FOR SELECT
     TO authenticated
-    USING (
-        bucket_id = 'profile_documents'
-    );
+    USING (bucket_id = 'profile_documents');
 
-    -- Allow users to read their own documents
+    -- Allow users to read objects in their own folder
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
     TO authenticated
@@ -64,14 +66,13 @@ BEGIN;
         auth.uid()::text = (storage.foldername(name))[1]
     );
 
-    -- Allow users to upload documents to their own directory
+    -- Allow users to upload to their own folder
     CREATE POLICY "Allow authenticated users to upload their own documents"
     ON storage.objects FOR INSERT
     TO authenticated
     WITH CHECK (
         bucket_id = 'profile_documents' AND
-        auth.uid()::text = (storage.foldername(name))[1] AND
-        (octet_length(CASE WHEN content_length IS NULL THEN NULL ELSE content::bytea END) <= 52428800)
+        auth.uid()::text = (storage.foldername(name))[1]
     );
 
     -- Allow users to update their own documents
