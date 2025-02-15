@@ -51,7 +51,6 @@ export const usePasswordReset = () => {
       }
 
       if (!typedResponse.success) {
-        // Handle rate limit error specifically
         if (typedResponse.code === 'RATE_LIMIT_EXCEEDED') {
           const remainingTime = Math.ceil(parseInt(typedResponse.remaining_time || '0') / 60);
           toast({
@@ -76,7 +75,7 @@ export const usePasswordReset = () => {
             token: typedResponse.requires_verification ? 
               typedResponse.verification_token : 
               typedResponse.reset_token,
-            isVerification: typedResponse.requires_verification
+            isVerification: typedResponse.requires_verification // Add this flag
           },
         }
       );
@@ -84,7 +83,6 @@ export const usePasswordReset = () => {
       if (emailError) {
         console.error("Error sending reset email:", emailError);
         
-        // Handle rate limit error specifically
         if (emailError.status === 429) {
           const rateLimitData = JSON.parse(emailError.message);
           toast({

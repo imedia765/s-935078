@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
@@ -21,6 +20,7 @@ interface RequestBody {
   email: string;
   memberNumber: string;
   token: string;
+  isVerification: boolean;
 }
 
 const supabaseAdmin = createClient(
@@ -90,7 +90,7 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json() as RequestBody;
-    const { email, memberNumber, token } = requestData;
+    const { email, memberNumber, token, isVerification } = requestData;
 
     // Input validation
     if (!email || !memberNumber || !token) {
@@ -122,7 +122,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[${new Date().toISOString()}] Starting password reset process for ${memberNumber}`);
+    console.log(`[${new Date().toISOString()}] Starting ${isVerification ? 'email verification' : 'password reset'} process for ${memberNumber}`);
 
     // Check Loops configuration first
     const { data: loopsConfig, error: configCheckError } = await supabaseAdmin
@@ -157,14 +157,15 @@ serve(async (req) => {
       throw new Error('Incomplete Loops configuration');
     }
 
-    // Always use production URL for reset links
-    const resetLink = `${PRODUCTION_URL}/reset-password?token=${token}&ref=email`;
+    // Always use production URL for reset/verify links
+    const actionLink = `${PRODUCTION_URL}/reset-password?${isVerification ? 'verify' : 'token'}=${token}&ref=email`;
 
     console.log('Making request to Loops API:', {
       templateId: loopsIntegration.password_reset_template_id,
       email,
       memberNumber,
-      resetLink,
+      actionLink,
+      isVerification,
       origin
     });
 
@@ -179,8 +180,9 @@ serve(async (req) => {
           transactionalId: loopsIntegration.password_reset_template_id,
           email: email,
           dataVariables: {
-            resetUrl: resetLink,
-            memberNumber: memberNumber
+            resetUrl: actionLink,
+            memberNumber: memberNumber,
+            isVerification: isVerification
           }
         })
       });
@@ -191,8 +193,9 @@ serve(async (req) => {
         statusText: loopsResponse.statusText,
         headers: Object.fromEntries(loopsResponse.headers.entries()),
         origin: origin,
-        resetLink: resetLink,
-        clientIp: clientIp
+        actionLink: actionLink,
+        clientIp: clientIp,
+        isVerification: isVerification
       };
       console.log('Loops API response details:', responseDetails);
 
@@ -206,29 +209,30 @@ serve(async (req) => {
       }
 
       const loopsResult = await loopsResponse.json();
-      console.log('Loops email sent successfully:', loopsResult);
+      console.log(`${isVerification ? 'Verification' : 'Reset'} email sent successfully:`, loopsResult);
 
-      // Log the successful reset link generation
+      // Log the successful action
       await supabaseAdmin
         .from('audit_logs')
         .insert({
-          operation: 'password_reset_requested',
-          table_name: 'password_reset_tokens',
+          operation: isVerification ? 'email_verification_requested' : 'password_reset_requested',
+          table_name: isVerification ? 'password_reset_email_transitions' : 'password_reset_tokens',
           record_id: token,
           metadata: {
             member_number: memberNumber,
             generated_at: new Date().toISOString(),
             success: true,
             origin: origin,
-            reset_link: resetLink,
-            ip_address: clientIp
+            action_link: actionLink,
+            ip_address: clientIp,
+            is_verification: isVerification
           },
           severity: 'info'
         });
 
       return new Response(
         JSON.stringify({ 
-          message: "Password reset email sent successfully",
+          message: `${isVerification ? 'Verification' : 'Password reset'} email sent successfully`,
           timing: {
             timestamp: new Date().toISOString()
           }
@@ -247,27 +251,29 @@ serve(async (req) => {
         message: loopsError.message,
         stack: loopsError.stack,
         origin: origin,
-        clientIp: clientIp
+        clientIp: clientIp,
+        isVerification: isVerification
       });
 
       // Log the failed attempt
       await supabaseAdmin
         .from('audit_logs')
         .insert({
-          operation: 'password_reset_failed',
-          table_name: 'password_reset_tokens',
+          operation: isVerification ? 'email_verification_failed' : 'password_reset_failed',
+          table_name: isVerification ? 'password_reset_email_transitions' : 'password_reset_tokens',
           record_id: token,
           metadata: {
             member_number: memberNumber,
             error: loopsError.message,
             timestamp: new Date().toISOString(),
             origin: origin,
-            ip_address: clientIp
+            ip_address: clientIp,
+            is_verification: isVerification
           },
           severity: 'error'
         });
 
-      throw new Error(`Failed to send email through Loops: ${loopsError.message}`);
+      throw new Error(`Failed to send ${isVerification ? 'verification' : 'reset'} email through Loops: ${loopsError.message}`);
     }
 
   } catch (error: any) {
@@ -281,7 +287,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || "Failed to send password reset email",
+        error: error.message || "Failed to send email",
         code: error.code || 'UNKNOWN_ERROR',
         timing: {
           timestamp: new Date().toISOString()
