@@ -13,16 +13,19 @@ BEGIN;
 COMMIT;
 
 -- Reset permissions
-ALTER TABLE storage.buckets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
--- Ensure the bucket exists (this will run as postgres)
-DO $$
-BEGIN
-    INSERT INTO storage.buckets (id, name, owner, created_at, updated_at, public)
-    VALUES ('profile_documents', 'profile_documents', NULL, NOW(), NOW(), false)
-    ON CONFLICT (id) DO NOTHING;
-END $$;
+-- Ensure the bucket exists
+INSERT INTO storage.buckets (id, name, owner, created_at, updated_at, public)
+VALUES ('profile_documents', 'profile_documents', NULL, NOW(), NOW(), false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create bucket access policy
+CREATE POLICY "Allow authenticated users to use bucket"
+ON storage.buckets FOR ALL
+TO authenticated
+USING (name = 'profile_documents');
 
 -- Create policies for objects
 BEGIN;
@@ -65,19 +68,3 @@ GRANT ALL ON storage.buckets TO authenticated;
 GRANT ALL ON storage.objects TO postgres;
 GRANT ALL ON storage.buckets TO postgres;
 
--- Create the bucket if it doesn't exist using a function to ensure proper permissions
-CREATE OR REPLACE FUNCTION create_storage_bucket()
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-    INSERT INTO storage.buckets (id, name, public)
-    VALUES ('profile_documents', 'profile_documents', false)
-    ON CONFLICT (id) DO NOTHING;
-END;
-$$;
-
--- Execute the function
-SELECT create_storage_bucket();
