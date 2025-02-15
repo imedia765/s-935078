@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { WhatsAppSupport } from "@/components/WhatsAppSupport";
+import { normalizeProductionUrl } from "@/utils/urlUtils";
 
 interface LoginFormProps {
   onLoginSuccess: () => void;
@@ -35,6 +36,12 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
   const validatePassword = (pass: string) => {
     if (!pass.trim()) return "Password is required";
     return "";
+  };
+
+  const handleForgotPassword = () => {
+    const resetUrl = new URL("/reset-password", window.location.href);
+    const normalizedUrl = normalizeProductionUrl(resetUrl.toString());
+    navigate("/reset-password");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -130,7 +137,7 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
             type="button"
             variant="link"
             className="text-sm text-primary hover:underline px-0"
-            onClick={() => navigate("/reset-password")}
+            onClick={handleForgotPassword}
           >
             Forgot Password?
           </Button>
