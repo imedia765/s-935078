@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,10 +102,10 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
   };
 
   return (
-    <form onSubmit={handleLogin} className="space-y-6">
+    <form onSubmit={handleLogin} className="space-y-6" noValidate aria-label="Login form">
       <div className="space-y-2">
         <label htmlFor="memberNumber" className="block text-sm text-left">
-          Member Number
+          Member Number <span aria-hidden="true">*</span>
         </label>
         <Input
           id="memberNumber"
@@ -117,16 +118,26 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
           }}
           className={`bg-black/40 ${validationErrors.memberNumber ? 'border-red-500' : ''}`}
           disabled={isLoading}
+          required
+          aria-required="true"
+          aria-invalid={!!validationErrors.memberNumber}
+          aria-describedby={validationErrors.memberNumber ? "memberNumber-error" : undefined}
         />
         {validationErrors.memberNumber && (
-          <p className="text-sm text-red-500 mt-1">{validationErrors.memberNumber}</p>
+          <p 
+            id="memberNumber-error" 
+            className="text-sm text-red-500 mt-1" 
+            role="alert"
+          >
+            {validationErrors.memberNumber}
+          </p>
         )}
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label htmlFor="password" className="block text-sm">
-            Password
+            Password <span aria-hidden="true">*</span>
           </label>
           <Button
             type="button"
@@ -148,9 +159,19 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
           }}
           className={`bg-black/40 ${validationErrors.password ? 'border-red-500' : ''}`}
           disabled={isLoading}
+          required
+          aria-required="true"
+          aria-invalid={!!validationErrors.password}
+          aria-describedby={validationErrors.password ? "password-error" : undefined}
         />
         {validationErrors.password && (
-          <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
+          <p 
+            id="password-error" 
+            className="text-sm text-red-500 mt-1" 
+            role="alert"
+          >
+            {validationErrors.password}
+          </p>
         )}
       </div>
 
@@ -159,6 +180,7 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
           id="rememberMe"
           checked={rememberMe}
           onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+          aria-label="Remember my member number"
         />
         <label
           htmlFor="rememberMe"
@@ -173,6 +195,7 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
           type="submit" 
           className="w-full bg-primary hover:bg-primary/90"
           disabled={isLoading}
+          aria-busy={isLoading}
         >
           {isLoading ? "Logging in..." : "Login"}
         </Button>
