@@ -65,6 +65,14 @@ export function RoleManagement() {
       )
     : [];
 
+  // Determine if there are any issues to fix
+  const hasIssues = filteredValidations.length > 0;
+
+  // Wrapper function to match the expected void return type
+  const handleMagicLinkGeneration = async (userId: string): Promise<void> => {
+    await generateMagicLink(userId);
+  };
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} aria-label="Role management sections">
       <div className="space-y-4">
@@ -136,7 +144,7 @@ export function RoleManagement() {
         <TabsContent value="table" role="tabpanel">
           <UserTable 
             users={filteredUsers ?? []} 
-            generateMagicLink={generateMagicLink}
+            generateMagicLink={handleMagicLinkGeneration}
           />
         </TabsContent>
 
