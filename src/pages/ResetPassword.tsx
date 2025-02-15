@@ -13,11 +13,13 @@ export const ResetPassword = () => {
   const verifyToken = searchParams.get("verify");
   const ref = searchParams.get("ref");
 
-  // Handle www to non-www redirect
+  // Handle www to non-www redirect immediately
   useEffect(() => {
     if (window.location.hostname === `www.pwaburton.co.uk`) {
       const newUrl = normalizeProductionUrl(window.location.href);
+      // Use replace to prevent adding to browser history
       window.location.replace(newUrl);
+      return;
     }
   }, []);
 
@@ -32,6 +34,18 @@ export const ResetPassword = () => {
       });
     }
   }, [resetToken, verifyToken, ref]);
+
+  // Show loading state during redirect
+  if (window.location.hostname === `www.pwaburton.co.uk`) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md glass-card p-8">
+          <h1 className="text-2xl font-bold mb-6 text-center">Redirecting...</h1>
+          <p className="text-center text-muted-foreground">Please wait while we redirect you to the secure domain.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 login-container">

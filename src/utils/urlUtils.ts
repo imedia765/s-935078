@@ -5,19 +5,23 @@ const WWW_PRODUCTION_DOMAIN = `www.${PRODUCTION_DOMAIN}`;
 
 export const getBaseUrl = (forceProduction: boolean = false): string => {
   // Always return production URL for auth-related operations (forceProduction = true)
-  // Otherwise, use current domain for regular operations
-  return forceProduction ? PRODUCTION_URL : (
-    window.location.hostname === PRODUCTION_DOMAIN || 
-    window.location.hostname === WWW_PRODUCTION_DOMAIN ? 
-    PRODUCTION_URL : window.location.origin
-  );
+  // And always return non-www version
+  if (forceProduction) {
+    return PRODUCTION_URL;
+  }
+
+  const currentHostname = window.location.hostname;
+  if (currentHostname === WWW_PRODUCTION_DOMAIN) {
+    return PRODUCTION_URL;
+  }
+
+  return currentHostname === PRODUCTION_DOMAIN ? PRODUCTION_URL : window.location.origin;
 };
 
 export const isValidDomain = (url: string): boolean => {
   try {
     const hostname = new URL(url).hostname;
     return hostname === PRODUCTION_DOMAIN || 
-           hostname === WWW_PRODUCTION_DOMAIN || 
            hostname === 'localhost' || 
            hostname.endsWith('.localhost');
   } catch {
@@ -31,8 +35,9 @@ export const normalizeProductionUrl = (url: string): string => {
     // If we're on www.pwaburton.co.uk, redirect to pwaburton.co.uk
     if (urlObj.hostname === WWW_PRODUCTION_DOMAIN) {
       urlObj.hostname = PRODUCTION_DOMAIN;
+      return urlObj.toString();
     }
-    return urlObj.toString();
+    return url;
   } catch {
     return url;
   }

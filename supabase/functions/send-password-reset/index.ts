@@ -71,7 +71,7 @@ serve(async (req) => {
       throw new Error('Incomplete Loops configuration');
     }
 
-    // Generate reset link - ensure it uses HTTPS and handles www/non-www
+    // Generate reset link - ensure it uses HTTPS and non-www domain
     const baseUrl = "https://pwaburton.co.uk";
     const resetLink = `${baseUrl}/reset-password?token=${token}&ref=email`;
 
