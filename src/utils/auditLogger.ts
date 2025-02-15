@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/types/supabase';
 
@@ -148,14 +147,12 @@ export function subscribeToAuditLogs(callback: (payload: any) => void) {
 
 export async function getAuditActivitySummary(options?: AuditActivityOptions) {
   try {
-    const params: Database['public']['Functions']['get_audit_activity_summary']['Args'] = {
+    const { data, error } = await supabase.rpc('get_audit_activity_summary', {
       start_date: options?.startDate?.toISOString() || null,
       end_date: options?.endDate?.toISOString() || null,
       operation_filter: options?.operation || null,
       severity_filter: options?.severity || null
-    };
-
-    const { data, error } = await supabase.rpc('get_audit_activity_summary', params);
+    });
 
     if (error) throw error;
     return data;

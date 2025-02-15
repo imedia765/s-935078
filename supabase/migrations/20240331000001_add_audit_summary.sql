@@ -1,8 +1,11 @@
 
--- Add audit summary function for aggregating audit log data
+-- Drop function if exists
+DROP FUNCTION IF EXISTS get_audit_activity_summary;
+
+-- Create function with proper parameter types
 CREATE OR REPLACE FUNCTION get_audit_activity_summary(
-  start_date timestamptz DEFAULT (now() - interval '7 days'),
-  end_date timestamptz DEFAULT now(),
+  start_date timestamptz DEFAULT NULL,
+  end_date timestamptz DEFAULT NULL,
   operation_filter text DEFAULT NULL,
   severity_filter text DEFAULT NULL
 )
@@ -27,8 +30,8 @@ BEGIN
     user_id
   FROM audit_logs
   WHERE
-    created_at >= start_date
-    AND created_at <= end_date
+    (start_date IS NULL OR created_at >= start_date)
+    AND (end_date IS NULL OR created_at <= end_date)
     AND (operation_filter IS NULL OR operation = operation_filter)
     AND (severity_filter IS NULL OR severity = severity_filter)
   GROUP BY
@@ -42,18 +45,5 @@ BEGIN
 END;
 $$;
 
--- Add index for better performance
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at 
-ON audit_logs (created_at);
-
--- Add index for table name queries
-CREATE INDEX IF NOT EXISTS idx_audit_logs_table_name 
-ON audit_logs (table_name);
-
--- Add index for operation queries
-CREATE INDEX IF NOT EXISTS idx_audit_logs_operation 
-ON audit_logs (operation);
-
--- Add composite index for common query patterns
-CREATE INDEX IF NOT EXISTS idx_audit_logs_composite 
-ON audit_logs (created_at, operation, table_name);
+-- Grant execute permission
+GRANT EXECUTE ON FUNCTION get_audit_activity_summary TO authenticated;

@@ -309,21 +309,12 @@ export interface Database {
           error?: string
         }
       }
-      check_error_rates: {
-        Args: Record<string, never>;
-        Returns: {
-          recorded_at: string;
-          severity: string;
-          message: string;
-          source: string;
-        }[];
-      }
       get_audit_activity_summary: {
         Args: {
-          start_date?: string | null;
-          end_date?: string | null;
-          operation_filter?: string | null;
-          severity_filter?: string | null;
+          start_date: string | null;
+          end_date: string | null;
+          operation_filter: string | null;
+          severity_filter: string | null;
         };
         Returns: {
           hour_bucket: string;
@@ -332,6 +323,15 @@ export interface Database {
           severity: string;
           table_name: string;
           user_id: string;
+        }[];
+      }
+      check_error_rates: {
+        Args: Record<string, never>;
+        Returns: {
+          recorded_at: string;
+          severity: string;
+          message: string;
+          source: string;
         }[];
       }
     }
