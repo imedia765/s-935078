@@ -4,7 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const ALLOWED_ORIGINS = [
   'https://www.pwaburton.co.uk',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'https://*.lovableproject.com'
 ];
 
 const corsHeaders = {
@@ -25,22 +26,35 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.some(pattern => {
+    if (pattern.includes('*')) {
+      const regex = new RegExp('^' + pattern.replace('*', '.*') + '$');
+      return regex.test(origin);
+    }
+    return pattern === origin;
+  });
+}
+
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const isAllowed = isAllowedOrigin(origin);
+  
+  // Set CORS headers for all responses
+  const responseHeaders = {
+    ...corsHeaders,
+    'Access-Control-Allow-Origin': isAllowed ? origin! : ALLOWED_ORIGINS[0]
+  };
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(req.headers.get('origin') || '') 
-          ? req.headers.get('origin')! 
-          : ALLOWED_ORIGINS[0]
-      } 
-    });
+    return new Response(null, { headers: responseHeaders });
   }
 
   // Validate origin
-  const origin = req.headers.get('origin');
-  if (!ALLOWED_ORIGINS.includes(origin || '')) {
+  if (!isAllowed) {
+    console.error('Invalid origin:', origin);
     return new Response(
       JSON.stringify({ 
         error: 'Invalid origin',
@@ -49,7 +63,7 @@ serve(async (req) => {
       { 
         status: 403,
         headers: { 
-          ...corsHeaders,
+          ...responseHeaders,
           'Content-Type': 'application/json'
         }
       }
@@ -178,9 +192,8 @@ serve(async (req) => {
         }),
         { 
           headers: { 
-            ...corsHeaders,
-            'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
-            "Content-Type": "application/json" 
+            ...responseHeaders,
+            'Content-Type': 'application/json'
           } 
         }
       );
@@ -229,13 +242,11 @@ serve(async (req) => {
       }),
       { 
         headers: { 
-          ...corsHeaders,
-          'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
-          "Content-Type": "application/json" 
+          ...responseHeaders,
+          'Content-Type': 'application/json'
         },
         status: 500
       }
     );
   }
 });
-
