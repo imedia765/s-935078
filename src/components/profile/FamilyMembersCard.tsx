@@ -12,6 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FamilyMembersCardProps {
   memberData: MemberWithRelations | null;
@@ -40,51 +46,72 @@ export function FamilyMembersCard({
       {familyMembers.length === 0 ? (
         <p className="text-muted-foreground text-center py-4">No family members added</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Relationship</TableHead>
-              <TableHead>Date of Birth</TableHead>
-              <TableHead>Gender</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {familyMembers.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>{member.full_name}</TableCell>
-                <TableCell className="capitalize">{member.relationship}</TableCell>
-                <TableCell>
-                  {member.date_of_birth 
-                    ? format(new Date(member.date_of_birth), 'dd/MM/yyyy')
-                    : 'Not set'}
-                </TableCell>
-                <TableCell className="capitalize">{member.gender || 'Not set'}</TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEditMember(member)}
-                      className="h-8 w-8 bg-blue-500/20 hover:bg-blue-500/30"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteMember(member.id)}
-                      className="h-8 w-8 bg-red-500/20 hover:bg-red-500/30"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        <TooltipProvider>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Relationship</TableHead>
+                <TableHead>Date of Birth</TableHead>
+                <TableHead>Gender</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {familyMembers.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell>{member.full_name}</TableCell>
+                  <TableCell className="capitalize">{member.relationship}</TableCell>
+                  <TableCell>
+                    {member.date_of_birth 
+                      ? format(new Date(member.date_of_birth), 'dd/MM/yyyy')
+                      : 'Not set'}
+                  </TableCell>
+                  <TableCell className="capitalize">{member.gender || 'Not set'}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onEditMember(member)}
+                            className="h-8 w-8 bg-blue-500/20 hover:bg-blue-500/30"
+                            aria-label={`Edit ${member.full_name}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit {member.full_name}</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit {member.full_name}</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDeleteMember(member.id)}
+                            className="h-8 w-8 bg-red-500/20 hover:bg-red-500/30"
+                            aria-label={`Delete ${member.full_name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete {member.full_name}</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete {member.full_name}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TooltipProvider>
       )}
     </Card>
   );
