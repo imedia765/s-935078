@@ -8,6 +8,8 @@ const ALLOWED_ORIGINS = [
   'https://*.lovableproject.com'
 ];
 
+const PRODUCTION_URL = 'https://www.pwaburton.co.uk';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -118,15 +120,15 @@ serve(async (req) => {
       throw new Error('Incomplete Loops configuration');
     }
 
-    // Generate reset link with production URL
-    const baseUrl = origin || 'https://www.pwaburton.co.uk';
-    const resetLink = `${baseUrl}/reset-password?token=${token}&ref=email`;
+    // Always use production URL for reset links
+    const resetLink = `${PRODUCTION_URL}/reset-password?token=${token}&ref=email`;
 
     console.log('Making request to Loops API:', {
       templateId: loopsIntegration.password_reset_template_id,
       email,
       memberNumber,
-      resetLink
+      resetLink,
+      origin
     });
 
     try {
@@ -151,7 +153,8 @@ serve(async (req) => {
         status: loopsResponse.status,
         statusText: loopsResponse.statusText,
         headers: Object.fromEntries(loopsResponse.headers.entries()),
-        origin: origin
+        origin: origin,
+        resetLink: resetLink
       };
       console.log('Loops API response details:', responseDetails);
 
@@ -178,7 +181,8 @@ serve(async (req) => {
             member_number: memberNumber,
             generated_at: new Date().toISOString(),
             success: true,
-            origin: origin
+            origin: origin,
+            reset_link: resetLink
           },
           severity: 'info'
         });
