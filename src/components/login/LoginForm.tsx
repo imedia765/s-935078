@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { WhatsAppSupport } from "@/components/WhatsAppSupport";
-import { normalizeProductionUrl } from "@/utils/urlUtils";
 
 interface LoginFormProps {
   onLoginSuccess: () => void;
@@ -39,8 +37,6 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
   };
 
   const handleForgotPassword = () => {
-    const resetUrl = new URL("/reset-password", window.location.href);
-    const normalizedUrl = normalizeProductionUrl(resetUrl.toString());
     navigate("/reset-password");
   };
 
@@ -61,7 +57,6 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      // Try login with member email format
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
         password,

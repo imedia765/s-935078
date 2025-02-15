@@ -4,7 +4,6 @@ import { Instructions } from "@/components/reset-password/Instructions";
 import { RequestResetForm } from "@/components/reset-password/RequestResetForm";
 import { ResetPasswordForm } from "@/components/reset-password/ResetPasswordForm";
 import { VerifyEmailForm } from "@/components/reset-password/VerifyEmailForm";
-import { normalizeProductionUrl } from "@/utils/urlUtils";
 import { useEffect } from "react";
 
 export const ResetPassword = () => {
@@ -13,16 +12,6 @@ export const ResetPassword = () => {
   const verifyToken = searchParams.get("verify");
   const ref = searchParams.get("ref");
 
-  // Handle www to non-www redirect immediately
-  useEffect(() => {
-    if (window.location.hostname === `www.pwaburton.co.uk`) {
-      const newUrl = normalizeProductionUrl(window.location.href);
-      // Use replace to prevent adding to browser history
-      window.location.replace(newUrl);
-      return;
-    }
-  }, []);
-
   // Log page access for debugging
   useEffect(() => {
     if (resetToken || verifyToken) {
@@ -30,22 +19,11 @@ export const ResetPassword = () => {
         hasResetToken: !!resetToken,
         hasVerifyToken: !!verifyToken,
         referrer: ref,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        hostname: window.location.hostname
       });
     }
   }, [resetToken, verifyToken, ref]);
-
-  // Show loading state during redirect
-  if (window.location.hostname === `www.pwaburton.co.uk`) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md glass-card p-8">
-          <h1 className="text-2xl font-bold mb-6 text-center">Redirecting...</h1>
-          <p className="text-center text-muted-foreground">Please wait while we redirect you to the secure domain.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 login-container">

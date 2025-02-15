@@ -1,9 +1,7 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const ALLOWED_ORIGINS = [
-  'https://pwaburton.co.uk',
   'https://www.pwaburton.co.uk',
   'http://localhost:5173'
 ];
@@ -106,7 +104,7 @@ serve(async (req) => {
     }
 
     // Generate reset link - always use non-www domain
-    const baseUrl = "https://pwaburton.co.uk";
+    const baseUrl = "https://www.pwaburton.co.uk";
     const resetLink = `${baseUrl}/reset-password?token=${token}&ref=email`;
 
     console.log('Making request to Loops API:', {
