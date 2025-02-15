@@ -309,6 +309,15 @@ export interface Database {
           error?: string
         }
       }
+      check_error_rates: {
+        Args: Record<string, never>;
+        Returns: {
+          recorded_at: string;
+          severity: string;
+          message: string;
+          source: string;
+        }[];
+      }
       get_audit_activity_summary: {
         Args: {
           start_date?: string;

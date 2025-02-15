@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search } from "lucide-react";
+import { Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ErrorLog } from "@/types/maintenance";
+import type { Database } from "@/types/supabase";
 
 export function ErrorLogViewer() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,26 +16,31 @@ export function ErrorLogViewer() {
   const { data: logs } = useQuery({
     queryKey: ["errorLogs", severity, searchTerm],
     queryFn: async () => {
-      const { data: rpcData, error } = await supabase.rpc('check_error_rates');
+      const { data, error } = await supabase.rpc('check_error_rates');
       if (error) throw error;
-      return (rpcData as any[]).map(item => ({
-        timestamp: item.recorded_at || new Date().toISOString(),
-        severity: item.severity || 'info',
-        message: item.message || '',
-        source: item.source || 'system'
+      return (data as Database['public']['Functions']['check_error_rates']['Returns']).map(item => ({
+        timestamp: item.recorded_at,
+        severity: item.severity,
+        message: item.message,
+        source: item.source
       })) as ErrorLog[];
     }
   });
 
   const handleExport = async () => {
+    if (!logs) return;
     const csvContent = "data:text/csv;charset=utf-8," + 
-      logs?.map((row: any) => Object.values(row).join(",")).join("\n");
+      "Timestamp,Severity,Message,Source\n" +
+      logs.map(row => 
+        `${new Date(row.timestamp).toISOString()},${row.severity},${row.message},${row.source}`
+      ).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "error_logs.csv");
     document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -74,7 +80,7 @@ export function ErrorLogViewer() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {logs?.map((log: any, index: number) => (
+          {logs?.map((log, index) => (
             <TableRow key={index}>
               <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
               <TableCell>
