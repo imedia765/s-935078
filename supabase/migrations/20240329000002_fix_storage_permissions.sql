@@ -30,39 +30,42 @@ BEGIN;
     -- First create bucket access policy
     CREATE POLICY "Allow authenticated users to access the bucket"
     ON storage.buckets FOR SELECT
-    USING (auth.role() = 'authenticated');
+    USING (
+        auth.role() = 'authenticated'
+        AND id = 'profile_documents'
+    );
 
     -- Then create storage object policies
     CREATE POLICY "Allow authenticated users to read their own documents"
     ON storage.objects FOR SELECT
     USING (
         auth.role() = 'authenticated' 
-        AND (bucket_id = 'profile_documents')
-        AND (auth.uid()::text = (storage.foldername(name))[1])
+        AND bucket_id = 'profile_documents'
+        AND (storage.foldername(name))[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to upload their own documents"
     ON storage.objects FOR INSERT
     WITH CHECK (
         auth.role() = 'authenticated' 
-        AND (bucket_id = 'profile_documents')
-        AND (auth.uid()::text = (storage.foldername(name))[1])
+        AND bucket_id = 'profile_documents'
+        AND (storage.foldername(name))[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to update their own documents"
     ON storage.objects FOR UPDATE
     USING (
         auth.role() = 'authenticated' 
-        AND (bucket_id = 'profile_documents')
-        AND (auth.uid()::text = (storage.foldername(name))[1])
+        AND bucket_id = 'profile_documents'
+        AND (storage.foldername(name))[1] = auth.uid()::text
     );
 
     CREATE POLICY "Allow authenticated users to delete their own documents"
     ON storage.objects FOR DELETE
     USING (
         auth.role() = 'authenticated' 
-        AND (bucket_id = 'profile_documents')
-        AND (auth.uid()::text = (storage.foldername(name))[1])
+        AND bucket_id = 'profile_documents'
+        AND (storage.foldername(name))[1] = auth.uid()::text
     );
 COMMIT;
 
@@ -77,4 +80,3 @@ GRANT ALL ON storage.buckets TO postgres;
 -- Reset ownership to postgres
 ALTER TABLE storage.objects OWNER TO postgres;
 ALTER TABLE storage.buckets OWNER TO postgres;
-

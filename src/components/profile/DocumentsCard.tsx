@@ -27,8 +27,40 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
   const [isLoading, setIsLoading] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
 
+  const createBucketIfNotExists = async () => {
+    try {
+      // Check if bucket exists
+      const { data: buckets, error: listError } = await supabase
+        .storage
+        .listBuckets();
+
+      if (listError) throw listError;
+
+      const bucketExists = buckets.some(b => b.name === 'profile_documents');
+
+      if (!bucketExists) {
+        const { data, error: createError } = await supabase
+          .storage
+          .createBucket('profile_documents', {
+            public: false,
+            allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            fileSizeLimit: 5242880, // 5MB
+          });
+
+        if (createError) throw createError;
+        console.log('Created profile_documents bucket');
+      }
+    } catch (error) {
+      console.error('Error checking/creating bucket:', error);
+      // Don't throw - let the operation continue even if we can't create the bucket
+      // The backend migration should handle bucket creation
+    }
+  };
+
   const ensureUserFolder = async (userId: string) => {
     try {
+      await createBucketIfNotExists();
+      
       // Try to list files to see if folder exists
       const { data, error } = await supabase.storage
         .from('profile_documents')
