@@ -1,58 +1,8 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-
-const ALLOWED_ORIGINS = [
-  'https://www.pwaburton.co.uk',
-  'http://localhost:5173',
-  'https://*.lovableproject.com'
-];
-
-const PRODUCTION_URL = 'https://www.pwaburton.co.uk';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-};
-
-interface RequestBody {
-  email: string;
-  memberNumber: string;
-  token: string;
-  isVerification: boolean;
-}
-
-const supabaseAdmin = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return false;
-  return ALLOWED_ORIGINS.some(pattern => {
-    if (pattern.includes('*')) {
-      const regex = new RegExp('^' + pattern.replace('*', '.*') + '$');
-      return regex.test(origin);
-    }
-    return pattern === origin;
-  });
-}
-
-async function checkRateLimit(ipAddress: string, memberNumber: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin
-    .rpc('check_password_reset_rate_limit', { 
-      p_ip_address: ipAddress,
-      p_member_number: memberNumber 
-    });
-
-  if (error) {
-    console.error('Rate limit check error:', error);
-    return false;
-  }
-
-  return data?.allowed ?? false;
-}
+import { validateRequest, corsHeaders, isAllowedOrigin, PRODUCTION_URL } from "./validation.ts";
+import { validateLoopsConfig, getLoopsIntegration, sendLoopsEmail } from "./loops.ts";
+import { checkRateLimit, logAuditEvent } from "./audit.ts";
 
 serve(async (req) => {
   const origin = req.headers.get('origin');
@@ -62,7 +12,7 @@ serve(async (req) => {
   // Set CORS headers for all responses
   const responseHeaders = {
     ...corsHeaders,
-    'Access-Control-Allow-Origin': isAllowed ? origin! : ALLOWED_ORIGINS[0]
+    'Access-Control-Allow-Origin': isAllowed ? origin! : 'https://www.pwaburton.co.uk'
   };
 
   // Handle CORS preflight
@@ -89,18 +39,9 @@ serve(async (req) => {
   }
 
   try {
-    const requestData = await req.json() as RequestBody;
+    // Validate request data
+    const requestData = validateRequest(await req.json());
     const { email, memberNumber, token, isVerification } = requestData;
-
-    // Input validation
-    if (!email || !memberNumber || !token) {
-      throw new Error('Missing required fields');
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Invalid email format');
-    }
 
     // Check rate limiting
     const isAllowedByRateLimit = await checkRateLimit(clientIp, memberNumber);
@@ -124,44 +65,14 @@ serve(async (req) => {
 
     console.log(`[${new Date().toISOString()}] Starting ${isVerification ? 'email verification' : 'password reset'} process for ${memberNumber}`);
 
-    // Check Loops configuration first
-    const { data: loopsConfig, error: configCheckError } = await supabaseAdmin
-      .rpc('check_loops_config');
+    // Validate Loops configuration
+    await validateLoopsConfig();
+    const loopsIntegration = await getLoopsIntegration();
 
-    if (configCheckError) {
-      console.error('Error checking Loops config:', configCheckError);
-      throw new Error('Failed to check Loops configuration');
-    }
-
-    if (!loopsConfig?.[0]?.has_api_key || !loopsConfig?.[0]?.is_active) {
-      console.error('Loops integration is not properly configured:', loopsConfig);
-      throw new Error('Loops integration is not properly configured or is inactive');
-    }
-
-    // Get full Loops configuration
-    const { data: loopsIntegration, error: integrationError } = await supabaseAdmin
-      .from('loops_integration')
-      .select('*')
-      .single();
-
-    if (integrationError) {
-      console.error('Error fetching Loops integration:', integrationError);
-      throw new Error('Failed to get Loops integration details');
-    }
-
-    if (!loopsIntegration?.api_key || !loopsIntegration?.password_reset_template_id) {
-      console.error('Missing required Loops configuration:', {
-        hasApiKey: !!loopsIntegration?.api_key,
-        hasTemplateId: !!loopsIntegration?.password_reset_template_id
-      });
-      throw new Error('Incomplete Loops configuration');
-    }
-
-    // Always use production URL for reset/verify links
+    // Generate action link
     const actionLink = `${PRODUCTION_URL}/reset-password?${isVerification ? 'verify' : 'token'}=${token}&ref=email`;
 
     console.log('Making request to Loops API:', {
-      templateId: loopsIntegration.password_reset_template_id,
       email,
       memberNumber,
       actionLink,
@@ -170,65 +81,33 @@ serve(async (req) => {
     });
 
     try {
-      const loopsResponse = await fetch('https://app.loops.so/api/v1/transactional', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${loopsIntegration.api_key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          transactionalId: loopsIntegration.password_reset_template_id,
-          email: email,
-          dataVariables: {
-            resetUrl: actionLink,
-            memberNumber: memberNumber,
-            isVerification: isVerification
-          }
-        })
-      });
+      // Send email via Loops
+      const loopsResult = await sendLoopsEmail(
+        loopsIntegration,
+        email,
+        memberNumber,
+        actionLink,
+        isVerification
+      );
 
-      // Enhanced response logging
-      const responseDetails = {
-        status: loopsResponse.status,
-        statusText: loopsResponse.statusText,
-        headers: Object.fromEntries(loopsResponse.headers.entries()),
-        origin: origin,
-        actionLink: actionLink,
-        clientIp: clientIp,
-        isVerification: isVerification
-      };
-      console.log('Loops API response details:', responseDetails);
-
-      if (!loopsResponse.ok) {
-        const errorContent = await loopsResponse.text();
-        console.error('Loops API error details:', {
-          ...responseDetails,
-          errorContent
-        });
-        throw new Error(`Loops API error (${loopsResponse.status}): ${errorContent}`);
-      }
-
-      const loopsResult = await loopsResponse.json();
       console.log(`${isVerification ? 'Verification' : 'Reset'} email sent successfully:`, loopsResult);
 
       // Log the successful action
-      await supabaseAdmin
-        .from('audit_logs')
-        .insert({
-          operation: isVerification ? 'email_verification_requested' : 'password_reset_requested',
-          table_name: isVerification ? 'password_reset_email_transitions' : 'password_reset_tokens',
-          record_id: token,
-          metadata: {
-            member_number: memberNumber,
-            generated_at: new Date().toISOString(),
-            success: true,
-            origin: origin,
-            action_link: actionLink,
-            ip_address: clientIp,
-            is_verification: isVerification
-          },
-          severity: 'info'
-        });
+      await logAuditEvent({
+        operation: isVerification ? 'email_verification_requested' : 'password_reset_requested',
+        tableName: isVerification ? 'password_reset_email_transitions' : 'password_reset_tokens',
+        recordId: token,
+        metadata: {
+          member_number: memberNumber,
+          generated_at: new Date().toISOString(),
+          success: true,
+          origin: origin,
+          action_link: actionLink,
+          ip_address: clientIp,
+          is_verification: isVerification
+        },
+        severity: 'info'
+      });
 
       return new Response(
         JSON.stringify({ 
@@ -256,22 +135,20 @@ serve(async (req) => {
       });
 
       // Log the failed attempt
-      await supabaseAdmin
-        .from('audit_logs')
-        .insert({
-          operation: isVerification ? 'email_verification_failed' : 'password_reset_failed',
-          table_name: isVerification ? 'password_reset_email_transitions' : 'password_reset_tokens',
-          record_id: token,
-          metadata: {
-            member_number: memberNumber,
-            error: loopsError.message,
-            timestamp: new Date().toISOString(),
-            origin: origin,
-            ip_address: clientIp,
-            is_verification: isVerification
-          },
-          severity: 'error'
-        });
+      await logAuditEvent({
+        operation: isVerification ? 'email_verification_failed' : 'password_reset_failed',
+        tableName: isVerification ? 'password_reset_email_transitions' : 'password_reset_tokens',
+        recordId: token,
+        metadata: {
+          member_number: memberNumber,
+          error: loopsError.message,
+          timestamp: new Date().toISOString(),
+          origin: origin,
+          ip_address: clientIp,
+          is_verification: isVerification
+        },
+        severity: 'error'
+      });
 
       throw new Error(`Failed to send ${isVerification ? 'verification' : 'reset'} email through Loops: ${loopsError.message}`);
     }
