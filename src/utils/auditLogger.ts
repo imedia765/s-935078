@@ -39,6 +39,11 @@ function mapOperationToDatabase(operation: AuditOperation): DatabaseOperation {
   }
 }
 
+function isValidUUID(str: string) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
 export async function logAuditEvent({
   operation,
   tableName,
@@ -51,22 +56,36 @@ export async function logAuditEvent({
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
+    // Generate a new UUID if recordId is not a valid UUID
+    const finalRecordId = recordId && !isValidUUID(recordId) 
+      ? crypto.randomUUID()
+      : recordId;
+
+    // If original recordId wasn't a UUID, include it in metadata
+    const finalMetadata = recordId && !isValidUUID(recordId)
+      ? {
+          ...metadata,
+          original_record_id: recordId,
+          user_agent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      : {
+          ...metadata,
+          user_agent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        };
+
     const { error } = await supabase
       .from('audit_logs')
       .insert({
         operation: mapOperationToDatabase(operation),
         table_name: tableName,
-        record_id: recordId,
+        record_id: finalRecordId,
         old_values: oldValues,
         new_values: newValues,
         severity,
         user_id: user?.id,
-        metadata: {
-          ...metadata,
-          original_operation: operation,
-          user_agent: navigator.userAgent,
-          timestamp: new Date().toISOString()
-        }
+        metadata: finalMetadata
       });
 
     if (error) {
