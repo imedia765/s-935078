@@ -31,14 +31,14 @@ export const Index = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 bg-background hover:bg-accent"
+            className="min-h-[44px] min-w-[44px] bg-gray-800 dark:bg-gray-700 text-white hover:bg-primary hover:text-primary-foreground"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
             {theme === "dark" ? (
-              <Sun className="h-5 w-5" aria-hidden="true" />
+              <Sun className="h-4 w-4" aria-hidden="true" />
             ) : (
-              <Moon className="h-5 w-5" aria-hidden="true" />
+              <Moon className="h-4 w-4" aria-hidden="true" />
             )}
           </Button>
         </div>
