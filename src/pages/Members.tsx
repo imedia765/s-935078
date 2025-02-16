@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { exportToCSV, generatePDF, generateIndividualMemberPDF, exportToExcel } from "@/utils/exportUtils";
@@ -122,6 +121,8 @@ export default function Members() {
     }
   };
 
+  const currentYear = new Date().getFullYear();
+
   if (isLoading || isUserLoading) {
     return <MembersLoading />;
   }
@@ -133,81 +134,91 @@ export default function Members() {
     } : null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto p-6 space-y-6">
-        <MembersToolbar
-          onSearch={handleSearch}
-          searchValue={searchTerm}
-          selectedCollector={selectedCollector}
-          onCollectorChange={setSelectedCollector}
-          onExportCSV={handleExportCSV}
-          onExportPDF={handleExportPDF}
-          onExportExcel={handleExportExcel}
-          onAddMember={(data) => addMemberMutation.mutate(data)}
-          collectors={collectors || []}
-          isAdmin={currentUser?.isAdmin || false}
-          currentCollector={currentCollector}
-        />
-
-        <Card className="glass-card p-6">
-          <MembersTable
-            members={membersData?.members || []}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            onEdit={(member) => {
-              setEditingMember(member);
-              setIsEditDialogOpen(true);
-            }}
-            onToggleStatus={(member) => setStatusConfirmMember(member)}
-            onMove={(member) => {
-              setMovingMember(member);
-              setIsMoveDialogOpen(true);
-            }}
-            onExportIndividual={generateIndividualMemberPDF}
-            onDelete={(member) => setDeleteConfirmMember(member)}
+    <>
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="container mx-auto p-6 space-y-6">
+          <MembersToolbar
+            onSearch={handleSearch}
+            searchValue={searchTerm}
+            selectedCollector={selectedCollector}
+            onCollectorChange={setSelectedCollector}
+            onExportCSV={handleExportCSV}
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+            onAddMember={(data) => addMemberMutation.mutate(data)}
+            collectors={collectors || []}
+            isAdmin={currentUser?.isAdmin || false}
+            currentCollector={currentCollector}
           />
 
-          <MembersPagination
-            currentPage={page}
-            totalPages={Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE)}
-            onPageChange={setPage}
+          <Card className="glass-card p-6">
+            <MembersTable
+              members={membersData?.members || []}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              onEdit={(member) => {
+                setEditingMember(member);
+                setIsEditDialogOpen(true);
+              }}
+              onToggleStatus={(member) => setStatusConfirmMember(member)}
+              onMove={(member) => {
+                setMovingMember(member);
+                setIsMoveDialogOpen(true);
+              }}
+              onExportIndividual={generateIndividualMemberPDF}
+              onDelete={(member) => setDeleteConfirmMember(member)}
+            />
+
+            <MembersPagination
+              currentPage={page}
+              totalPages={Math.ceil((membersData?.totalCount || 0) / ITEMS_PER_PAGE)}
+              onPageChange={setPage}
+            />
+          </Card>
+
+          <EditMemberDialog
+            isOpen={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            onSubmit={(id, data) => updateMemberMutation.mutate({ id, data })}
+            member={editingMember}
+            collectors={collectors || []}
           />
-        </Card>
 
-        <EditMemberDialog
-          isOpen={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          onSubmit={(id, data) => updateMemberMutation.mutate({ id, data })}
-          member={editingMember}
-          collectors={collectors || []}
-        />
+          <MoveMemberDialog
+            open={isMoveDialogOpen}
+            onOpenChange={setIsMoveDialogOpen}
+            onConfirm={(collectorId) => 
+              moveMemberMutation.mutate({ 
+                memberId: movingMember?.id, 
+                newCollectorId: collectorId 
+              })}
+            collectors={collectors || []}
+            loading={moveMemberMutation.isPending}
+            memberName={movingMember?.full_name}
+          />
 
-        <MoveMemberDialog
-          open={isMoveDialogOpen}
-          onOpenChange={setIsMoveDialogOpen}
-          onConfirm={(collectorId) => 
-            moveMemberMutation.mutate({ 
-              memberId: movingMember?.id, 
-              newCollectorId: collectorId 
-            })}
-          collectors={collectors || []}
-          loading={moveMemberMutation.isPending}
-          memberName={movingMember?.full_name}
-        />
+          <DeleteMemberDialog
+            member={deleteConfirmMember}
+            onDelete={(id) => deleteMemberMutation.mutate(id)}
+            onClose={() => setDeleteConfirmMember(null)}
+          />
 
-        <DeleteMemberDialog
-          member={deleteConfirmMember}
-          onDelete={(id) => deleteMemberMutation.mutate(id)}
-          onClose={() => setDeleteConfirmMember(null)}
-        />
-
-        <StatusMemberDialog
-          member={statusConfirmMember}
-          onToggleStatus={toggleStatusMutation.mutate}
-          onClose={() => setStatusConfirmMember(null)}
-        />
+          <StatusMemberDialog
+            member={statusConfirmMember}
+            onToggleStatus={toggleStatusMutation.mutate}
+            onClose={() => setStatusConfirmMember(null)}
+          />
+        </div>
       </div>
-    </div>
+      <footer className="text-center py-6 sm:py-8 space-y-2 border-t border-border">
+        <p className="text-subtle text-xs sm:text-sm">
+          © {currentYear} SmartFIX Tech, Burton Upon Trent. All rights reserved.
+        </p>
+        <p className="text-subtle text-xs sm:text-sm">
+          Website created and coded by <span className="text-primary">Zaheer Asghar</span>
+        </p>
+      </footer>
+    </>
   );
 }

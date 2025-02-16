@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { LoginForm } from "@/components/login/LoginForm";
 import { Features } from "@/components/login/Features";
@@ -37,6 +38,8 @@ export const Index = () => {
       </div>
     );
   }
+
+  const currentYear = new Date().getFullYear();
 
   return (
     <div className="min-h-screen p-3 sm:p-4 login-container">
@@ -102,10 +105,10 @@ export const Index = () => {
 
         <footer className="text-center pt-6 sm:pt-8 space-y-2">
           <p className="text-subtle text-xs sm:text-sm">
-            © 2024 SmartFIX Tech, Burton Upon Trent. All rights reserved.
+            © {currentYear} SmartFIX Tech, Burton Upon Trent. All rights reserved.
           </p>
           <p className="text-subtle text-xs sm:text-sm">
-            Website created and coded by Zaheer Asghar
+            Website created and coded by <span className="text-primary">Zaheer Asghar</span>
           </p>
         </footer>
       </div>
