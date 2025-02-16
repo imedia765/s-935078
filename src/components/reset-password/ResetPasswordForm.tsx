@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check, X } from "lucide-react";
-import type { RPCResponse, ValidateTokenParams } from "@/components/reset-password/types";
+import type { RPCResponse } from "@/components/reset-password/types";
 
 interface ResetPasswordFormProps {
   token: string;
@@ -62,12 +62,12 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     setIsLoading(true);
     try {
       // First validate the token and get user info
-      const { data: tokenData, error: tokenError } = await supabase.rpc<ValidateTokenParams, RPCResponse>(
+      const { data: tokenData, error: tokenError } = await supabase.rpc(
         "validate_reset_token",
         { p_reset_token: token }
       );
 
-      if (tokenError || !tokenData?.success) {
+      if (tokenError || !(tokenData as RPCResponse)?.success) {
         throw new Error("This password reset link has expired or is invalid. Please request a new one.");
       }
 
