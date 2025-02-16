@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -28,7 +29,6 @@
   }
 
   .dark {
-    /* Keep dark mode variables unchanged */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -62,7 +62,7 @@
   }
 
   .glass-card {
-    @apply transition-all duration-200;
+    @apply transition-all duration-200 focus-within:ring-2 focus-within:ring-primary;
   }
 
   /* Light mode with darker text */
@@ -76,10 +76,10 @@
     }
   }
 
-  /* Dark mode - Updated with black-blue background */
+  /* Dark mode - With improved contrast */
   .dark {
     .glass-card {
-      @apply bg-[#0A0B14] border-gray-700 text-foreground;
+      @apply bg-[#0A0B14] border-gray-700 text-gray-100;
     }
 
     .nav-gradient {
@@ -89,66 +89,60 @@
 
   /* Text styles with improved contrast */
   .text-subtle {
-    @apply text-gray-800 dark:text-gray-300;
+    @apply text-gray-800 dark:text-gray-200;
   }
 
   .text-muted {
-    @apply text-gray-700 dark:text-gray-400;
+    @apply text-gray-700 dark:text-gray-300;
   }
 
-  /* Card styles with improved contrast */
-  .card-gradient {
-    @apply bg-gradient-to-br from-card to-secondary;
+  /* Status colors with improved contrast */
+  .status-active {
+    @apply text-emerald-700 dark:text-emerald-400;
   }
 
-  /* Gradient text with fallback */
-  .text-gradient {
-    @apply bg-gradient-to-br from-primary via-primary to-primary/80 bg-clip-text text-transparent;
-    @apply text-primary; /* Fallback for better accessibility */
+  .status-inactive {
+    @apply text-red-700 dark:text-red-400;
   }
 
-  /* Shared styles with improved accessibility */
-  .member-info {
-    @apply text-foreground;
+  .status-pending {
+    @apply text-amber-700 dark:text-amber-400;
   }
 
-  .member-label {
-    @apply text-foreground font-medium;
+  /* Focus styles with improved visibility */
+  .focus-visible:focus {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
   }
 
-  .member-value {
-    @apply text-foreground;
-  }
-
-  .status-badge {
-    @apply bg-opacity-90 text-opacity-100;
-  }
-
-  .announcement-card {
-    @apply bg-card text-card-foreground border-border;
-  }
-
-  /* Form elements with improved contrast */
-  input, select, textarea {
-    @apply bg-background border-input text-foreground;
+  /* Skip link with improved accessibility */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 
+           focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary text-foreground;
   }
 
   /* Table styles with improved contrast */
   th {
-    @apply text-foreground bg-muted;
+    @apply text-foreground bg-muted font-semibold p-3;
   }
 
   td {
-    @apply text-foreground;
+    @apply text-foreground p-3;
+  }
+
+  /* Form elements with improved contrast */
+  input, select, textarea {
+    @apply bg-background border-input text-foreground focus:ring-2 focus:ring-primary;
   }
 
   /* Button styles with improved contrast */
   .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 
+           focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
 
   .btn-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 
+           focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2;
   }
 
   /* Card content with improved contrast */
@@ -162,20 +156,11 @@
 
   /* Navigation with improved contrast */
   .nav-link {
-    @apply text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
+    @apply text-foreground hover:text-primary focus-visible:outline-none 
+           focus-visible:ring-2 focus-visible:ring-primary;
   }
 
   .nav-link.active {
     @apply text-white bg-primary;
-  }
-
-  /* Focus styles */
-  .focus-visible:focus {
-    @apply outline-none ring-2 ring-primary ring-offset-2;
-  }
-
-  /* Skip link */
-  .skip-link {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary;
   }
 }

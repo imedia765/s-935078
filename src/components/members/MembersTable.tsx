@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -124,17 +123,18 @@ export function MembersTable({
   };
 
   return (
-    <div className="space-y-2 max-w-full overflow-hidden">
+    <div className="space-y-2 max-w-full overflow-hidden" role="region" aria-label="Members list">
       {selectedMembers.length > 0 && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl">
           <div className="flex items-center gap-2 p-3 bg-card/95 backdrop-blur-sm border rounded-lg shadow-lg">
-            <span className="text-sm text-muted-foreground whitespace-nowrap px-2">
+            <span className="text-sm text-muted-foreground whitespace-nowrap px-2" aria-live="polite">
               {selectedMembers.length} selected
             </span>
             <div className="flex-1 min-w-0">
               <Select
                 value={paymentMethod}
                 onValueChange={(value: 'cash' | 'bank_transfer') => setPaymentMethod(value)}
+                aria-label="Payment method"
               >
                 <SelectTrigger className="h-8">
                   <SelectValue placeholder="Payment Method" />
@@ -169,6 +169,7 @@ export function MembersTable({
               checked={selectedMembers.includes(member.id)}
               onCheckedChange={(checked) => handleSelectMember(member.id, checked as boolean)}
               className="mt-4 flex-shrink-0"
+              aria-label={`Select ${member.full_name}`}
             />
             <div className="flex-1 min-w-0">
               <MemberProfileCard

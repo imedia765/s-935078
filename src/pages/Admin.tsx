@@ -18,35 +18,63 @@ export default function Admin() {
     window.scrollTo(0, 0);
   }, [selectedTab]);
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    const tabs = ["audit", "roles", "members", "maintenance", "email", "database", "standardization"];
+    const currentIndex = tabs.indexOf(selectedTab);
+
+    switch (event.key) {
+      case "ArrowRight":
+        event.preventDefault();
+        if (currentIndex < tabs.length - 1) {
+          setSelectedTab(tabs[currentIndex + 1]);
+        }
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        if (currentIndex > 0) {
+          setSelectedTab(tabs[currentIndex - 1]);
+        }
+        break;
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4 lg:p-6 space-y-6">
-      <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-gradient">Admin Dashboard</h1>
+    <main id="main-content" className="container mx-auto p-4 lg:p-6 space-y-6">
+      <h1 className="text-2xl lg:text-3xl font-bold mb-6 text-gradient">
+        Admin Dashboard
+      </h1>
 
       <Tabs 
         value={selectedTab} 
         onValueChange={setSelectedTab} 
         className="w-full"
-        aria-label="Admin dashboard sections"
+        defaultValue="roles"
       >
         <TabsList 
           className="w-full flex flex-col sm:flex-row gap-2 sm:gap-0 bg-transparent sm:bg-black/40 sm:backdrop-blur-xl border-0 sm:border sm:border-white/10"
-          aria-label="Admin sections"
+          role="tablist"
+          aria-label="Admin dashboard sections"
+          onKeyDown={handleKeyDown}
         >
           <TabsTrigger 
             value="audit" 
             className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
+            role="tab"
+            aria-selected={selectedTab === "audit"}
             aria-controls="audit-tab"
           >
             <ClipboardList className="h-4 w-4" aria-hidden="true" />
-            <span className="text-foreground">Audit Logs</span>
+            <span>Audit Logs</span>
           </TabsTrigger>
           <TabsTrigger 
             value="roles"
             className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
+            role="tab"
+            aria-selected={selectedTab === "roles"}
             aria-controls="roles-tab"
           >
             <Users className="h-4 w-4" aria-hidden="true" />
-            <span className="text-foreground">Role Management</span>
+            <span>Role Management</span>
           </TabsTrigger>
           <TabsTrigger 
             value="members"
@@ -54,7 +82,7 @@ export default function Admin() {
             aria-controls="members-tab"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
-            <span className="text-foreground">Member Search</span>
+            <span>Member Search</span>
           </TabsTrigger>
           <TabsTrigger 
             value="maintenance"
@@ -62,7 +90,7 @@ export default function Admin() {
             aria-controls="maintenance-tab"
           >
             <Settings className="h-4 w-4" aria-hidden="true" />
-            <span className="text-foreground">Maintenance</span>
+            <span>Maintenance</span>
           </TabsTrigger>
           <TabsTrigger 
             value="email"
@@ -70,7 +98,7 @@ export default function Admin() {
             aria-controls="email-tab"
           >
             <Mail className="h-4 w-4" aria-hidden="true" />
-            <span className="text-foreground">Email Server</span>
+            <span>Email Server</span>
           </TabsTrigger>
           <TabsTrigger 
             value="database"
@@ -78,7 +106,7 @@ export default function Admin() {
             aria-controls="database-tab"
           >
             <Database className="h-4 w-4" aria-hidden="true" />
-            <span className="text-foreground">Database</span>
+            <span>Database</span>
           </TabsTrigger>
           <TabsTrigger 
             value="standardization"
@@ -86,54 +114,54 @@ export default function Admin() {
             aria-controls="standardization-tab"
           >
             <FileCheck className="h-4 w-4" aria-hidden="true" />
-            <span className="text-foreground">Email Standard.</span>
+            <span>Email Standard.</span>
           </TabsTrigger>
         </TabsList>
 
-        <main id="main-content" role="main" aria-labelledby="admin-heading">
-          <TabsContent value="audit" id="audit-tab" role="tabpanel">
+        <div role="tabpanel" aria-labelledby={`${selectedTab}-tab`}>
+          <TabsContent value="audit" id="audit-tab">
             <Card className="p-4 lg:p-6 glass-card">
-              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">Audit Activity</h2>
+              <h2 className="text-lg lg:text-xl font-semibold mb-4">Audit Activity</h2>
               <AuditLogViewer />
             </Card>
           </TabsContent>
 
-          <TabsContent value="roles" id="roles-tab" role="tabpanel">
+          <TabsContent value="roles" id="roles-tab">
             <Card className="p-4 lg:p-6 glass-card">
-              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">Role Management</h2>
+              <h2 className="text-lg lg:text-xl font-semibold mb-4">Role Management</h2>
               <RoleManagement />
             </Card>
           </TabsContent>
 
-          <TabsContent value="members" id="members-tab" role="tabpanel">
+          <TabsContent value="members" id="members-tab">
             <Card className="p-4 lg:p-6 glass-card">
-              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">Member Search</h2>
+              <h2 className="text-lg lg:text-xl font-semibold mb-4">Member Search</h2>
               <MemberSearch />
             </Card>
           </TabsContent>
 
-          <TabsContent value="maintenance" id="maintenance-tab" role="tabpanel">
+          <TabsContent value="maintenance" id="maintenance-tab">
             <Card className="p-4 lg:p-6 glass-card">
-              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">System Maintenance</h2>
+              <h2 className="text-lg lg:text-xl font-semibold mb-4">System Maintenance</h2>
               <MaintenanceManagement />
             </Card>
           </TabsContent>
 
-          <TabsContent value="database" id="database-tab" role="tabpanel">
+          <TabsContent value="database" id="database-tab">
             <Card className="p-4 lg:p-6 glass-card">
               <DatabaseManagement />
             </Card>
           </TabsContent>
 
-          <TabsContent value="email" id="email-tab" role="tabpanel">
+          <TabsContent value="email" id="email-tab">
             <EmailServerDashboard />
           </TabsContent>
 
-          <TabsContent value="standardization" id="standardization-tab" role="tabpanel">
+          <TabsContent value="standardization" id="standardization-tab">
             <EmailStandardizationManager />
           </TabsContent>
-        </main>
+        </div>
       </Tabs>
-    </div>
+    </main>
   );
 }
