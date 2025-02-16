@@ -18,10 +18,14 @@ export function ActionButtons({
   status,
   onSave,
   onCancel,
-  onEdit
+  onEdit,
 }: ActionButtonsProps) {
   return (
-    <div className="flex gap-2">
+    <div 
+      className="flex gap-2"
+      role="group"
+      aria-label="Profile actions"
+    >
       {isEditing ? (
         <>
           <Button 
@@ -29,34 +33,50 @@ export function ActionButtons({
             size="sm" 
             className="bg-primary/20 hover:bg-primary/30 text-primary"
             disabled={saving}
+            aria-label={saving ? "Saving changes..." : "Save changes"}
           >
             {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              <Loader2 className="h-4 w-4 animate-spin mr-1" aria-hidden="true" />
             ) : (
-              <Save className="h-4 w-4 mr-1" />
+              <Save className="h-4 w-4 mr-1" aria-hidden="true" />
             )}
-            Save
+            <span>Save</span>
           </Button>
           <Button 
             onClick={onCancel} 
             variant="outline" 
             size="sm" 
             className="hover:bg-destructive/20 hover:text-destructive"
+            aria-label="Cancel editing"
           >
-            <X className="h-4 w-4 mr-1" /> Cancel
+            <X className="h-4 w-4 mr-1" aria-hidden="true" />
+            <span>Cancel</span>
           </Button>
         </>
       ) : (
-        <Button onClick={onEdit} variant="outline" size="sm" className="hover:bg-primary/20 hover:text-primary">
-          <Edit className="w-4 h-4 mr-1" /> Edit
+        <Button 
+          onClick={onEdit} 
+          variant="outline" 
+          size="sm" 
+          className="hover:bg-primary/20 hover:text-primary"
+          aria-label="Edit profile"
+        >
+          <Edit className="w-4 h-4 mr-1" aria-hidden="true" />
+          <span>Edit</span>
         </Button>
       )}
-      <Badge 
-        variant={status === 'active' ? 'default' : 'destructive'}
-        className={status === 'active' ? 'bg-green-500/20 text-green-700 dark:text-green-400' : ''}
-      >
-        {status}
-      </Badge>
+      {status && (
+        <Badge 
+          variant={status === 'active' ? 'default' : 'destructive'}
+          className={cn(
+            status === 'active' 
+              ? 'bg-green-500/20 text-green-700 dark:text-green-400' 
+              : 'bg-destructive/20 text-destructive'
+          )}
+        >
+          {status}
+        </Badge>
+      )}
     </div>
   );
 }

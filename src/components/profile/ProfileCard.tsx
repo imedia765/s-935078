@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -55,7 +56,7 @@ export function ProfileCard({
     return cn(
       "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
       {
-        "border-red-500 focus-visible:ring-red-500": validationErrors[fieldName],
+        "border-destructive focus-visible:ring-destructive": validationErrors[fieldName],
         "border-input": !validationErrors[fieldName]
       }
     );
@@ -64,25 +65,33 @@ export function ProfileCard({
   const renderValidationError = (fieldName: string) => {
     if (!validationErrors[fieldName]) return null;
     return (
-      <p className="text-sm text-red-500 mt-1" id={`${fieldName}-error`} role="alert">
+      <p 
+        className="text-sm text-destructive mt-1" 
+        id={`${fieldName}-error`} 
+        role="alert"
+      >
         {validationErrors[fieldName]}
       </p>
     );
   };
 
   const renderField = (fieldName: keyof MemberWithRelations, label: string, type: string = "text") => {
+    const inputId = `profile-${fieldName}`;
+    
     if (isEditing) {
       const value = editedData?.[fieldName];
       if (typeof value === 'string' || typeof value === 'number' || value === null) {
         return (
           <div className="space-y-2">
             <Input
+              id={inputId}
               type={type}
               value={value?.toString() || ''}
               onChange={(e) => onInputChange(fieldName, e.target.value)}
               className={getInputClassName(fieldName)}
               aria-invalid={!!validationErrors[fieldName]}
               aria-describedby={validationErrors[fieldName] ? `${fieldName}-error` : undefined}
+              aria-label={label}
             />
             {renderValidationError(fieldName)}
           </div>
@@ -97,7 +106,10 @@ export function ProfileCard({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className="text-foreground hover:text-primary transition-colors truncate">
+              <p 
+                className="text-foreground hover:text-primary transition-colors truncate"
+                id={inputId}
+              >
                 {value?.toString() || 'Not set'}
               </p>
             </TooltipTrigger>
@@ -127,19 +139,29 @@ export function ProfileCard({
               <div className="space-y-4 w-full sm:w-auto">
                 {isEditing ? (
                   <div className="space-y-2">
+                    <label 
+                      htmlFor="profile-full_name" 
+                      className="text-sm font-medium text-foreground"
+                    >
+                      Full Name
+                    </label>
                     <Input
+                      id="profile-full_name"
                       value={editedData?.full_name || ''}
                       onChange={(e) => onInputChange("full_name", e.target.value)}
                       className={cn(
-                        "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                        validationErrors.full_name && "border-red-500 focus-visible:ring-red-500"
+                        getInputClassName("full_name"),
+                        validationErrors.full_name && "border-destructive focus-visible:ring-destructive"
                       )}
                       aria-invalid={!!validationErrors.full_name}
                       aria-describedby={validationErrors.full_name ? "full_name-error" : undefined}
-                      placeholder="Full Name"
                     />
                     {validationErrors.full_name && (
-                      <p className="text-sm text-red-500" id="full_name-error" role="alert">
+                      <p 
+                        className="text-sm text-destructive" 
+                        id="full_name-error"
+                        role="alert"
+                      >
                         {validationErrors.full_name}
                       </p>
                     )}
@@ -150,7 +172,12 @@ export function ProfileCard({
                   </h2>
                 )}
                 <div className="flex items-center gap-2">
-                  <p className="text-sm text-muted-foreground font-mono">Member #{memberData?.member_number}</p>
+                  <p 
+                    className="text-sm text-muted-foreground font-mono"
+                    aria-label="Member number"
+                  >
+                    Member #{memberData?.member_number}
+                  </p>
                 </div>
                 <RoleBadges roles={memberData?.user_roles} />
               </div>
@@ -158,6 +185,7 @@ export function ProfileCard({
               <ActionButtons
                 isEditing={isEditing}
                 saving={saving}
+                status={memberData?.status}
                 onSave={onSave}
                 onCancel={onCancel}
                 onEdit={onEdit}
@@ -166,69 +194,146 @@ export function ProfileCard({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Email</p>
+                <label 
+                  htmlFor="profile-email"
+                  className="text-sm text-muted-foreground mb-1 block"
+                >
+                  Email
+                </label>
                 {renderField("email", "Email")}
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Phone</p>
+                <label 
+                  htmlFor="profile-phone"
+                  className="text-sm text-muted-foreground mb-1 block"
+                >
+                  Phone
+                </label>
                 {renderField("phone", "Phone")}
               </div>
             </div>
 
             <div className="space-y-4 mt-6">
-              <div className="border rounded-lg p-4">
+              <section 
+                className="border rounded-lg p-4"
+                aria-labelledby="address-section-title"
+              >
                 <button
                   onClick={() => toggleSection('address')}
                   className="flex justify-between items-center w-full text-left"
                   aria-expanded={isSectionExpanded('address')}
+                  aria-controls="address-section-content"
                 >
-                  <h3 className="text-lg font-medium">Address Information</h3>
-                  {isSectionExpanded('address') ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  <h3 
+                    id="address-section-title" 
+                    className="text-lg font-medium text-foreground"
+                  >
+                    Address Information
+                  </h3>
+                  <span className="sr-only">
+                    {isSectionExpanded('address') ? 'Collapse' : 'Expand'} address section
+                  </span>
+                  {isSectionExpanded('address') ? (
+                    <ChevronUp className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5" aria-hidden="true" />
+                  )}
                 </button>
                 
                 {isSectionExpanded('address') && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div 
+                    id="address-section-content"
+                    className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+                  >
                     <div className="md:col-span-2">
-                      <p className="text-sm text-muted-foreground mb-1">Address</p>
+                      <label 
+                        htmlFor="profile-address"
+                        className="text-sm text-muted-foreground mb-1 block"
+                      >
+                        Address
+                      </label>
                       {renderField("address", "Address")}
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Postcode</p>
+                      <label 
+                        htmlFor="profile-postcode"
+                        className="text-sm text-muted-foreground mb-1 block"
+                      >
+                        Postcode
+                      </label>
                       {renderField("postcode", "Postcode")}
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Town</p>
+                      <label 
+                        htmlFor="profile-town"
+                        className="text-sm text-muted-foreground mb-1 block"
+                      >
+                        Town
+                      </label>
                       {renderField("town", "Town")}
                     </div>
                   </div>
                 )}
-              </div>
+              </section>
 
-              <div className="border rounded-lg p-4">
+              <section 
+                className="border rounded-lg p-4"
+                aria-labelledby="personal-section-title"
+              >
                 <button
                   onClick={() => toggleSection('personal')}
                   className="flex justify-between items-center w-full text-left"
                   aria-expanded={isSectionExpanded('personal')}
+                  aria-controls="personal-section-content"
                 >
-                  <h3 className="text-lg font-medium">Personal Information</h3>
-                  {isSectionExpanded('personal') ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  <h3 
+                    id="personal-section-title"
+                    className="text-lg font-medium text-foreground"
+                  >
+                    Personal Information
+                  </h3>
+                  <span className="sr-only">
+                    {isSectionExpanded('personal') ? 'Collapse' : 'Expand'} personal information section
+                  </span>
+                  {isSectionExpanded('personal') ? (
+                    <ChevronUp className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5" aria-hidden="true" />
+                  )}
                 </button>
                 
                 {isSectionExpanded('personal') && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div 
+                    id="personal-section-content"
+                    className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+                  >
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Date of Birth</p>
+                      <label 
+                        htmlFor="profile-date_of_birth"
+                        className="text-sm text-muted-foreground mb-1 block"
+                      >
+                        Date of Birth
+                      </label>
                       {renderField("date_of_birth", "Date of Birth", "date")}
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Gender</p>
+                      <label 
+                        htmlFor="profile-gender"
+                        className="text-sm text-muted-foreground mb-1 block"
+                      >
+                        Gender
+                      </label>
                       {isEditing ? (
                         <div className="space-y-2">
                           <Select
                             value={editedData?.gender || ''}
                             onValueChange={(value) => onInputChange("gender", value)}
                           >
-                            <SelectTrigger className={validationErrors.gender ? "border-red-500" : ""}>
+                            <SelectTrigger 
+                              className={validationErrors.gender ? "border-destructive" : ""}
+                              aria-invalid={!!validationErrors.gender}
+                              aria-describedby={validationErrors.gender ? "gender-error" : undefined}
+                            >
                               <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                             <SelectContent>
@@ -238,22 +343,39 @@ export function ProfileCard({
                             </SelectContent>
                           </Select>
                           {validationErrors.gender && (
-                            <p className="text-sm text-red-500" role="alert">{validationErrors.gender}</p>
+                            <p 
+                              className="text-sm text-destructive" 
+                              id="gender-error"
+                              role="alert"
+                            >
+                              {validationErrors.gender}
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <p className="text-foreground capitalize">{memberData?.gender || 'Not set'}</p>
+                        <p className="text-foreground capitalize">
+                          {memberData?.gender || 'Not set'}
+                        </p>
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Marital Status</p>
+                      <label 
+                        htmlFor="profile-marital_status"
+                        className="text-sm text-muted-foreground mb-1 block"
+                      >
+                        Marital Status
+                      </label>
                       {isEditing ? (
                         <div className="space-y-2">
                           <Select
                             value={editedData?.marital_status || ''}
                             onValueChange={(value) => onInputChange("marital_status", value)}
                           >
-                            <SelectTrigger className={validationErrors.marital_status ? "border-red-500" : ""}>
+                            <SelectTrigger 
+                              className={validationErrors.marital_status ? "border-destructive" : ""}
+                              aria-invalid={!!validationErrors.marital_status}
+                              aria-describedby={validationErrors.marital_status ? "marital_status-error" : undefined}
+                            >
                               <SelectValue placeholder="Select marital status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -264,20 +386,35 @@ export function ProfileCard({
                             </SelectContent>
                           </Select>
                           {validationErrors.marital_status && (
-                            <p className="text-sm text-red-500" role="alert">{validationErrors.marital_status}</p>
+                            <p 
+                              className="text-sm text-destructive" 
+                              id="marital_status-error"
+                              role="alert"
+                            >
+                              {validationErrors.marital_status}
+                            </p>
                           )}
                         </div>
                       ) : (
-                        <p className="text-foreground capitalize">{memberData?.marital_status || 'Not set'}</p>
+                        <p className="text-foreground capitalize">
+                          {memberData?.marital_status || 'Not set'}
+                        </p>
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Collector</p>
-                      <p className="text-foreground">{memberData?.collector || 'Not assigned'}</p>
+                      <label 
+                        htmlFor="profile-collector"
+                        className="text-sm text-muted-foreground mb-1 block"
+                      >
+                        Collector
+                      </label>
+                      <p className="text-foreground">
+                        {memberData?.collector || 'Not assigned'}
+                      </p>
                     </div>
                   </div>
                 )}
-              </div>
+              </section>
             </div>
 
             {!isEditing && memberData?.member_number && (
