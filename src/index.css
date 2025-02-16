@@ -76,14 +76,14 @@
     }
   }
 
-  /* Dark mode */
+  /* Dark mode - Updated with black-blue background */
   .dark {
     .glass-card {
-      @apply bg-gray-900 border-gray-700 text-foreground;
+      @apply bg-[#0A0B14] border-gray-700 text-foreground;
     }
 
     .nav-gradient {
-      @apply bg-gray-900 border-gray-700;
+      @apply bg-[#0A0B14] border-gray-700;
     }
   }
 
