@@ -1,46 +1,30 @@
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { supabaseAdmin } from "./supabaseClient.ts";
 
-const supabaseAdmin = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
-export async function logAuditEvent({
-  operation,
-  tableName,
-  recordId,
-  metadata,
-  severity
-}: {
+export interface AuditEvent {
   operation: string;
   tableName: string;
-  recordId: string;
-  metadata: Record<string, any>;
-  severity: 'info' | 'error';
-}) {
-  await supabaseAdmin
-    .from('audit_logs')
-    .insert({
-      operation,
-      table_name: tableName,
-      record_id: recordId,
-      metadata,
-      severity
-    });
+  recordId?: string;
+  metadata?: Record<string, any>;
+  severity: 'info' | 'warning' | 'error';
 }
 
-export async function checkRateLimit(ipAddress: string, memberNumber: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin
-    .rpc('check_password_reset_rate_limit', { 
-      p_ip_address: ipAddress,
-      p_member_number: memberNumber 
+export async function logAuditEvent(event: AuditEvent): Promise<void> {
+  try {
+    const { error } = await supabaseAdmin.from('audit_logs').insert({
+      operation: event.operation,
+      table_name: event.tableName,
+      record_id: event.recordId,
+      new_values: event.metadata,
+      severity: event.severity
     });
 
-  if (error) {
-    console.error('Rate limit check error:', error);
-    return false;
+    if (error) {
+      console.error('Error logging audit event:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Failed to log audit event:', error);
+    // Don't throw the error to prevent disrupting the main flow
   }
-
-  return data?.allowed ?? false;
 }

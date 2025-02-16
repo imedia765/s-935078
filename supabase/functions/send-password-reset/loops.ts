@@ -12,6 +12,7 @@ interface LoopsIntegration {
 }
 
 export async function validateLoopsConfig(): Promise<void> {
+  console.log('Validating Loops configuration...');
   const { data: loopsConfig, error: configCheckError } = await supabaseAdmin
     .rpc('check_loops_config') as { data: LoopsConfig[], error: any };
 
@@ -27,6 +28,7 @@ export async function validateLoopsConfig(): Promise<void> {
 }
 
 export async function getLoopsIntegration(): Promise<LoopsIntegration> {
+  console.log('Fetching Loops integration details...');
   const { data: loopsIntegration, error: integrationError } = await supabaseAdmin
     .from('loops_integration')
     .select('*')
@@ -55,6 +57,7 @@ export async function sendLoopsEmail(
   actionLink: string,
   isVerification: boolean
 ): Promise<any> {
+  console.log('Sending email via Loops...', { email, memberNumber, isVerification });
   const response = await fetch('https://app.loops.so/api/v1/transactional', {
     method: 'POST',
     headers: {
@@ -74,8 +77,14 @@ export async function sendLoopsEmail(
 
   if (!response.ok) {
     const errorContent = await response.text();
+    console.error('Loops API error:', {
+      status: response.status,
+      error: errorContent
+    });
     throw new Error(`Loops API error (${response.status}): ${errorContent}`);
   }
 
-  return await response.json();
+  const result = await response.json();
+  console.log('Email sent successfully via Loops');
+  return result;
 }
