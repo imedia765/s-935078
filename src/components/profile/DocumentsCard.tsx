@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Eye, Loader2 } from "lucide-react";
@@ -146,13 +147,29 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
   };
 
   const handleViewDocument = async (doc: Document) => {
-    if (!(await checkSession())) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Session Expired",
+        description: "Please sign in again to view documents",
+        variant: "destructive"
+      });
+      return false;
+    }
     window.open(doc.url, '_blank');
   };
 
   const handleDownloadDocument = async (doc: Document) => {
     try {
-      if (!(await checkSession())) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again to download documents",
+          variant: "destructive"
+        });
+        return false;
+      }
       
       const response = await fetch(doc.url);
       const blob = await response.blob();
