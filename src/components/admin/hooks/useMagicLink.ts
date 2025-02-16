@@ -18,8 +18,8 @@ export function useMagicLink() {
 
       if (error) throw error;
 
-      // Cast the response to our RPCResponse type
-      const response = data as RPCResponse;
+      // Cast the response to our RPCResponse type using a double cast for safety
+      const response = data as unknown as RPCResponse;
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to reset password');
