@@ -18,6 +18,13 @@ export const Navigation = () => {
   const { theme, setTheme } = useTheme()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const [announcements, setAnnouncements] = useState<string>("")
+
+  // Screen reader announcements
+  const announce = (message: string) => {
+    setAnnouncements(message)
+  }
 
   const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ["session"],
@@ -43,34 +50,47 @@ export const Navigation = () => {
     enabled: !!session
   })
 
-  // Focus trap for mobile menu
+  // Enhanced focus trap and keyboard navigation
   useEffect(() => {
     if (!isMenuOpen) return;
 
-    const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab' || !menuRef.current) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false)
+        menuButtonRef.current?.focus()
+        announce("Menu closed")
+      }
 
-      const focusableElements = menuRef.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      const firstElement = focusableElements[0] as HTMLElement;
-      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      if (e.key === 'Tab' && menuRef.current) {
+        const focusableElements = menuRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
+        if (e.shiftKey && document.activeElement === firstElement) {
           lastElement.focus();
           e.preventDefault();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
           firstElement.focus();
           e.preventDefault();
         }
       }
     };
 
-    document.addEventListener('keydown', handleTab);
-    return () => document.removeEventListener('keydown', handleTab);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isMenuOpen]);
+
+  // Focus management when menu opens/closes
+  useEffect(() => {
+    if (isMenuOpen) {
+      const firstFocusableElement = menuRef.current?.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      ) as HTMLElement;
+      firstFocusableElement?.focus();
+      announce("Menu opened")
+    }
   }, [isMenuOpen]);
 
   const handleSignOut = async () => {
@@ -123,17 +143,22 @@ export const Navigation = () => {
   const isLoading = sessionLoading || rolesLoading
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 nav-gradient" aria-label="Main Navigation">
+    <nav className="fixed top-0 left-0 right-0 z-40 nav-gradient" aria-label="Main Navigation">
+      {/* Live region for announcements */}
+      <div className="sr-only" role="status" aria-live="polite">
+        {announcements}
+      </div>
+
       {/* Skip link for keyboard users */}
       <a 
         href="#main-content" 
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary"
       >
         Skip to main content
       </a>
 
       <div className="max-w-7xl mx-auto">
-        <div className="py-2 border-b border-white/10">
+        <div className="py-2 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-4">
             <h3 className="text-sm font-medium text-primary">PWA Burton</h3>
             <p className="text-lg font-arabic text-primary tracking-wider truncate max-w-[200px] md:max-w-none" lang="ar">
@@ -154,6 +179,7 @@ export const Navigation = () => {
             ) : (
               <>
                 <Button
+                  ref={menuButtonRef}
                   variant="ghost"
                   size="icon"
                   className="lg:hidden min-h-[44px] min-w-[44px]"
@@ -173,7 +199,7 @@ export const Navigation = () => {
                   ref={menuRef}
                   id="navigation-menu"
                   className={cn(
-                    "fixed inset-x-0 top-[105px] bg-background/95 backdrop-blur-sm lg:relative lg:top-0 lg:bg-transparent lg:backdrop-blur-none transition-all duration-200 border-b border-white/10 lg:border-none",
+                    "fixed inset-x-0 top-[105px] bg-gray-900 dark:bg-gray-800 lg:relative lg:top-0 lg:bg-transparent lg:backdrop-blur-none transition-all duration-200 border-b border-gray-200 dark:border-gray-700 lg:border-none z-30",
                     isMenuOpen ? "block" : "hidden lg:block"
                   )}
                 >
@@ -185,15 +211,17 @@ export const Navigation = () => {
                       <NavigationMenuItem key={item.path} role="none">
                         <NavigationMenuLink
                           className={cn(
-                            "group inline-flex h-11 w-full items-center justify-start rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                            "hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white disabled:pointer-events-none disabled:opacity-50",
+                            "group inline-flex h-11 w-full items-center justify-start rounded-md px-4 py-2 text-sm font-medium transition-colors",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                            "hover:bg-primary-600 hover:text-white disabled:pointer-events-none disabled:opacity-50",
                             isActive(item.path) ? 
                               "bg-primary-600 text-white shadow-sm" : 
-                              "bg-black/40 text-foreground"
+                              "bg-gray-800 text-white dark:bg-gray-700"
                           )}
                           onClick={() => {
                             navigate(item.path);
                             setIsMenuOpen(false);
+                            announce(`Navigating to ${item.label}`);
                           }}
                           role="menuitem"
                           aria-current={isActive(item.path) ? 'page' : undefined}
@@ -209,8 +237,11 @@ export const Navigation = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-11 w-11 bg-black/40 text-foreground hover:bg-primary-600 hover:text-white focus-visible:ring-2 focus-visible:ring-primary"
-                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                        className="h-11 w-11 bg-gray-800 dark:bg-gray-700 text-white hover:bg-primary-600 hover:text-white focus-visible:ring-2 focus-visible:ring-primary"
+                        onClick={() => {
+                          setTheme(theme === "dark" ? "light" : "dark");
+                          announce(`Switched to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+                        }}
                         aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
                       >
                         {theme === "dark" ? (
@@ -223,10 +254,11 @@ export const Navigation = () => {
                     <NavigationMenuItem role="none" className="lg:ml-auto">
                       <Button
                         variant="ghost"
-                        className="w-full flex items-center justify-start px-4 h-11 bg-red-500/40 text-red-500 hover:bg-red-600 hover:text-white focus-visible:ring-2 focus-visible:ring-red-500"
+                        className="w-full flex items-center justify-start px-4 h-11 bg-red-600 text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500"
                         onClick={() => {
                           handleSignOut();
                           setIsMenuOpen(false);
+                          announce("Signing out");
                         }}
                       >
                         <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
