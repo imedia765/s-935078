@@ -68,22 +68,22 @@
   /* Light mode with improved contrast */
   :root {
     .glass-card {
-      @apply bg-white/95 backdrop-blur-xl border border-gray-300 text-foreground shadow-sm;
+      @apply bg-white/95 border border-gray-300 text-foreground shadow-sm;
     }
 
     .nav-gradient {
-      @apply bg-white/95 border-b border-gray-300 backdrop-blur-sm;
+      @apply bg-white/95 border-b border-gray-300;
     }
   }
 
   /* Dark mode with improved contrast */
   .dark {
     .glass-card {
-      @apply bg-black/80 backdrop-blur-xl border border-white/20 text-foreground;
+      @apply bg-gray-900 border border-gray-700 text-foreground;
     }
 
     .nav-gradient {
-      @apply bg-black/90 border-b border-white/20 backdrop-blur-sm;
+      @apply bg-gray-900 border-b border-gray-700;
     }
   }
 
@@ -98,22 +98,22 @@
 
   /* Card styles with improved contrast */
   .card-gradient {
-    @apply bg-gradient-to-br from-card to-secondary/90 backdrop-blur-sm;
+    @apply bg-gradient-to-br from-card to-secondary;
   }
 
   /* Gradient text with fallback */
   .text-gradient {
-    @apply bg-gradient-to-br from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent;
+    @apply bg-gradient-to-br from-primary via-primary to-primary/80 bg-clip-text text-transparent;
     @apply text-primary; /* Fallback for better accessibility */
   }
 
   /* Shared styles with improved accessibility */
   .member-info {
-    @apply text-foreground/90;
+    @apply text-foreground;
   }
 
   .member-label {
-    @apply text-foreground/80 font-medium;
+    @apply text-foreground font-medium;
   }
 
   .member-value {
@@ -121,7 +121,7 @@
   }
 
   .status-badge {
-    @apply bg-opacity-40 text-opacity-100;
+    @apply bg-opacity-90 text-opacity-100;
   }
 
   .announcement-card {
@@ -135,7 +135,7 @@
 
   /* Table styles with improved contrast */
   th {
-    @apply text-foreground/80 bg-muted/50;
+    @apply text-foreground bg-muted;
   }
 
   td {
@@ -144,11 +144,11 @@
 
   /* Button styles with improved contrast */
   .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
   }
 
   .btn-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2;
   }
 
   /* Card content with improved contrast */
@@ -162,11 +162,11 @@
 
   /* Navigation with improved contrast */
   .nav-link {
-    @apply text-foreground/80 hover:text-primary;
+    @apply text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
   }
 
   .nav-link.active {
-    @apply text-primary bg-primary/40;
+    @apply text-white bg-primary;
   }
 
   /* Focus styles */
@@ -176,6 +176,6 @@
 
   /* Skip link */
   .skip-link {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50;
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary;
   }
 }
