@@ -60,15 +60,24 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
 
     setIsLoading(true);
     try {
+      // First validate the token and get user info
       const { data: tokenData, error: tokenError } = await supabase.rpc(
         "validate_reset_token",
         { p_reset_token: token }
       );
 
-      if (tokenError || !tokenData) {
+      if (tokenError || !tokenData?.success) {
         throw new Error("This password reset link has expired or is invalid. Please request a new one.");
       }
 
+      // Use Supabase Auth API to update the password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      // Mark token as used and log the change
       const clientInfo = {
         userAgent: window.navigator.userAgent,
         platform: window.navigator.platform,
@@ -76,18 +85,20 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         timestamp: new Date().toISOString()
       };
 
-      const { error: resetError } = await supabase.rpc(
-        "handle_password_reset_with_token",
+      const { error: finalizeError } = await supabase.rpc(
+        "finalize_password_reset",
         {
           token_value: token,
-          new_password: newPassword,
           ip_address: window.location.origin,
           user_agent: window.navigator.userAgent,
           client_info: clientInfo
         }
       );
 
-      if (resetError) throw resetError;
+      if (finalizeError) {
+        console.error("Error finalizing password reset:", finalizeError);
+        // Don't throw here as password is already updated
+      }
 
       toast({
         title: "Success",
