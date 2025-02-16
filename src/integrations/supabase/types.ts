@@ -3611,6 +3611,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      reset_password_to_member_number: {
+        Args: {
+          p_user_id: string
+          p_member_number: string
+        }
+        Returns: Json
+      }
       reset_user_login_state: {
         Args: {
           p_member_number: string
