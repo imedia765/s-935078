@@ -50,9 +50,9 @@ export const Index = () => {
         Skip to main content
       </a>
 
-      <div className="min-h-screen p-3 sm:p-4 login-container">
-        <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8">
-          <header className="flex justify-between items-center mb-4">
+      <div className="min-h-screen p-4 sm:p-6 md:p-8 login-container">
+        <div className="w-full max-w-7xl mx-auto space-y-8 sm:space-y-10">
+          <header className="flex justify-between items-center mb-6">
             <h1 className="sr-only">PWA Burton Member Portal</h1>
             <Button
               variant="ghost"
@@ -62,20 +62,20 @@ export const Index = () => {
               aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
             >
               {resolvedTheme === "dark" ? (
-                <Sun className="h-4 w-4" aria-hidden="true" />
+                <Sun className="h-5 w-5" aria-hidden="true" />
               ) : (
-                <Moon className="h-4 w-4" aria-hidden="true" />
+                <Moon className="h-5 w-5" aria-hidden="true" />
               )}
             </Button>
           </header>
 
-          <main id="main-content" className="grid lg:grid-cols-2 gap-4 sm:gap-8">
-            <div className="glass-card p-4 sm:p-8 space-y-6 sm:space-y-8">
+          <main id="main-content" className="grid lg:grid-cols-2 gap-6 sm:gap-10">
+            <div className="glass-card p-6 sm:p-8 md:p-10 space-y-8">
               <div className="text-left">
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 tracking-tight">
                   <span className="text-primary">Member Portal</span>
                 </h2>
-                <p className="text-subtle text-base sm:text-lg">
+                <p className="text-subtle text-lg sm:text-xl leading-relaxed">
                   Access your membership information, stay updated with announcements, and manage your payments all in one place.
                 </p>
               </div>
@@ -83,19 +83,19 @@ export const Index = () => {
               <Features />
             </div>
 
-            <div className="glass-card p-4 sm:p-8 flex flex-col justify-center">
-              <div className="text-center mb-6 sm:mb-8">
+            <div className="glass-card p-6 sm:p-8 md:p-10 flex flex-col justify-center">
+              <div className="text-center mb-8 sm:mb-10">
                 <p 
-                  className="text-2xl mb-3 sm:mb-4 font-arabic text-primary"
+                  className="text-3xl sm:text-4xl mb-6 font-arabic text-primary leading-relaxed"
                   lang="ar"
                   dir="rtl"
                 >
                   بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                 </p>
-                <h2 className="text-xl sm:text-2xl font-bold mb-2 text-foreground">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-foreground">
                   Pakistan Welfare Association
                 </h2>
-                <p className="text-subtle text-sm sm:text-base">
+                <p className="text-subtle text-lg sm:text-xl">
                   Welcome to our community platform. Please login with your member number.
                 </p>
               </div>
@@ -103,13 +103,13 @@ export const Index = () => {
               <LoginForm onLoginSuccess={handleLoginSuccess} />
 
               {lastLogin && (
-                <p className="text-muted text-xs sm:text-sm mt-4">
+                <p className="text-muted text-sm sm:text-base mt-6">
                   Last login: {new Date(lastLogin).toLocaleString()}
                 </p>
               )}
 
-              <div className="text-center space-y-3 sm:space-y-4 mt-6">
-                <p className="text-subtle text-xs max-w-md mx-auto">
+              <div className="text-center space-y-4 mt-8">
+                <p className="text-subtle text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
                   By logging in, you agree to the PWA Collector Member Responsibilities and Pakistan Welfare Association Membership Terms
                 </p>
               </div>
@@ -118,11 +118,11 @@ export const Index = () => {
 
           <Announcements />
 
-          <footer className="text-center pt-6 sm:pt-8 space-y-2">
-            <p className="text-subtle text-xs sm:text-sm">
+          <footer className="text-center pt-8 sm:pt-10 space-y-3">
+            <p className="text-subtle text-sm sm:text-base">
               © {currentYear} SmartFIX Tech, Burton Upon Trent. All rights reserved.
             </p>
-            <p className="text-subtle text-xs sm:text-sm">
+            <p className="text-subtle text-sm sm:text-base">
               Website created and coded by <span className="text-primary">Zaheer Asghar</span>
             </p>
           </footer>
