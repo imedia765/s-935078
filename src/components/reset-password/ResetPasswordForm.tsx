@@ -62,7 +62,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     setIsLoading(true);
     try {
       // First validate the token and get user info
-      const { data: tokenData, error: tokenError } = await supabase.rpc<RPCResponse, ValidateTokenParams>(
+      const { data: tokenData, error: tokenError } = await supabase.rpc<ValidateTokenParams, RPCResponse>(
         "validate_reset_token",
         { p_reset_token: token }
       );
