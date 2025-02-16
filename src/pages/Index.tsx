@@ -3,9 +3,13 @@ import { useState, useEffect } from "react";
 import { LoginForm } from "@/components/login/LoginForm";
 import { Features } from "@/components/login/Features";
 import { Announcements } from "@/components/login/Announcements";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
+import { Sun, Moon } from "lucide-react";
 
 export const Index = () => {
   const [lastLogin, setLastLogin] = useState<string | null>(null);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const lastLoginTime = localStorage.getItem("lastLoginTime");
@@ -23,6 +27,22 @@ export const Index = () => {
   return (
     <div className="min-h-screen p-3 sm:p-4 login-container">
       <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 bg-background hover:bg-accent"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Moon className="h-5 w-5" aria-hidden="true" />
+            )}
+          </Button>
+        </div>
+
         <div className="grid lg:grid-cols-2 gap-4 sm:gap-8">
           <div className="glass-card p-4 sm:p-8 space-y-6 sm:space-y-8">
             <div className="text-left">
