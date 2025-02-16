@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check, X } from "lucide-react";
+import type { RPCResponse } from "@/components/reset-password/types";
 
 interface ResetPasswordFormProps {
   token: string;
@@ -61,7 +62,7 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
     setIsLoading(true);
     try {
       // First validate the token and get user info
-      const { data: tokenData, error: tokenError } = await supabase.rpc(
+      const { data: tokenData, error: tokenError } = await supabase.rpc<RPCResponse>(
         "validate_reset_token",
         { p_reset_token: token }
       );
@@ -85,15 +86,13 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         timestamp: new Date().toISOString()
       };
 
-      const { error: finalizeError } = await supabase.rpc(
-        "finalize_password_reset",
-        {
-          token_value: token,
-          ip_address: window.location.origin,
-          user_agent: window.navigator.userAgent,
-          client_info: clientInfo
-        }
-      );
+      // Handle the finalization through a simpler database update for now
+      const { error: finalizeError } = await supabase.from('password_reset_tokens')
+        .update({ 
+          used_at: new Date().toISOString(),
+          attempts: 1
+        })
+        .eq('token', token);
 
       if (finalizeError) {
         console.error("Error finalizing password reset:", finalizeError);
