@@ -1,21 +1,23 @@
 
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Edit, Trash2, UserCog, FileText, Power } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { MemberHeader } from "./components/MemberHeader";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { MemberInfo } from "./components/MemberInfo";
-import { PaymentInfo } from "./components/PaymentInfo";
-import { FamilyMembers } from "./components/FamilyMembers";
-import { MemberNotes } from "./components/MemberNotes";
 
 interface MemberProfileCardProps {
   member: any;
-  onEdit?: () => void;
-  onDelete?: () => void;
-  onToggleStatus?: () => void;
-  onMove?: () => void;
-  onExportIndividual?: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleStatus: () => void;
+  onMove: () => void;
+  onExportIndividual: (member: any) => void;
 }
 
 export function MemberProfileCard({
@@ -24,104 +26,114 @@ export function MemberProfileCard({
   onDelete,
   onToggleStatus,
   onMove,
-  onExportIndividual
+  onExportIndividual,
 }: MemberProfileCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer'>('cash');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { toast } = useToast();
-
-  const handleRecordPayment = async () => {
-    try {
-      setIsProcessing(true);
-      const { data: collector } = await supabase
-        .from('members_collectors')
-        .select('id')
-        .eq('name', member.collector)
-        .single();
-
-      if (!collector) {
-        throw new Error('Collector not found');
-      }
-
-      // Generate a unique payment number
-      const paymentNumber = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-      const { data, error } = await supabase
-        .from('payment_requests')
-        .insert({
-          payment_number: paymentNumber,
-          amount: member.yearly_payment_amount || 40,
-          payment_method: paymentMethod,
-          payment_type: 'yearly',
-          status: 'pending',
-          collector_id: collector.id,
-          member_number: member.member_number,
-          notes: 'Quick yearly membership payment',
-          created_at: new Date().toISOString(),
-          has_supporting_docs: false
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Payment Recorded",
-        description: "Payment has been recorded and is pending approval",
-      });
-    } catch (error: any) {
-      console.error('Error recording payment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to record payment. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'text-green-600 dark:text-green-400';
+      case 'inactive':
+        return 'text-red-600 dark:text-red-400';
+      case 'pending':
+        return 'text-yellow-600 dark:text-yellow-400';
+      default:
+        return 'text-gray-600 dark:text-gray-400';
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'paid':
+        return 'text-emerald-600 dark:text-emerald-400';
+      case 'overdue':
+        return 'text-red-600 dark:text-red-400';
+      case 'pending':
+        return 'text-amber-600 dark:text-amber-400';
+      default:
+        return 'text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  const getCollectorColor = (collector: string | null) => {
+    return collector 
+      ? 'text-primary dark:text-primary/90'
+      : 'text-gray-600 dark:text-gray-400';
+  };
+
   return (
-    <Card className="overflow-hidden transition-all duration-200">
-      <div className="p-3 space-y-2">
-        <MemberHeader
-          fullName={member.full_name}
-          email={member.email}
-          status={member.status}
-          isProcessing={isProcessing}
-          isExpanded={isExpanded}
-          onRecordPayment={handleRecordPayment}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onToggleExpand={() => setIsExpanded(!isExpanded)}
-        />
+    <Card className="glass-card p-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="space-y-4 flex-1">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                {member.full_name}
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-sm font-medium",
+                  getStatusColor(member.status)
+                )}>
+                  {member.status || 'Unknown Status'}
+                </span>
+                <span className="text-muted-foreground">•</span>
+                <span className={cn(
+                  "text-sm",
+                  getPaymentStatusColor(member.yearly_payment_status)
+                )}>
+                  {member.yearly_payment_status || 'No Payment Status'}
+                </span>
+              </div>
+              <span className={cn(
+                "text-sm block mt-1",
+                getCollectorColor(member.collector)
+              )}>
+                Collector: {member.collector || 'Not Assigned'}
+              </span>
+            </div>
 
-        <MemberInfo
-          memberNumber={member.member_number}
-          dateOfBirth={member.date_of_birth}
-          phone={member.phone}
-          address={member.address}
-        />
-
-        {isExpanded && (
-          <div className="mt-3 pt-3 border-t space-y-3">
-            <PaymentInfo
-              yearlyStatus={member.yearly_payment_status}
-              yearlyAmount={member.yearly_payment_amount}
-              yearlyDueDate={member.yearly_payment_due_date}
-              emergencyStatus={member.emergency_collection_status}
-              emergencyAmount={member.emergency_collection_amount}
-              emergencyDueDate={member.emergency_collection_due_date}
-            />
-
-            <FamilyMembers
-              members={member.family_members}
-            />
-
-            <MemberNotes
-              notes={member.member_notes}
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[160px]">
+                <DropdownMenuItem onClick={onEdit}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onToggleStatus}>
+                  <Power className="mr-2 h-4 w-4" />
+                  Toggle Status
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onMove}>
+                  <UserCog className="mr-2 h-4 w-4" />
+                  Move Member
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onExportIndividual(member)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={onDelete}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        )}
+
+          <MemberInfo
+            memberNumber={member.member_number}
+            dateOfBirth={member.date_of_birth}
+            phone={member.phone}
+            address={member.address}
+          />
+        </div>
       </div>
     </Card>
   );
