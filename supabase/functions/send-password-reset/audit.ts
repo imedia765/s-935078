@@ -1,8 +1,10 @@
 
 import { supabaseAdmin } from "./supabaseClient.ts";
 
+type AuditOperationType = 'create' | 'update' | 'delete' | 'INSERT' | 'UPDATE' | 'DELETE' | 'email_update' | 'email_verify' | 'email_reset';
+
 export interface AuditEvent {
-  operation: string;
+  operation: AuditOperationType;
   tableName: string;
   recordId?: string;
   metadata?: Record<string, any>;
@@ -11,11 +13,16 @@ export interface AuditEvent {
 
 export async function logAuditEvent(event: AuditEvent): Promise<void> {
   try {
+    console.log('Logging audit event:', { ...event, metadata: { ...event.metadata, timestamp: new Date().toISOString() } });
+
     const { error } = await supabaseAdmin.from('audit_logs').insert({
       operation: event.operation,
       table_name: event.tableName,
       record_id: event.recordId,
-      new_values: event.metadata,
+      metadata: {
+        ...event.metadata,
+        timestamp: new Date().toISOString()
+      },
       severity: event.severity
     });
 

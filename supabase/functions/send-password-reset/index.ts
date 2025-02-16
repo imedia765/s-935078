@@ -62,9 +62,9 @@ serve(async (req) => {
       isVerification
     );
 
-    // Log success
+    // Log success with proper operation type
     await logAuditEvent({
-      operation: isVerification ? 'verification_email_sent' : 'reset_email_sent',
+      operation: isVerification ? 'email_verify' : 'email_reset',
       tableName: 'password_reset_transitions',
       recordId: memberNumber,
       metadata: {
@@ -101,12 +101,13 @@ serve(async (req) => {
     });
     
     await logAuditEvent({
-      operation: 'email_send_failed',
+      operation: 'email_update',
       tableName: 'password_reset_transitions',
       recordId: 'error',
       metadata: {
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        success: false
       },
       severity: 'error'
     });
