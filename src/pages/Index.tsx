@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { LoginForm } from "@/components/login/LoginForm";
 import { Features } from "@/components/login/Features";
@@ -9,7 +8,12 @@ import { Sun, Moon } from "lucide-react";
 
 export const Index = () => {
   const [lastLogin, setLastLogin] = useState<string | null>(null);
-  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const lastLoginTime = localStorage.getItem("lastLoginTime");
@@ -24,6 +28,16 @@ export const Index = () => {
     setLastLogin(currentTime);
   };
 
+  if (!mounted) {
+    return (
+      <div className="min-h-screen p-3 sm:p-4 login-container">
+        <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8">
+          <div className="h-[44px]" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-3 sm:p-4 login-container">
       <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8">
@@ -32,10 +46,10 @@ export const Index = () => {
             variant="ghost"
             size="icon"
             className="min-h-[44px] min-w-[44px] bg-gray-800 dark:bg-gray-700 text-white hover:bg-primary hover:text-primary-foreground"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
           >
-            {theme === "dark" ? (
+            {resolvedTheme === "dark" ? (
               <Sun className="h-4 w-4" aria-hidden="true" />
             ) : (
               <Moon className="h-4 w-4" aria-hidden="true" />
