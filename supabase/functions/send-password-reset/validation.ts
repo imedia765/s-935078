@@ -24,8 +24,23 @@ export function validateRequest(data: any): RequestBody {
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
+};
+
+export const validateEnvironment = () => {
+  const requiredVars = ['APP_URL', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+  const missing = requiredVars.filter(varName => !Deno.env.get(varName));
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  // Validate APP_URL format
+  const appUrl = Deno.env.get('APP_URL')!;
+  try {
+    new URL(appUrl);
+  } catch {
+    throw new Error(`Invalid APP_URL format: ${appUrl}`);
+  }
 };
 
 export const ALLOWED_ORIGINS = [

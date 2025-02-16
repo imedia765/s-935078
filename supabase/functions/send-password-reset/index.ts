@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "./validation.ts";
-import { validateRequest } from "./validation.ts";
+import { corsHeaders, validateRequest, validateEnvironment } from "./validation.ts";
 import { validateLoopsConfig, getLoopsIntegration, sendLoopsEmail } from "./loops.ts";
 import { logAuditEvent } from "./audit.ts";
 import { supabaseAdmin } from "./supabaseClient.ts";
@@ -13,6 +12,14 @@ serve(async (req) => {
   }
 
   try {
+    // Validate environment first
+    validateEnvironment();
+    console.log('Environment validation passed');
+
+    // Get and validate APP_URL
+    const appUrl = Deno.env.get('APP_URL')!;
+    console.log('Using APP_URL:', appUrl);
+
     // Validate request
     const data = await req.json();
     const { email, memberNumber, token, isVerification } = validateRequest(data);
@@ -39,11 +46,14 @@ serve(async (req) => {
       throw new Error(result.error || 'Failed to process request');
     }
 
-    // Send email using Loops
+    // Construct action link with validated APP_URL
     const actionLink = isVerification 
-      ? `${Deno.env.get('APP_URL')}/reset-password?verify=${token}`
-      : `${Deno.env.get('APP_URL')}/reset-password?token=${token}`;
+      ? `${appUrl}/reset-password?verify=${token}`
+      : `${appUrl}/reset-password?token=${token}`;
 
+    console.log('Generated action link:', actionLink);
+
+    // Send email using Loops
     const response = await sendLoopsEmail(
       loopsIntegration,
       email,
@@ -81,8 +91,14 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    // Log error
+    // Enhanced error logging
     console.error('Error in send-password-reset:', error);
+    console.error('Environment variables state:', {
+      hasAppUrl: !!Deno.env.get('APP_URL'),
+      appUrlValue: Deno.env.get('APP_URL'),
+      hasSupabaseUrl: !!Deno.env.get('SUPABASE_URL'),
+      hasServiceRoleKey: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    });
     
     await logAuditEvent({
       operation: 'email_send_failed',
