@@ -23,6 +23,13 @@ interface MetricData {
   verification_rate: number;
 }
 
+interface AuditMetadata {
+  event_type?: string;
+  step?: string;
+  error?: string;
+  timestamp?: string;
+}
+
 export function PasswordResetMetrics() {
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['passwordResetMetrics'],
@@ -34,8 +41,8 @@ export function PasswordResetMetrics() {
         .from('audit_logs')
         .select('*')
         .eq('table_name', 'password_reset')
-        .gte('created_at', thirtyDaysAgo.toISOString())
-        .order('created_at', { ascending: true });
+        .gte('timestamp', thirtyDaysAgo.toISOString())
+        .order('timestamp', { ascending: true });
 
       if (error) throw error;
 
@@ -43,7 +50,7 @@ export function PasswordResetMetrics() {
       const dailyMetrics: Record<string, MetricData> = {};
       
       data.forEach(log => {
-        const date = new Date(log.created_at).toISOString().split('T')[0];
+        const date = new Date(log.timestamp).toISOString().split('T')[0];
         if (!dailyMetrics[date]) {
           dailyMetrics[date] = {
             date,
@@ -57,9 +64,12 @@ export function PasswordResetMetrics() {
         const metrics = dailyMetrics[date];
         metrics.total_requests++;
 
-        if (log.metadata?.event_type === 'reset_success') {
+        // Cast metadata to our interface type
+        const metadata = log.metadata as AuditMetadata;
+        
+        if (metadata?.event_type === 'reset_success') {
           metrics.successful_resets++;
-        } else if (log.metadata?.event_type === 'reset_failed') {
+        } else if (metadata?.event_type === 'reset_failed') {
           metrics.failed_attempts++;
         }
 
