@@ -6,6 +6,10 @@ export interface RPCResponse {
   error?: string;
 }
 
+export interface ValidateTokenParams {
+  p_reset_token: string;
+}
+
 export interface EmailTransitionResponse extends RPCResponse {
   email?: string;
   requires_verification?: boolean;
