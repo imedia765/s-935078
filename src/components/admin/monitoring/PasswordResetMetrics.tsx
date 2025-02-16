@@ -90,22 +90,26 @@ export function PasswordResetMetrics() {
   }
 
   return (
-    <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-6">Password Reset Metrics</h2>
+    <Card className="p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Password Reset Metrics</h2>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="success-rate">Success Rate</TabsTrigger>
           <TabsTrigger value="verification">Verification Rate</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="h-[400px]">
+        <TabsContent value="overview" className="h-[300px] sm:h-[400px] mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => new Date(value).toLocaleDateString()}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
               <Line 
@@ -113,29 +117,36 @@ export function PasswordResetMetrics() {
                 dataKey="total_requests" 
                 stroke="#6C5DD3" 
                 name="Total Requests"
+                strokeWidth={2}
               />
               <Line 
                 type="monotone" 
                 dataKey="successful_resets" 
                 stroke="#10B981" 
                 name="Successful Resets"
+                strokeWidth={2}
               />
               <Line 
                 type="monotone" 
                 dataKey="failed_attempts" 
                 stroke="#EF4444" 
                 name="Failed Attempts"
+                strokeWidth={2}
               />
             </LineChart>
           </ResponsiveContainer>
         </TabsContent>
 
-        <TabsContent value="success-rate" className="h-[400px]">
+        <TabsContent value="success-rate" className="h-[300px] sm:h-[400px] mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => new Date(value).toLocaleDateString()}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
               <Line 
@@ -143,24 +154,35 @@ export function PasswordResetMetrics() {
                 dataKey="successful_resets" 
                 stroke="#10B981" 
                 name="Successful Resets"
+                strokeWidth={2}
               />
             </LineChart>
           </ResponsiveContainer>
         </TabsContent>
 
-        <TabsContent value="verification" className="h-[400px]">
+        <TabsContent value="verification" className="h-[300px] sm:h-[400px] mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => new Date(value).toLocaleDateString()}
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => `${value.toFixed(1)}%`}
+              />
+              <Tooltip 
+                formatter={(value: number) => [`${value.toFixed(1)}%`, "Verification Rate"]}
+              />
               <Legend />
               <Line 
                 type="monotone" 
                 dataKey="verification_rate" 
                 stroke="#6C5DD3" 
                 name="Verification Rate (%)"
+                strokeWidth={2}
               />
             </LineChart>
           </ResponsiveContainer>
