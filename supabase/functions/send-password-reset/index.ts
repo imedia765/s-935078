@@ -1,9 +1,22 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { corsHeaders } from "./validation.ts";
-import { validateRequest, RequestBody } from "./validation.ts";
+import { validateRequest } from "./validation.ts";
 import { validateLoopsConfig, getLoopsIntegration, sendLoopsEmail } from "./loops.ts";
 import { logAuditEvent } from "./audit.ts";
+
+// Initialize the Supabase admin client
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 serve(async (req) => {
   // Handle CORS
