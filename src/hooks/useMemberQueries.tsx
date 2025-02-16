@@ -3,41 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Simplified type definitions - reducing nesting depth
-type BaseEntity = {
-  id: string;
-};
-
-type CollectorBase = BaseEntity & {
-  prefix: string | null;
-  name: string;
-  number: string;
-};
-
-type Collector = CollectorBase & {
-  active: boolean;
-};
-
-type MemberCollector = {
-  name: string;
-  number: string;
-  active: boolean;
-  prefix: string;
-};
-
-type Member = BaseEntity & {
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  member_number: string;
-  collector_id: string;
-  members_collectors: MemberCollector | null;
-};
-
-type QueryResult = {
-  members: Member[];
-  totalCount: number;
-};
+interface MembersTableProps {
+  members: any[];
+  sortField: string;
+  sortDirection: 'asc' | 'desc';
+  onSort: (field: string) => void;
+  onEdit: (member: any) => void;
+  onToggleStatus: (member: any) => void;
+  onMove: (member: any) => void;
+  onExportIndividual: (member: any) => void;
+  onDelete: (member: any) => void;
+}
 
 export function useMemberQueries(
   selectedCollector: string,
@@ -134,12 +110,10 @@ export function useMemberQueries(
       const isAdmin = userRolesQuery.data?.includes("admin");
       const userCollector = userCollectorQuery.data;
 
-      // First check: Is the user an admin?
       console.log('User is admin:', isAdmin);
       console.log('Current collector data:', userCollector);
 
       if (!isAdmin) {
-        // Non-admin case: Must always filter by their collector_id
         if (!userCollector?.id) {
           console.error('Non-admin user without collector ID detected');
           throw new Error('Collector ID not found');
@@ -147,7 +121,6 @@ export function useMemberQueries(
         console.log('Applying non-admin filter with collector ID:', userCollector.id);
         query = query.eq('collector_id', userCollector.id);
       } else if (selectedCollector !== 'all') {
-        // Admin case with specific collector selected
         console.log('Admin filtering by selected collector:', selectedCollector);
         query = query.eq('collector_id', selectedCollector);
       } else {
@@ -156,11 +129,7 @@ export function useMemberQueries(
 
       if (searchTerm) {
         console.log('Applying search term:', searchTerm);
-        query = query.or(`
-          full_name.ilike.%${searchTerm}%,
-          member_number.ilike.%${searchTerm}%,
-          email.ilike.%${searchTerm}%
-        `);
+        query = query.or(`full_name.ilike.%${searchTerm}%,member_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
       }
 
       if (sortField) {
