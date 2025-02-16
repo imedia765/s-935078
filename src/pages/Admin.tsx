@@ -35,103 +35,105 @@ export default function Admin() {
         >
           <TabsTrigger 
             value="audit" 
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
             aria-controls="audit-tab"
           >
             <ClipboardList className="h-4 w-4" aria-hidden="true" />
-            <span>Audit Logs</span>
+            <span className="text-foreground">Audit Logs</span>
           </TabsTrigger>
           <TabsTrigger 
             value="roles"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
             aria-controls="roles-tab"
           >
             <Users className="h-4 w-4" aria-hidden="true" />
-            <span>Role Management</span>
+            <span className="text-foreground">Role Management</span>
           </TabsTrigger>
           <TabsTrigger 
             value="members"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
             aria-controls="members-tab"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
-            <span>Member Search</span>
+            <span className="text-foreground">Member Search</span>
           </TabsTrigger>
           <TabsTrigger 
             value="maintenance"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
             aria-controls="maintenance-tab"
           >
             <Settings className="h-4 w-4" aria-hidden="true" />
-            <span>Maintenance</span>
+            <span className="text-foreground">Maintenance</span>
           </TabsTrigger>
           <TabsTrigger 
             value="email"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
             aria-controls="email-tab"
           >
             <Mail className="h-4 w-4" aria-hidden="true" />
-            <span>Email Server</span>
+            <span className="text-foreground">Email Server</span>
           </TabsTrigger>
           <TabsTrigger 
             value="database"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
             aria-controls="database-tab"
           >
             <Database className="h-4 w-4" aria-hidden="true" />
-            <span>Database</span>
+            <span className="text-foreground">Database</span>
           </TabsTrigger>
           <TabsTrigger 
             value="standardization"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
             aria-controls="standardization-tab"
           >
             <FileCheck className="h-4 w-4" aria-hidden="true" />
-            <span>Email Standard.</span>
+            <span className="text-foreground">Email Standard.</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="audit" id="audit-tab" role="tabpanel">
-          <Card className="p-4 lg:p-6 glass-card">
-            <h2 className="text-lg lg:text-xl font-semibold mb-4 text-gradient">Audit Activity</h2>
-            <AuditLogViewer />
-          </Card>
-        </TabsContent>
+        <main id="main-content" role="main" aria-labelledby="admin-heading">
+          <TabsContent value="audit" id="audit-tab" role="tabpanel">
+            <Card className="p-4 lg:p-6 glass-card">
+              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">Audit Activity</h2>
+              <AuditLogViewer />
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="roles" id="roles-tab" role="tabpanel">
-          <Card className="p-4 lg:p-6 glass-card">
-            <h2 className="text-lg lg:text-xl font-semibold mb-4 text-gradient">Role Management</h2>
-            <RoleManagement />
-          </Card>
-        </TabsContent>
+          <TabsContent value="roles" id="roles-tab" role="tabpanel">
+            <Card className="p-4 lg:p-6 glass-card">
+              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">Role Management</h2>
+              <RoleManagement />
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="members" id="members-tab" role="tabpanel">
-          <Card className="p-4 lg:p-6 glass-card">
-            <h2 className="text-lg lg:text-xl font-semibold mb-4 text-gradient">Member Search</h2>
-            <MemberSearch />
-          </Card>
-        </TabsContent>
+          <TabsContent value="members" id="members-tab" role="tabpanel">
+            <Card className="p-4 lg:p-6 glass-card">
+              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">Member Search</h2>
+              <MemberSearch />
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="maintenance" id="maintenance-tab" role="tabpanel">
-          <Card className="p-4 lg:p-6 glass-card">
-            <h2 className="text-lg lg:text-xl font-semibold mb-4 text-gradient">System Maintenance</h2>
-            <MaintenanceManagement />
-          </Card>
-        </TabsContent>
+          <TabsContent value="maintenance" id="maintenance-tab" role="tabpanel">
+            <Card className="p-4 lg:p-6 glass-card">
+              <h2 className="text-lg lg:text-xl font-semibold mb-4 text-foreground">System Maintenance</h2>
+              <MaintenanceManagement />
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="database" id="database-tab" role="tabpanel">
-          <Card className="p-4 lg:p-6 glass-card">
-            <DatabaseManagement />
-          </Card>
-        </TabsContent>
+          <TabsContent value="database" id="database-tab" role="tabpanel">
+            <Card className="p-4 lg:p-6 glass-card">
+              <DatabaseManagement />
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="email" id="email-tab" role="tabpanel">
-          <EmailServerDashboard />
-        </TabsContent>
+          <TabsContent value="email" id="email-tab" role="tabpanel">
+            <EmailServerDashboard />
+          </TabsContent>
 
-        <TabsContent value="standardization" id="standardization-tab" role="tabpanel">
-          <EmailStandardizationManager />
-        </TabsContent>
+          <TabsContent value="standardization" id="standardization-tab" role="tabpanel">
+            <EmailStandardizationManager />
+          </TabsContent>
+        </main>
       </Tabs>
     </div>
   );
