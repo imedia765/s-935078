@@ -4,7 +4,6 @@ import { FileText, Download, Eye, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 interface Document {
   id: string;
@@ -23,56 +22,40 @@ interface DocumentsCardProps {
 
 export function DocumentsCard({ documents: initialDocuments, onView, onDownload }: DocumentsCardProps) {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
 
-  const checkSession = async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) {
-      console.error('Session check failed:', error);
-      toast({
-        title: "Session Expired",
-        description: "Please sign in again",
-        variant: "destructive"
-      });
-      navigate("/");
-      return false;
-    }
-    return true;
-  };
-
   const fetchDocuments = async () => {
     try {
-      if (!(await checkSession())) return;
-
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        throw new Error('User not authenticated');
+        console.log('No authenticated user found');
+        return;
       }
 
       console.log('Fetching documents for user:', user.id);
 
-      // First ensure user directory exists by creating a .keep file if needed
-      const { data: keepFile, error: keepError } = await supabase.storage
-        .from('profile_documents')
-        .list(`${user.id}`, {
-          limit: 1,
-          search: '.keep'
-        });
+      // First check if bucket exists
+      const { data: buckets, error: bucketError } = await supabase
+        .storage
+        .listBuckets();
 
-      if (!keepFile?.length) {
-        await supabase.storage
-          .from('profile_documents')
-          .upload(`${user.id}/.keep`, new Blob([''], { type: 'text/plain' }));
+      if (bucketError) {
+        console.error('Error checking buckets:', bucketError);
+        return;
       }
 
-      // Now list all files in user's directory
+      const bucketExists = buckets?.some(b => b.name === 'profile_documents');
+      if (!bucketExists) {
+        console.log('Profile documents bucket does not exist');
+        return;
+      }
+
       const { data: files, error } = await supabase.storage
         .from('profile_documents')
-        .list(`${user.id}/`, {
+        .list(user.id, {
           limit: 100,
           sortBy: { column: 'name', order: 'asc' }
         });
@@ -82,12 +65,9 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
         throw error;
       }
 
-      console.log('Files retrieved:', files);
-
-      if (files) {
-        const actualFiles = files.filter(file => file.name !== '.keep');
+      if (files?.length) {
         const formattedDocs: Document[] = await Promise.all(
-          actualFiles.map(async (file) => {
+          files.map(async (file) => {
             const { data: { publicUrl } } = supabase.storage
               .from('profile_documents')
               .getPublicUrl(`${user.id}/${file.name}`);
@@ -109,9 +89,6 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
       }
     } catch (error: any) {
       console.error('Error fetching documents:', error);
-      if (error.message?.includes('session')) {
-        navigate("/");
-      }
       toast({
         title: "Error",
         description: "Failed to load documents",
@@ -131,8 +108,6 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
     if (!file) return;
 
     try {
-      if (!(await checkSession())) return;
-      
       setIsUploading(true);
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -158,12 +133,8 @@ export function DocumentsCard({ documents: initialDocuments, onView, onDownload 
       });
 
       await fetchDocuments();
-
     } catch (error: any) {
       console.error('Upload error:', error);
-      if (error.message?.includes('session')) {
-        navigate("/");
-      }
       toast({
         title: "Error",
         description: error.message || "Failed to upload document",
