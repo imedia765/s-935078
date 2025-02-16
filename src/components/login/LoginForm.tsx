@@ -41,6 +41,31 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
     navigate("/reset-password");
   };
 
+  const tryLogin = async (email: string, password: string) => {
+    console.log("[Login] Attempting login with email:", email);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  };
+
+  const getPersonalEmail = async (memberNumber: string) => {
+    const { data, error } = await supabase
+      .from('members')
+      .select('email')
+      .eq('member_number', memberNumber)
+      .single();
+    
+    if (error || !data?.email) return null;
+    
+    // Check if it's a personal email (not temp)
+    if (!data.email.includes('@temp.')) {
+      return data.email;
+    }
+    return null;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -58,36 +83,46 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
-        password,
-      });
+      // Try login formats in sequence:
+      // 1. Try personal email if exists
+      const personalEmail = await getPersonalEmail(memberNumber);
+      if (personalEmail) {
+        console.log("[Login] Trying personal email");
+        const result = await tryLogin(personalEmail, password);
+        if (!result.error) {
+          handleLoginSuccess();
+          return;
+        }
+      }
 
-      if (signInError) {
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: "Invalid credentials. Please try again or contact support.",
-        });
+      // 2. Try @temp.pwaburton.org format
+      console.log("[Login] Trying @temp.pwaburton.org format");
+      const burtonResult = await tryLogin(
+        `${memberNumber.toLowerCase()}@temp.pwaburton.org`,
+        password
+      );
+      if (!burtonResult.error) {
+        handleLoginSuccess();
         return;
       }
 
-      if (rememberMe) {
-        localStorage.setItem("rememberedMember", memberNumber);
-      } else {
-        localStorage.removeItem("rememberedMember");
+      // 3. Try legacy @temp.com format
+      console.log("[Login] Trying legacy @temp.com format");
+      const legacyResult = await tryLogin(
+        `${memberNumber.toLowerCase()}@temp.com`,
+        password
+      );
+      if (!legacyResult.error) {
+        handleLoginSuccess();
+        return;
       }
 
-      const currentTime = new Date().toISOString();
-      localStorage.setItem("lastLoginTime", currentTime);
-
+      // If all attempts fail, show error
       toast({
-        title: "Welcome back!",
-        description: "Successfully logged in",
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Invalid credentials. Please try again or contact support.",
       });
-
-      onLoginSuccess();
-      navigate("/profile");
 
     } catch (error: any) {
       console.error("[Login] Unexpected error:", error);
@@ -99,6 +134,25 @@ export const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLoginSuccess = () => {
+    if (rememberMe) {
+      localStorage.setItem("rememberedMember", memberNumber);
+    } else {
+      localStorage.removeItem("rememberedMember");
+    }
+
+    const currentTime = new Date().toISOString();
+    localStorage.setItem("lastLoginTime", currentTime);
+
+    toast({
+      title: "Welcome back!",
+      description: "Successfully logged in",
+    });
+
+    onLoginSuccess();
+    navigate("/profile");
   };
 
   return (
