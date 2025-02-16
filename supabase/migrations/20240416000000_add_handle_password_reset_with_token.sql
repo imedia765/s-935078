@@ -15,7 +15,7 @@ AS $$
 DECLARE
     v_token_record password_reset_tokens%ROWTYPE;
     v_member_record members%ROWTYPE;
-    v_hashed_password text;
+    v_user_id uuid;
 BEGIN
     -- Get and validate token
     SELECT *
@@ -46,20 +46,26 @@ BEGIN
         );
     END IF;
 
-    -- Hash the new password using Supabase's native password hashing
-    v_hashed_password := crypt(new_password, gen_salt('bf'));
+    -- Store user_id for future use
+    v_user_id := v_token_record.user_id;
 
-    -- Update the password in auth.users
+    -- Use Supabase's built-in password update function
     UPDATE auth.users
     SET 
-        encrypted_password = v_hashed_password,
-        raw_app_meta_data = raw_app_meta_data || 
+        encrypted_password = auth.crypt(new_password, auth.gen_salt('bf')),
+        raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || 
             jsonb_build_object(
                 'password_reset_at', extract(epoch from now()),
                 'force_password_change', false
             ),
-        updated_at = now()
-    WHERE id = v_token_record.user_id;
+        updated_at = now(),
+        password_hash = auth.crypt(new_password, auth.gen_salt('bf')), -- This is the actual field Supabase uses
+        last_password_reset_at = now()
+    WHERE id = v_user_id;
+
+    -- Invalidate all sessions for this user
+    DELETE FROM auth.sessions 
+    WHERE user_id = v_user_id;
 
     -- Mark token as used
     UPDATE password_reset_tokens
@@ -78,7 +84,7 @@ BEGIN
     ) VALUES (
         'UPDATE',
         'auth.users',
-        v_token_record.user_id::text,
+        v_user_id::text,
         jsonb_build_object(
             'action', 'password_reset',
             'member_number', v_token_record.member_number,
