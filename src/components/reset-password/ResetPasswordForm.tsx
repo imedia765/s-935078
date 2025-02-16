@@ -67,7 +67,9 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         { p_reset_token: token }
       );
 
-      if (tokenError || !(tokenData as RPCResponse)?.success) {
+      const validatedData = tokenData as unknown as RPCResponse;
+      
+      if (tokenError || !validatedData?.success) {
         throw new Error("This password reset link has expired or is invalid. Please request a new one.");
       }
 

@@ -4,6 +4,8 @@ import { Json } from "@/integrations/supabase/types";
 export interface RPCResponse {
   success: boolean;
   error?: string;
+  user_id?: string;
+  member_number?: string;
 }
 
 export interface ValidateTokenParams {
