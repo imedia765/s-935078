@@ -16,7 +16,7 @@
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
-    --muted-foreground: 215 25% 27%;  /* Darker for better contrast */
+    --muted-foreground: 215 25% 27%;
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
@@ -28,7 +28,6 @@
   }
 
   .dark {
-    /* Dark mode variables with improved contrast */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -40,7 +39,7 @@
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
-    --muted-foreground: 215 25% 75%;  /* Lighter for better contrast */
+    --muted-foreground: 215 25% 75%;
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
@@ -65,25 +64,25 @@
     @apply transition-all duration-200;
   }
 
-  /* Light mode with improved contrast */
+  /* Light mode */
   :root {
     .glass-card {
-      @apply bg-white/95 border border-gray-300 text-foreground shadow-sm;
+      @apply bg-white border-gray-200 text-foreground shadow-sm;
     }
 
     .nav-gradient {
-      @apply bg-white/95 border-b border-gray-300;
+      @apply bg-background border-gray-200;
     }
   }
 
-  /* Dark mode with improved contrast */
+  /* Dark mode */
   .dark {
     .glass-card {
-      @apply bg-gray-900 border border-gray-700 text-foreground;
+      @apply bg-gray-900 border-gray-700 text-foreground;
     }
 
     .nav-gradient {
-      @apply bg-gray-900 border-b border-gray-700;
+      @apply bg-gray-900 border-gray-700;
     }
   }
 

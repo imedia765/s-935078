@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react"
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -19,11 +18,16 @@ export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null)
   const [announcements, setAnnouncements] = useState<string>("")
 
-  // Screen reader announcements
-  const announce = (message: string) => {
-    setAnnouncements(message)
+  // Enhanced screen reader announcements
+  const announce = (message: string, priority: 'polite' | 'assertive' = 'polite') => {
+    setAnnouncements((prev) => `${prev} ${message}`.trim())
+    // Clear announcement after 2 seconds
+    setTimeout(() => {
+      setAnnouncements((prev) => prev.replace(message, '').trim())
+    }, 2000)
   }
 
   const { data: session, isLoading: sessionLoading } = useQuery({
@@ -52,46 +56,63 @@ export const Navigation = () => {
 
   // Enhanced focus trap and keyboard navigation
   useEffect(() => {
-    if (!isMenuOpen) return;
+    if (!isMenuOpen) {
+      // Return focus to last focused element when menu closes
+      if (lastFocusedElementRef.current) {
+        lastFocusedElementRef.current.focus()
+        lastFocusedElementRef.current = null
+      }
+      return
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsMenuOpen(false)
         menuButtonRef.current?.focus()
-        announce("Menu closed")
+        announce("Menu closed", "assertive")
       }
 
       if (e.key === 'Tab' && menuRef.current) {
         const focusableElements = menuRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        const firstElement = focusableElements[0] as HTMLElement;
-        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        const firstElement = focusableElements[0] as HTMLElement
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
+
+        // Store currently focused element before tab
+        lastFocusedElementRef.current = document.activeElement as HTMLElement
 
         if (e.shiftKey && document.activeElement === firstElement) {
-          lastElement.focus();
-          e.preventDefault();
+          lastElement.focus()
+          e.preventDefault()
         } else if (!e.shiftKey && document.activeElement === lastElement) {
-          firstElement.focus();
-          e.preventDefault();
+          firstElement.focus()
+          e.preventDefault()
         }
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isMenuOpen]);
+    // Prevent body scroll when menu is open
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', handleKeyDown)
+    
+    return () => {
+      document.body.style.overflow = ''
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isMenuOpen])
 
   // Focus management when menu opens/closes
   useEffect(() => {
     if (isMenuOpen) {
+      lastFocusedElementRef.current = document.activeElement as HTMLElement
       const firstFocusableElement = menuRef.current?.querySelector(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      ) as HTMLElement;
-      firstFocusableElement?.focus();
-      announce("Menu opened")
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) as HTMLElement
+      firstFocusableElement?.focus()
+      announce("Menu opened", "assertive")
     }
-  }, [isMenuOpen]);
+  }, [isMenuOpen])
 
   const handleSignOut = async () => {
     try {
@@ -143,16 +164,23 @@ export const Navigation = () => {
   const isLoading = sessionLoading || rolesLoading
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 nav-gradient" aria-label="Main Navigation">
-      {/* Live region for announcements */}
+    <nav 
+      className="fixed top-0 left-0 right-0 z-40 nav-gradient" 
+      aria-label="Main Navigation"
+      role="navigation"
+    >
+      {/* Live regions for announcements */}
       <div className="sr-only" role="status" aria-live="polite">
         {announcements}
       </div>
+      <div className="sr-only" role="alert" aria-live="assertive">
+        {announcements}
+      </div>
 
-      {/* Skip link for keyboard users */}
+      {/* Skip link */}
       <a 
         href="#main-content" 
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:p-4 focus:bg-background focus:ring-2 focus:ring-primary focus:text-foreground"
       >
         Skip to main content
       </a>
@@ -160,8 +188,12 @@ export const Navigation = () => {
       <div className="max-w-7xl mx-auto">
         <div className="py-2 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-4">
-            <h3 className="text-sm font-medium text-primary">PWA Burton</h3>
-            <p className="text-lg font-arabic text-primary tracking-wider truncate max-w-[200px] md:max-w-none" lang="ar">
+            <h3 className="text-sm font-medium text-foreground">PWA Burton</h3>
+            <p 
+              className="text-lg font-arabic text-foreground tracking-wider truncate max-w-[200px] md:max-w-none" 
+              lang="ar"
+              dir="rtl"
+            >
               بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
             </p>
             <span className="w-[88px] invisible" aria-hidden="true" />
@@ -171,7 +203,7 @@ export const Navigation = () => {
         {session && (
           <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-3 relative">
             {isLoading ? (
-              <div className="flex items-center space-x-2" role="status">
+              <div className="flex items-center space-x-2" role="status" aria-busy="true">
                 <span className="sr-only">Loading navigation...</span>
                 <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
                 <span className="text-xs text-muted-foreground">Loading...</span>
@@ -183,7 +215,10 @@ export const Navigation = () => {
                   variant="ghost"
                   size="icon"
                   className="lg:hidden min-h-[44px] min-w-[44px]"
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onClick={() => {
+                    setIsMenuOpen(!isMenuOpen)
+                    announce(isMenuOpen ? "Menu closed" : "Menu opened", "assertive")
+                  }}
                   aria-expanded={isMenuOpen}
                   aria-controls="navigation-menu"
                   aria-label={isMenuOpen ? "Close menu" : "Open menu"}
@@ -199,7 +234,7 @@ export const Navigation = () => {
                   ref={menuRef}
                   id="navigation-menu"
                   className={cn(
-                    "fixed inset-x-0 top-[105px] bg-gray-900 dark:bg-gray-800 lg:relative lg:top-0 lg:bg-transparent lg:backdrop-blur-none transition-all duration-200 border-b border-gray-200 dark:border-gray-700 lg:border-none z-30",
+                    "fixed inset-x-0 top-[105px] bg-gray-900 dark:bg-gray-800 lg:relative lg:top-0 lg:bg-transparent lg:backdrop-blur-none transition-all duration-200 border-b border-gray-200 dark:border-gray-700 lg:border-none z-50",
                     isMenuOpen ? "block" : "hidden lg:block"
                   )}
                 >
@@ -212,19 +247,21 @@ export const Navigation = () => {
                         <NavigationMenuLink
                           className={cn(
                             "group inline-flex h-11 w-full items-center justify-start rounded-md px-4 py-2 text-sm font-medium transition-colors",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                            "hover:bg-primary-600 hover:text-white disabled:pointer-events-none disabled:opacity-50",
+                            "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background",
+                            "hover:bg-primary hover:text-primary-foreground",
+                            "active:scale-95",
                             isActive(item.path) ? 
-                              "bg-primary-600 text-white shadow-sm" : 
+                              "bg-primary text-primary-foreground" : 
                               "bg-gray-800 text-white dark:bg-gray-700"
                           )}
                           onClick={() => {
-                            navigate(item.path);
-                            setIsMenuOpen(false);
-                            announce(`Navigating to ${item.label}`);
+                            navigate(item.path)
+                            setIsMenuOpen(false)
+                            announce(`Navigating to ${item.label}`, "assertive")
                           }}
                           role="menuitem"
                           aria-current={isActive(item.path) ? 'page' : undefined}
+                          tabIndex={0}
                         >
                           <span className="flex items-center">
                             {item.icon}
@@ -237,10 +274,15 @@ export const Navigation = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-11 w-11 bg-gray-800 dark:bg-gray-700 text-white hover:bg-primary-600 hover:text-white focus-visible:ring-2 focus-visible:ring-primary"
+                        className={cn(
+                          "h-11 w-11",
+                          "bg-gray-800 dark:bg-gray-700 text-white",
+                          "hover:bg-primary hover:text-primary-foreground",
+                          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        )}
                         onClick={() => {
-                          setTheme(theme === "dark" ? "light" : "dark");
-                          announce(`Switched to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+                          setTheme(theme === "dark" ? "light" : "dark")
+                          announce(`Switched to ${theme === 'dark' ? 'light' : 'dark'} mode`, "polite")
                         }}
                         aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
                       >
@@ -254,11 +296,16 @@ export const Navigation = () => {
                     <NavigationMenuItem role="none" className="lg:ml-auto">
                       <Button
                         variant="ghost"
-                        className="w-full flex items-center justify-start px-4 h-11 bg-red-600 text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500"
+                        className={cn(
+                          "w-full flex items-center justify-start px-4 h-11",
+                          "bg-red-600 text-white",
+                          "hover:bg-red-700",
+                          "focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        )}
                         onClick={() => {
-                          handleSignOut();
-                          setIsMenuOpen(false);
-                          announce("Signing out");
+                          handleSignOut()
+                          setIsMenuOpen(false)
+                          announce("Signing out", "assertive")
                         }}
                       >
                         <LogOut className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -273,5 +320,5 @@ export const Navigation = () => {
         )}
       </div>
     </nav>
-  );
+  )
 }
