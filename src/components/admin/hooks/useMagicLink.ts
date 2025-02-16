@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RPCResponse } from "@/components/reset-password/types";
 
 export function useMagicLink() {
   const { toast } = useToast();
@@ -17,8 +18,11 @@ export function useMagicLink() {
 
       if (error) throw error;
 
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to reset password');
+      // Cast the response to our RPCResponse type
+      const response = data as RPCResponse;
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to reset password');
       }
 
       toast({
@@ -26,7 +30,7 @@ export function useMagicLink() {
         description: "Password has been reset to the member number.",
       });
 
-      return data;
+      return response;
     } catch (error: any) {
       console.error('Password reset error:', error);
       toast({
