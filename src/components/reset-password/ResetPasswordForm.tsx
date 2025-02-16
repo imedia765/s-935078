@@ -88,13 +88,16 @@ export const ResetPasswordForm = ({ token }: ResetPasswordFormProps) => {
         timestamp: new Date().toISOString()
       };
 
-      // Handle the finalization through a simpler database update for now
-      const { error: finalizeError } = await supabase.from('password_reset_tokens')
-        .update({ 
-          used_at: new Date().toISOString(),
-          attempts: 1
-        })
-        .eq('token', token);
+      // Finalize the password reset
+      const { data: finalizeData, error: finalizeError } = await supabase.rpc(
+        'finalize_password_reset',
+        {
+          token_value: token,
+          ip_address: window.location.hostname,
+          user_agent: window.navigator.userAgent,
+          client_info: clientInfo
+        }
+      );
 
       if (finalizeError) {
         console.error("Error finalizing password reset:", finalizeError);

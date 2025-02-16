@@ -3261,6 +3261,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      finalize_password_reset: {
+        Args: {
+          token_value: string
+          ip_address: string
+          user_agent: string
+          client_info?: Json
+        }
+        Returns: Json
+      }
       fix_all_role_issues: {
         Args: Record<PropertyKey, never>
         Returns: Json
