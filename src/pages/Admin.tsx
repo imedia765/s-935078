@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,7 +34,7 @@ export default function Admin() {
         >
           <TabsTrigger 
             value="audit" 
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
             aria-controls="audit-tab"
           >
             <ClipboardList className="h-4 w-4" aria-hidden="true" />
@@ -43,7 +42,7 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger 
             value="roles"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
             aria-controls="roles-tab"
           >
             <Users className="h-4 w-4" aria-hidden="true" />
@@ -51,7 +50,7 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger 
             value="members"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
             aria-controls="members-tab"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
@@ -59,7 +58,7 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger 
             value="maintenance"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
             aria-controls="maintenance-tab"
           >
             <Settings className="h-4 w-4" aria-hidden="true" />
@@ -67,7 +66,7 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger 
             value="email"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
             aria-controls="email-tab"
           >
             <Mail className="h-4 w-4" aria-hidden="true" />
@@ -75,7 +74,7 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger 
             value="database"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
             aria-controls="database-tab"
           >
             <Database className="h-4 w-4" aria-hidden="true" />
@@ -83,7 +82,7 @@ export default function Admin() {
           </TabsTrigger>
           <TabsTrigger 
             value="standardization"
-            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60"
+            className="w-full flex items-center gap-2 justify-start sm:justify-center h-11 hover:bg-primary/60 focus:bg-primary/60 data-[state=active]:bg-primary data-[state=active]:text-white transition-colors"
             aria-controls="standardization-tab"
           >
             <FileCheck className="h-4 w-4" aria-hidden="true" />
